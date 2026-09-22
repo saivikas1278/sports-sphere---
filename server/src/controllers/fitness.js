@@ -502,3 +502,66 @@ export const getContentByCategory = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Get user fitness stats
+// @route   GET /api/fitness/stats
+// @access  Private
+export const getUserStats = async (req, res, next) => {
+  try {
+    // This is a stub that could aggregate actual user progress data.
+    // For now, returning empty stats to satisfy the frontend gracefully.
+    res.status(200).json({
+      success: true,
+      data: {
+        workouts: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{
+            label: 'Workouts Completed',
+            data: [0, 0, 0, 0, 0, 0, 0],
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4
+          }]
+        },
+        calories: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{
+            label: 'Calories Burned',
+            data: [0, 0, 0, 0, 0, 0, 0],
+            backgroundColor: 'rgba(16, 185, 129, 0.8)',
+            borderColor: 'rgb(16, 185, 129)',
+            borderWidth: 1
+          }]
+        },
+        duration: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{
+            label: 'Workout Duration (minutes)',
+            data: [0, 0, 0, 0, 0, 0, 0],
+            backgroundColor: 'rgba(139, 92, 246, 0.8)',
+            borderColor: 'rgb(139, 92, 246)',
+            borderWidth: 1
+          }]
+        },
+        workoutTypes: {
+          labels: ['Strength', 'Cardio', 'HIIT', 'Flexibility', 'Sports'],
+          datasets: [{
+            data: [0, 0, 0, 0, 0],
+            backgroundColor: [
+              'rgba(59, 130, 246, 0.8)',
+              'rgba(16, 185, 129, 0.8)',
+              'rgba(245, 101, 101, 0.8)',
+              'rgba(139, 92, 246, 0.8)',
+              'rgba(251, 191, 36, 0.8)'
+            ],
+            borderWidth: 2
+          }]
+        },
+        bodyMeasurements: [],
+        personalRecords: []
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

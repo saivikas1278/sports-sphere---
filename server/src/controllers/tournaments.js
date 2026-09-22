@@ -1151,7 +1151,7 @@ const advanceToNextRound = async (tournament, completedMatches) => {
 // @access  Public
 export const searchTournaments = async (req, res, next) => {
   try {
-    const { q, sport, location, dateFrom, dateTo } = req.query;
+    const { q, sport, location, dateFrom, dateTo, lat, lng, radius } = req.query;
 
     let query = {};
 
@@ -1168,12 +1168,26 @@ export const searchTournaments = async (req, res, next) => {
       query.sport = sport;
     }
 
-    // Location filter
-    if (location) {
+    // Location filter (text based)
+    if (location && (!lat || !lng)) {
       query.$or = [
         { 'venue.city': { $regex: location, $options: 'i' } },
         { 'venue.state': { $regex: location, $options: 'i' } }
       ];
+    }
+
+    // Geospatial filter
+    if (lat && lng) {
+      const radiusInMeters = (parseInt(radius) || 50) * 1000; // default 50km
+      query['venue.location'] = {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [parseFloat(lng), parseFloat(lat)] // GeoJSON is [lng, lat]
+          },
+          $maxDistance: radiusInMeters
+        }
+      };
     }
 
     // Date range filter

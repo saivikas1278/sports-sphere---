@@ -2,6 +2,7 @@ import Post from '../models/Post.js';
 import User from '../models/User.js';
 import cloudinary from '../config/cloudinary.js';
 import { uploadImage, uploadVideo, deleteFromCloudinary } from '../utils/uploadUtils.js';
+import { createLikeNotification, createCommentNotification } from '../utils/notificationUtils.js';
 
 // @desc    Get all posts with filters
 // @route   GET /api/posts
@@ -375,9 +376,7 @@ export const likePost = async (req, res) => {
     if (isLiked && post.author.toString() !== req.user.id) {
       const io = req.app.get('io');
       try {
-        // Create a simple notification
-        console.log(`User ${req.user.id} liked post ${post._id} by ${post.author}`);
-        // TODO: Implement notification system
+        await createLikeNotification(post.author, req.user.id, post._id, io);
       } catch (notificationError) {
         console.error('Failed to create like notification:', notificationError);
         // Don't fail the like operation if notification fails
@@ -432,9 +431,7 @@ export const addComment = async (req, res) => {
     if (post.author.toString() !== req.user.id) {
       const io = req.app.get('io');
       try {
-        // Create a simple notification
-        console.log(`User ${req.user.id} commented on post ${post._id} by ${post.author}`);
-        // TODO: Implement notification system
+        await createCommentNotification(post.author, req.user.id, post._id, io);
       } catch (notificationError) {
         console.error('Failed to create comment notification:', notificationError);
         // Don't fail the comment operation if notification fails
@@ -528,6 +525,89 @@ export const sharePost = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to share post'
+    });
+  }
+};
+
+// @desc    Save/Bookmark post
+// @route   POST /api/posts/:id/save
+// @access  Private
+export const savePost = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const postId = req.params.id;
+
+    // Check if post exists
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    const isSaved = user.savedPosts.includes(postId);
+    
+    if (isSaved) {
+      // Unsave
+      user.savedPosts = user.savedPosts.filter(id => id.toString() !== postId);
+    } else {
+      // Save
+      user.savedPosts.push(postId);
+    }
+    
+    await user.save();
+
+    res.json({
+      success: true,
+      data: {
+        isSaved: !isSaved
+      }
+    });
+  } catch (error) {
+    console.error('Save post error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save post'
+    });
+  }
+};
+
+// @desc    Report post
+// @route   POST /api/posts/:id/report
+// @access  Private
+export const reportPost = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    
+    if (!reason) {
+      return res.status(400).json({ success: false, message: 'Report reason is required' });
+    }
+
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    // Check if already reported
+    const alreadyReported = post.reports.some(report => report.user.toString() === req.user.id);
+    if (alreadyReported) {
+      return res.status(400).json({ success: false, message: 'You have already reported this post' });
+    }
+
+    post.reports.push({
+      user: req.user.id,
+      reason
+    });
+
+    await post.save();
+
+    res.json({
+      success: true,
+      message: 'Post reported successfully'
+    });
+  } catch (error) {
+    console.error('Report post error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to report post'
     });
   }
 };

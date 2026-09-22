@@ -118,8 +118,8 @@ const UpcomingTournaments = () => {
 
   if (tournaments.length === 0) {
     return (
-      <div className="text-center py-8">
-        <FaTrophy className="mx-auto text-gray-300 text-4xl mb-4" />
+      <div className="text-center py-4 md:py-8">
+        <FaTrophy className="mx-auto text-gray-300 text-2xl md:text-4xl mb-4" />
         <h3 className="text-lg font-medium text-gray-700">No Upcoming Tournaments</h3>
         <p className="text-gray-500 mt-2">Check back later for new tournaments</p>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { 
@@ -53,7 +53,7 @@ const MatchScorecard = () => {
 
   useEffect(() => {
     fetchMatchData();
-  }, [matchId]);
+  }, [fetchMatchData]);
 
   useEffect(() => {
     let interval = null;
@@ -65,7 +65,7 @@ const MatchScorecard = () => {
     return () => clearInterval(interval);
   }, [timerRunning]);
 
-  const fetchMatchData = async () => {
+  const fetchMatchData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await matchService.getMatch(matchId);
@@ -95,7 +95,7 @@ const MatchScorecard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [matchId]);
 
   const handleStartMatch = async () => {
     try {
@@ -224,14 +224,14 @@ const MatchScorecard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-4 md:py-8">
       <div className="container mx-auto px-4">
         {/* Match Header */}
-        <AnimatedCard className="mb-8">
-          <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-t-xl p-6">
+        <AnimatedCard className="mb-4 md:mb-8">
+          <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-t-xl p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold mb-2">Match #{match.matchNumber}</h1>
+                <h1 className="text-xl md:text-3xl font-bold mb-2">Match #{match.matchNumber}</h1>
                 <p className="text-green-100">{match.tournament?.name}</p>
                 <p className="text-green-100 capitalize">{match.round} - {match.sport}</p>
               </div>
@@ -254,17 +254,17 @@ const MatchScorecard = () => {
           </div>
           
           {/* Scoreboard */}
-          <div className="bg-white p-6 rounded-b-xl">
-            <div className="grid grid-cols-3 gap-8 items-center">
+          <div className="bg-white p-4 md:p-6 rounded-b-xl">
+            <div className="grid grid-cols-3 gap-4 md:gap-8 items-center">
               {/* Home Team */}
               <div className="text-center">
                 <img
                   src={match.homeTeam?.logo || '/default-team-logo.png'}
                   alt={match.homeTeam?.name}
-                  className="w-20 h-20 rounded-full mx-auto mb-3"
+                  className="w-12 md:w-20 h-12 md:h-20 rounded-full mx-auto mb-3"
                 />
                 <h3 className="text-xl font-bold mb-2">{match.homeTeam?.name}</h3>
-                <div className="text-4xl font-bold text-blue-600">{homeScore}</div>
+                <div className="text-2xl md:text-4xl font-bold text-blue-600">{homeScore}</div>
               </div>
               
               {/* VS/Score Controls */}
@@ -314,10 +314,10 @@ const MatchScorecard = () => {
                 <img
                   src={match.awayTeam?.logo || '/default-team-logo.png'}
                   alt={match.awayTeam?.name}
-                  className="w-20 h-20 rounded-full mx-auto mb-3"
+                  className="w-12 md:w-20 h-12 md:h-20 rounded-full mx-auto mb-3"
                 />
                 <h3 className="text-xl font-bold mb-2">{match.awayTeam?.name}</h3>
-                <div className="text-4xl font-bold text-red-600">{awayScore}</div>
+                <div className="text-2xl md:text-4xl font-bold text-red-600">{awayScore}</div>
                 {isLive && (
                   <div className="mt-3 flex justify-center space-x-4">
                     <button
@@ -338,7 +338,7 @@ const MatchScorecard = () => {
             </div>
             
             {/* Match Controls */}
-            <div className="mt-6 flex justify-center space-x-4">
+            <div className="mt-4 md:mt-6 flex justify-center space-x-4">
               {match.status === 'scheduled' && (
                 <GradientButton onClick={handleStartMatch} disabled={updating}>
                   <FaPlay className="mr-2" />
@@ -357,7 +357,7 @@ const MatchScorecard = () => {
         </AnimatedCard>
 
         {/* Navigation Tabs */}
-        <div className="mb-8">
+        <div className="mb-4 md:mb-8">
           <nav className="flex space-x-8">
             {['scorecard', 'events', 'details'].map((tab) => (
               <button
@@ -377,15 +377,15 @@ const MatchScorecard = () => {
 
         {/* Tab Content */}
         {activeTab === 'scorecard' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
             {/* Live Events */}
             <div className="lg:col-span-2">
-              <AnimatedCard className="p-6">
+              <AnimatedCard className="p-4 md:p-6">
                 <h3 className="text-xl font-semibold mb-4">Match Events</h3>
                 
                 {/* Add Event Form */}
                 {isLive && (
-                  <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                  <div className="bg-gray-50 p-4 rounded-lg mb-4 md:mb-6">
                     <h4 className="font-medium mb-3">Add Event</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                       <select
@@ -466,7 +466,7 @@ const MatchScorecard = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-4 md:py-8 text-gray-500">
                       No events recorded yet
                     </div>
                   )}
@@ -476,7 +476,7 @@ const MatchScorecard = () => {
 
             {/* Match Info Sidebar */}
             <div className="space-y-6">
-              <AnimatedCard className="p-6">
+              <AnimatedCard className="p-4 md:p-6">
                 <h3 className="text-lg font-semibold mb-4">Match Information</h3>
                 <div className="space-y-3">
                   <div>
@@ -517,7 +517,7 @@ const MatchScorecard = () => {
               </AnimatedCard>
               
               {/* Quick Stats */}
-              <AnimatedCard className="p-6">
+              <AnimatedCard className="p-4 md:p-6">
                 <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -539,12 +539,12 @@ const MatchScorecard = () => {
         )}
 
         {activeTab === 'events' && (
-          <AnimatedCard className="p-6">
+          <AnimatedCard className="p-4 md:p-6">
             <h3 className="text-xl font-semibold mb-4">Match Timeline</h3>
             <div className="space-y-4">
               {events.map((event, index) => (
                 <div key={event.id || index} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="text-3xl">{getEventIcon(event.type)}</div>
+                  <div className="text-xl md:text-3xl">{getEventIcon(event.type)}</div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium capitalize">{event.type}</h4>
@@ -561,7 +561,7 @@ const MatchScorecard = () => {
               ))}
               
               {events.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-4 md:py-6 md:py-12 text-gray-500">
                   No events recorded for this match
                 </div>
               )}
@@ -570,8 +570,8 @@ const MatchScorecard = () => {
         )}
 
         {activeTab === 'details' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <AnimatedCard className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+            <AnimatedCard className="p-4 md:p-6">
               <h3 className="text-xl font-semibold mb-4">Match Notes</h3>
               <textarea
                 value={matchNotes}
@@ -593,7 +593,7 @@ const MatchScorecard = () => {
               )}
             </AnimatedCard>
             
-            <AnimatedCard className="p-6">
+            <AnimatedCard className="p-4 md:p-6">
               <h3 className="text-xl font-semibold mb-4">Additional Details</h3>
               <div className="space-y-4">
                 <div>

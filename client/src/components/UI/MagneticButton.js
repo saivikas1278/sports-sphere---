@@ -1,9 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 const MagneticButton = ({ children, className = "", magnetStrength = 0.4, ...props }) => {
   const buttonRef = useRef(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const isHovered = false;
+  const position = { x: 0, y: 0 };
+  const setIsHovered = () => {};
+  const setPosition = () => {};
 
   useEffect(() => {
     const button = buttonRef.current;

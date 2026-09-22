@@ -86,8 +86,8 @@ const CricketDashboard = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 mb-8 animate-fade-in">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-4 md:mb-8 animate-fade-in">
+      <div className="flex justify-between items-center mb-4 md:mb-6">
         <h2 className="text-xl font-semibold flex items-center text-gray-800">
           <FaBaseballBall className="mr-2 text-green-600" /> Cricket Scorer
         </h2>
@@ -100,13 +100,13 @@ const CricketDashboard = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-8">
+        <div className="flex justify-center items-center py-4 md:py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
         </div>
       ) : (
         <div>
           {/* Live Matches */}
-          <div className="mb-6">
+          <div className="mb-4 md:mb-6">
             <h3 className="text-lg font-medium text-gray-800 mb-3 flex items-center">
               <div className="mr-2 h-2 w-2 bg-red-500 rounded-full animate-pulse"></div>
               Live Matches
@@ -195,7 +195,7 @@ const CricketDashboard = () => {
           </div>
           
           {/* Create Match Button */}
-          <div className="mt-6 text-center">
+          <div className="mt-4 md:mt-6 text-center">
             <Link 
               to="/cricket/create"
               className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"

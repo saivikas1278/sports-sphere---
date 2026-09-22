@@ -114,6 +114,11 @@ const postSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  reports: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    reason: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now }
+  }],
   isArchived: {
     type: Boolean,
     default: false

@@ -13,12 +13,12 @@ const contactService = {
       console.error('Contact service error:', error);
       // Extract validation errors if they exist
       if (error.response?.data?.errors) {
-        throw {
-          message: error.response.data.message || 'Validation failed',
-          errors: error.response.data.errors
-        };
+        const customError = new Error(error.response.data.message || 'Validation failed');
+        customError.errors = error.response.data.errors;
+        throw customError;
       }
-      throw error.response?.data || error || { message: 'Failed to send message' };
+      const finalError = new Error(error.response?.data?.message || error.message || 'Failed to send message');
+      throw finalError;
     }
   },
 
@@ -29,8 +29,7 @@ const contactService = {
       // api.js interceptor already returns response.data, so response is the actual data
       return response;
     } catch (error) {
-      console.error('Contact info service error:', error);
-      throw error.response?.data || error || { message: 'Failed to get contact info' };
+      throw new Error(error.response?.data?.message || 'Failed to get contact info');
     }
   }
 };

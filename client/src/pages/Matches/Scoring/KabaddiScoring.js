@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaCheck, FaUndo, FaRedo, FaPlus, FaMinus, FaFlag } from 'react-icons/fa';
+import { FaArrowLeft, FaCheck, FaUndo, FaFlag } from 'react-icons/fa';
 import { GiWhistle } from 'react-icons/gi';
+import matchService from '../../../services/matchService';
+import { showToast } from '../../../utils/toast';
 
 const KabaddiScoring = () => {
   const { matchId } = useParams();
@@ -44,38 +46,69 @@ const KabaddiScoring = () => {
 
   // Load match data
   useEffect(() => {
-    const fetchMatch = () => {
+    const fetchMatch = async () => {
       try {
-        const savedMatches = JSON.parse(localStorage.getItem('matches')) || [];
-        const matchData = savedMatches.find(m => m.id === matchId);
+        const response = await matchService.getMatch(matchId);
+        let matchData = null;
+        if (response.success && response.data) {
+          matchData = response.data;
+        } else if (response.data && response.data.data) {
+          matchData = response.data.data;
+        }
         
         if (matchData) {
-          setMatch(matchData);
+          const formattedMatch = {
+            id: matchData._id || matchData.id,
+            sport: matchData.sport || 'kabaddi',
+            teams: {
+              team1: {
+                name: matchData.homeTeamName || matchData.homeTeam?.name || 'Team 1',
+                players: matchData.homeTeamPlayers?.length ? matchData.homeTeamPlayers.map(p => ({
+                  id: p._id, name: `${p.firstName} ${p.lastName}`
+                })) : []
+              },
+              team2: {
+                name: matchData.awayTeamName || matchData.awayTeam?.name || 'Team 2',
+                players: matchData.awayTeamPlayers?.length ? matchData.awayTeamPlayers.map(p => ({
+                  id: p._id, name: `${p.firstName} ${p.lastName}`
+                })) : []
+              }
+            },
+            status: matchData.status || 'live',
+            result: matchData.result || null,
+          };
+          setMatch(formattedMatch);
           
           // If match has result, initialize scoring state
-          if (matchData.result && matchData.result.scorecard) {
+          if (formattedMatch.result && formattedMatch.result.scorecard) {
             setScore(prevScore => ({
               ...prevScore,
               team1: {
                 ...prevScore.team1,
-                points: matchData.teams.team1.score || 0
+                points: formattedMatch.result.scorecard.finalScore?.team1 || 0
               },
               team2: {
                 ...prevScore.team2,
-                points: matchData.teams.team2.score || 0
+                points: formattedMatch.result.scorecard.finalScore?.team2 || 0
               },
-              gameOver: matchData.status === 'completed',
-              winner: matchData.result.winner === 'team1' ? 'team1' : 'team2'
+              gameOver: formattedMatch.status === 'completed',
+              winner: formattedMatch.result.winner
+            }));
+          } else if (matchData.scorecard && matchData.scorecard.kabaddi) {
+            // Restore ongoing state if needed
+            setScore(prevScore => ({
+              ...prevScore,
+              ...matchData.scorecard.kabaddi
             }));
           }
 
           // Initialize players if available in the team data
-          if (matchData.teams.team1.players && matchData.teams.team1.players.length > 0) {
+          if (formattedMatch.teams.team1.players && formattedMatch.teams.team1.players.length > 0) {
             setScore(prevScore => ({
               ...prevScore,
               team1: {
                 ...prevScore.team1,
-                players: matchData.teams.team1.players.map(p => ({
+                players: formattedMatch.teams.team1.players.map(p => ({
                   id: p.id,
                   name: p.name,
                   number: p.number || '',
@@ -88,7 +121,7 @@ const KabaddiScoring = () => {
               },
               team2: {
                 ...prevScore.team2,
-                players: matchData.teams.team2.players.map(p => ({
+                players: formattedMatch.teams.team2.players.map(p => ({
                   id: p.id,
                   name: p.name,
                   number: p.number || '',
@@ -105,6 +138,7 @@ const KabaddiScoring = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error loading match data:", error);
+        showToast("Error loading match data", "error");
         setLoading(false);
       }
     };
@@ -316,62 +350,49 @@ const KabaddiScoring = () => {
       winner
     }));
     
-    // Save match result
-    const savedMatches = JSON.parse(localStorage.getItem('matches')) || [];
-    const matchIndex = savedMatches.findIndex(m => m.id === matchId);
-    
-    if (matchIndex !== -1) {
-      const updatedMatch = {
-        ...savedMatches[matchIndex],
-        status: 'completed',
-        teams: {
-          ...savedMatches[matchIndex].teams,
-          team1: {
-            ...savedMatches[matchIndex].teams.team1,
-            score: team1Score
-          },
-          team2: {
-            ...savedMatches[matchIndex].teams.team2,
-            score: team2Score
-          }
-        },
-        result: {
-          winner,
-          summary: result,
-          scorecard: {
-            halftimeScore: score.halftimeScore,
-            finalScore: {
-              team1: team1Score,
-              team2: team2Score
-            },
-            stats: {
-              team1: {
-                raids: score.team1.raids,
-                successfulRaids: score.team1.successfulRaids,
-                tackles: score.team1.tackles,
-                allOuts: score.team1.allOuts,
-                bonusPoints: score.team1.bonusPoints
+    const endMatchAsync = async () => {
+      try {
+        await matchService.updateMatch(matchId, {
+          status: 'completed',
+          result: {
+            winner,
+            summary: result,
+            scorecard: {
+              halftimeScore: score.halftimeScore,
+              finalScore: {
+                team1: team1Score,
+                team2: team2Score
               },
-              team2: {
-                raids: score.team2.raids,
-                successfulRaids: score.team2.successfulRaids,
-                tackles: score.team2.tackles,
-                allOuts: score.team2.allOuts,
-                bonusPoints: score.team2.bonusPoints
+              stats: {
+                team1: {
+                  raids: score.team1.raids,
+                  successfulRaids: score.team1.successfulRaids,
+                  tackles: score.team1.tackles,
+                  allOuts: score.team1.allOuts,
+                  bonusPoints: score.team1.bonusPoints
+                },
+                team2: {
+                  raids: score.team2.raids,
+                  successfulRaids: score.team2.successfulRaids,
+                  tackles: score.team2.tackles,
+                  allOuts: score.team2.allOuts,
+                  bonusPoints: score.team2.bonusPoints
+                }
+              },
+              playerStats: {
+                team1: score.team1.players,
+                team2: score.team2.players
               }
-            },
-            playerStats: {
-              team1: score.team1.players,
-              team2: score.team2.players
             }
           }
-        }
-      };
-      
-      savedMatches[matchIndex] = updatedMatch;
-      localStorage.setItem('matches', JSON.stringify(savedMatches));
-      setMatch(updatedMatch);
-    }
+        });
+        showToast("Match completed successfully", "success");
+      } catch (error) {
+        console.error("Failed to save match result", error);
+        showToast("Failed to save match result", "error");
+      }
+    };
+    endMatchAsync();
   };
 
   // Undo last action
@@ -401,7 +422,7 @@ const KabaddiScoring = () => {
 
   if (!match) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-8">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <p>Match not found. Please return to the matches page.</p>
           <button 
@@ -416,8 +437,8 @@ const KabaddiScoring = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6 flex items-center">
+    <div className="container mx-auto px-4 py-4 md:py-8">
+      <div className="mb-4 md:mb-6 flex items-center">
         <button 
           onClick={goBack}
           className="mr-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
@@ -429,7 +450,7 @@ const KabaddiScoring = () => {
       </div>
       
       {/* Match Info */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
         <h2 className="text-xl font-semibold mb-4">{match.title || `${match.teams.team1.name} vs ${match.teams.team2.name}`}</h2>
         <div className="flex flex-col md:flex-row md:justify-between">
           <div className="mb-4 md:mb-0">
@@ -444,7 +465,7 @@ const KabaddiScoring = () => {
       </div>
       
       {/* Scoreboard */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
         <div className="text-center mb-4">
           <span className="text-sm font-medium bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
             {score.currentHalf === 1 ? '1st Half' : '2nd Half'}
@@ -456,7 +477,7 @@ const KabaddiScoring = () => {
           )}
         </div>
         
-        <div className="flex flex-col md:flex-row justify-between mb-6">
+        <div className="flex flex-col md:flex-row justify-between mb-4 md:mb-6">
           <div className="flex-1 text-center mb-4 md:mb-0">
             <h3 className="text-lg font-semibold mb-2">{match.teams.team1.name}</h3>
             <div className={`text-6xl font-bold ${score.currentRaider === 'team1' ? 'text-blue-600' : 'text-gray-700'}`}>
@@ -468,7 +489,7 @@ const KabaddiScoring = () => {
           </div>
           
           <div className="flex items-center justify-center px-4 mb-4 md:mb-0">
-            <div className="text-3xl font-bold text-gray-400">vs</div>
+            <div className="text-xl md:text-3xl font-bold text-gray-400">vs</div>
           </div>
           
           <div className="flex-1 text-center">
@@ -483,7 +504,7 @@ const KabaddiScoring = () => {
         </div>
         
         {/* Team Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6 mb-4 md:mb-6">
           {/* Team 1 Stats */}
           <div className="border rounded-lg p-4">
             <h4 className="text-center font-semibold mb-3">{match.teams.team1.name} Stats</h4>
@@ -513,7 +534,7 @@ const KabaddiScoring = () => {
         
         {/* Raid Controls */}
         {!score.gameOver && !score.isHalftime && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 md:mb-6">
             {!score.isRaidActive ? (
               <>
                 <button
@@ -556,7 +577,7 @@ const KabaddiScoring = () => {
         
         {/* Scoring Controls */}
         {!score.gameOver && !score.isHalftime && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 md:mb-6">
             {/* Team 1 Scoring */}
             <div className="border rounded-lg p-4">
               <h4 className="text-center font-semibold mb-3">{match.teams.team1.name}</h4>
@@ -623,10 +644,10 @@ const KabaddiScoring = () => {
         
         {/* Player Management */}
         {score.team1.players.length > 0 && !score.gameOver && !score.isHalftime && (
-          <div className="mb-6">
+          <div className="mb-4 md:mb-6">
             <h3 className="text-lg font-semibold mb-3">Player Status</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
               {/* Team 1 Players */}
               <div>
                 <h4 className="font-medium mb-2">{match.teams.team1.name}</h4>
@@ -716,7 +737,7 @@ const KabaddiScoring = () => {
             </button>
           </div>
         ) : (
-          <div className="text-center p-6 bg-green-100 border border-green-300 rounded-lg">
+          <div className="text-center p-4 md:p-6 bg-green-100 border border-green-300 rounded-lg">
             <h3 className="text-xl font-bold text-green-800 mb-2">Match Complete!</h3>
             <p className="text-green-700 mb-4">
               {score.winner === 'team1' 
@@ -738,20 +759,20 @@ const KabaddiScoring = () => {
         {/* Halftime Screen */}
         {score.isHalftime && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 max-w-md w-full">
-              <h2 className="text-2xl font-bold text-center mb-6">Halftime</h2>
+            <div className="bg-white rounded-lg p-4 md:p-8 max-w-md w-full">
+              <h2 className="text-2xl font-bold text-center mb-4 md:mb-6">Halftime</h2>
               
-              <div className="flex justify-between items-center mb-8">
+              <div className="flex justify-between items-center mb-4 md:mb-8">
                 <div className="text-center">
                   <h3 className="font-semibold mb-2">{match.teams.team1.name}</h3>
-                  <div className="text-4xl font-bold">{score.team1.points}</div>
+                  <div className="text-2xl md:text-4xl font-bold">{score.team1.points}</div>
                 </div>
                 
                 <div className="text-xl font-bold">-</div>
                 
                 <div className="text-center">
                   <h3 className="font-semibold mb-2">{match.teams.team2.name}</h3>
-                  <div className="text-4xl font-bold">{score.team2.points}</div>
+                  <div className="text-2xl md:text-4xl font-bold">{score.team2.points}</div>
                 </div>
               </div>
               

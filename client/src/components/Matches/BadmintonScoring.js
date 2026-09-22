@@ -262,7 +262,7 @@ const BadmintonScoring = () => {
 
   if (!match) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-8">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <p>Match not found. Please return to the matches page.</p>
           <button 
@@ -277,8 +277,8 @@ const BadmintonScoring = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6 flex items-center">
+    <div className="container mx-auto px-4 py-4 md:py-8">
+      <div className="mb-4 md:mb-6 flex items-center">
         <button 
           onClick={goBack}
           className="mr-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
@@ -290,7 +290,7 @@ const BadmintonScoring = () => {
       </div>
       
       {/* Match Info */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
         <h2 className="text-xl font-semibold mb-4">{match.title}</h2>
         <div className="flex flex-col md:flex-row md:justify-between">
           <div className="mb-4 md:mb-0">
@@ -305,8 +305,8 @@ const BadmintonScoring = () => {
       </div>
       
       {/* Scoreboard */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="flex flex-col md:flex-row justify-between mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
+        <div className="flex flex-col md:flex-row justify-between mb-4 md:mb-6">
           <div className="flex-1 text-center mb-4 md:mb-0">
             <h3 className="text-lg font-semibold mb-2">{match.teams.team1.name}</h3>
             <div className={`text-6xl font-bold ${player1Service ? 'text-blue-600' : 'text-gray-700'}`}>
@@ -317,7 +317,7 @@ const BadmintonScoring = () => {
           </div>
           
           <div className="flex items-center justify-center px-4 mb-4 md:mb-0">
-            <div className="text-3xl font-bold text-gray-400">vs</div>
+            <div className="text-xl md:text-3xl font-bold text-gray-400">vs</div>
           </div>
           
           <div className="flex-1 text-center">
@@ -331,7 +331,7 @@ const BadmintonScoring = () => {
         </div>
         
         {/* Set information */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <h3 className="text-md font-semibold mb-2">Current Set: {currentSet}</h3>
           {sets.length > 0 && (
             <div className="overflow-x-auto">
@@ -393,14 +393,14 @@ const BadmintonScoring = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
               onClick={() => scorePoint('player1')}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded text-lg"
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-4 px-4 md:px-6 rounded text-lg"
               disabled={isMatchOver}
             >
               Point for {match.teams.team1.name}
             </button>
             <button
               onClick={() => scorePoint('player2')}
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-4 px-6 rounded text-lg"
+              className="bg-green-500 hover:bg-green-700 text-white font-bold py-4 px-4 md:px-6 rounded text-lg"
               disabled={isMatchOver}
             >
               Point for {match.teams.team2.name}
@@ -425,7 +425,7 @@ const BadmintonScoring = () => {
             </button>
           </div>
         ) : (
-          <div className="text-center p-6 bg-green-100 border border-green-300 rounded-lg">
+          <div className="text-center p-4 md:p-6 bg-green-100 border border-green-300 rounded-lg">
             <h3 className="text-xl font-bold text-green-800 mb-2">Match Complete!</h3>
             <p className="text-green-700 mb-4">{match.result.summary}</p>
             <button

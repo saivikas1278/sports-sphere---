@@ -191,6 +191,17 @@ export const setupSocketHandlers = (io) => {
       });
     });
 
+    // Handle direct messaging (chat)
+    socket.on('join-chat', (conversationId) => {
+      socket.join(`chat-${conversationId}`);
+      console.log(`💬 User ${socket.id} joined chat ${conversationId}`);
+    });
+
+    socket.on('leave-chat', (conversationId) => {
+      socket.leave(`chat-${conversationId}`);
+      console.log(`💬 User ${socket.id} left chat ${conversationId}`);
+    });
+
     // Handle disconnection
     socket.on('disconnect', () => {
       console.log(`🔌 User disconnected: ${socket.id}`);
@@ -246,6 +257,14 @@ export const emitBracketUpdate = (io, tournamentId, bracket) => {
   io.to(`tournament-${tournamentId}`).emit('bracket-updated', {
     tournamentId,
     bracket,
+    timestamp: new Date()
+  });
+};
+
+export const emitChatMessage = (io, conversationId, message) => {
+  io.to(`chat-${conversationId}`).emit('new-message', {
+    conversationId,
+    message,
     timestamp: new Date()
   });
 };

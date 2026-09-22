@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  FaBaseballBall, FaRunning, FaExchangeAlt, FaSave, FaDownload, 
-  FaCheck, FaTimes, FaPlus, FaMinus, FaHistory, FaRegFileAlt, FaPlay
+  FaBaseballBall, FaRunning, FaExchangeAlt, FaDownload, 
+  FaCheck, FaTimes, FaPlus, FaPlay
 } from 'react-icons/fa';
 import { GiCricketBat } from 'react-icons/gi';
 import LoadingSpinner from '../../../components/UI/LoadingSpinner';
 import { showToast } from '../../../utils/toast';
+import matchService from '../../../services/matchService';
 
 const CricketScoring = () => {
   const { matchId } = useParams();
@@ -42,7 +43,6 @@ const CricketScoring = () => {
   const [showWicketModal, setShowWicketModal] = useState(false);
   const [showExtrasModal, setShowExtrasModal] = useState(false);
   const [showInningsEndModal, setShowInningsEndModal] = useState(false);
-  const [dismissalType, setDismissalType] = useState(null);
   const [eventHistory, setEventHistory] = useState([]);
   
   useEffect(() => {
@@ -51,48 +51,50 @@ const CricketScoring = () => {
       try {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Assuming we get this data from our API/Redux
-        // For this demo, we'll create mock data
+        // Fetch match data
+        const response = await matchService.getMatch(matchId);
+        let matchData = null;
+        if (response.success && response.data) {
+          matchData = response.data;
+        } else if (response.data && response.data.data) {
+          matchData = response.data.data;
+        }
+        
+        if (!matchData) {
+          throw new Error('Match not found');
+        }
+
+        // Format to what the UI expects
+        const homePlayers = matchData.homeTeamPlayers?.length ? matchData.homeTeamPlayers.map(p => ({
+          id: p._id, name: `${p.firstName} ${p.lastName}`, position: p.role || 'Player'
+        })) : [
+          { id: '1', name: 'Player 1', position: 'Batsman' },
+          { id: '2', name: 'Player 2', position: 'Bowler' },
+        ];
+        
+        const awayPlayers = matchData.awayTeamPlayers?.length ? matchData.awayTeamPlayers.map(p => ({
+          id: p._id, name: `${p.firstName} ${p.lastName}`, position: p.role || 'Player'
+        })) : [
+          { id: '3', name: 'Player 3', position: 'Batsman' },
+          { id: '4', name: 'Player 4', position: 'Bowler' },
+        ];
+
         const mockMatch = {
           id: matchId,
           sport: 'cricket',
           team1: {
-            name: 'Royal Strikers',
-            players: [
-              { id: 1, name: 'John Smith', position: 'Batsman' },
-              { id: 2, name: 'Maria Garcia', position: 'Bowler' },
-              { id: 3, name: 'David Johnson', position: 'All-rounder' },
-              { id: 12, name: 'Alex Johnson', position: 'Batsman' },
-              { id: 13, name: 'Emma Wilson', position: 'Bowler' },
-              { id: 14, name: 'Ryan Garcia', position: 'Wicket Keeper' },
-              { id: 15, name: 'Sophia Martinez', position: 'All-rounder' },
-              { id: 16, name: 'Daniel Brown', position: 'Batsman' },
-              { id: 17, name: 'Oliver White', position: 'Bowler' },
-              { id: 18, name: 'Ethan Lee', position: 'All-rounder' },
-              { id: 19, name: 'Jackson Clark', position: 'Batsman' },
-            ]
+            name: matchData.homeTeamName || matchData.homeTeam?.name || 'Home Team',
+            players: homePlayers
           },
           team2: {
-            name: 'Metro Kings',
-            players: [
-              { id: 4, name: 'Sarah Wilson', position: 'Batsman' },
-              { id: 5, name: 'Michael Brown', position: 'Bowler' },
-              { id: 20, name: 'Ava Taylor', position: 'All-rounder' },
-              { id: 21, name: 'Noah Martin', position: 'Batsman' },
-              { id: 22, name: 'Liam Thompson', position: 'Bowler' },
-              { id: 23, name: 'Zoe Anderson', position: 'Wicket Keeper' },
-              { id: 24, name: 'Lucas Harris', position: 'All-rounder' },
-              { id: 25, name: 'Isabella Moore', position: 'Batsman' },
-              { id: 26, name: 'Jacob Jackson', position: 'Bowler' },
-              { id: 27, name: 'Mia Nelson', position: 'All-rounder' },
-              { id: 28, name: 'William Robinson', position: 'Batsman' },
-            ]
+            name: matchData.awayTeamName || matchData.awayTeam?.name || 'Away Team',
+            players: awayPlayers
           },
-          date: new Date().toISOString(),
-          status: 'in_progress',
-          format: 'T20', // Assuming a T20 match
-          venue: 'City Cricket Stadium',
-          toss: {
+          date: matchData.scheduledTime || matchData.date || new Date().toISOString(),
+          status: matchData.status || 'in_progress',
+          format: matchData.format || 'T20',
+          venue: matchData.venue?.name || 'Local Stadium',
+          toss: matchData.toss || {
             winner: 'team1',
             decision: 'bat'
           }
@@ -568,7 +570,7 @@ const CricketScoring = () => {
   };
   
   // Complete match and save data
-  const completeMatch = () => {
+  const completeMatch = async () => {
     try {
       // Create match summary with final stats
       const matchSummary = {
@@ -638,8 +640,15 @@ const CricketScoring = () => {
       // In a real app, you would dispatch an action to save the match data
       // dispatch(updateMatch(match.id, matchSummary));
       
-      // For demo purposes, save to localStorage
-      localStorage.setItem(`match_${match.id}_completed`, JSON.stringify(matchSummary));
+      try {
+        await matchService.updateMatch(match.id, {
+          status: 'completed',
+          result: matchSummary.result,
+          scorecard: matchSummary
+        });
+      } catch (err) {
+        console.error('Failed to save match summary', err);
+      }
       
       showToast('Match completed and data saved!', 'success');
       
@@ -664,7 +673,7 @@ const CricketScoring = () => {
   // If match is not loaded yet
   if (!match) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-8">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Match not found</h1>
           <button
@@ -681,16 +690,16 @@ const CricketScoring = () => {
   // If match is completed
   if (matchCompleted) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Match Completed</h1>
+      <div className="container mx-auto px-4 py-4 md:py-8">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 md:p-6">
+          <div className="text-center mb-4 md:mb-8">
+            <h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-2">Match Completed</h1>
             <p className="text-xl text-gray-700">
               {winner === 'Tie' ? 'Match Tied' : `${winner} wins!`}
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6 mb-4 md:mb-8">
             <div className="bg-gray-50 p-4 rounded-lg">
               <h2 className="text-lg font-semibold text-gray-800 mb-2">{match.team1.name}</h2>
               <p className="text-2xl font-bold">
@@ -741,9 +750,9 @@ const CricketScoring = () => {
   // Check if we need to select opening batsmen or bowler
   if (!striker || !nonStriker) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
-          <div className="text-center mb-6">
+      <div className="container mx-auto px-4 py-4 md:py-8">
+        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-4 md:p-6">
+          <div className="text-center mb-4 md:mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Select Opening Batsmen</h1>
             <p className="text-gray-600">Choose two batsmen to start the innings</p>
           </div>
@@ -763,7 +772,7 @@ const CricketScoring = () => {
             </div>
           </div>
           
-          <div className="mb-6">
+          <div className="mb-4 md:mb-6">
             <p className="font-medium text-gray-700 mb-2">Available Batsmen:</p>
             <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
               {batsmen.filter(p => p.id !== (striker?.id || -1)).map(player => (
@@ -791,8 +800,8 @@ const CricketScoring = () => {
           </div>
           
           {striker && nonStriker && !currentBowler && (
-            <div className="mt-8">
-              <div className="text-center mb-6">
+            <div className="mt-4 md:mt-8">
+              <div className="text-center mb-4 md:mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Select Opening Bowler</h2>
                 <p className="text-gray-600">Choose a bowler to start the innings</p>
               </div>
@@ -827,10 +836,10 @@ const CricketScoring = () => {
   }
   
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-4 md:py-6">
       <div className="max-w-6xl mx-auto">
         {/* Match header */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="bg-white rounded-lg shadow-md p-4 mb-4 md:mb-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{match.team1.name} vs {match.team2.name}</h1>
@@ -860,11 +869,11 @@ const CricketScoring = () => {
         </div>
         
         {/* Score summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 md:mb-6">
           <div className="bg-white rounded-lg shadow-md p-4">
             <h2 className="text-lg font-semibold text-gray-800 mb-2">Score</h2>
             <div className="flex items-end">
-              <p className="text-3xl font-bold text-gray-900">{runs}/{wickets}</p>
+              <p className="text-xl md:text-3xl font-bold text-gray-900">{runs}/{wickets}</p>
               <p className="ml-2 text-gray-600">({overs}.{balls} ov)</p>
             </div>
             <p className="text-sm text-gray-600 mt-1">
@@ -908,10 +917,10 @@ const CricketScoring = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6">
           {/* Scoring buttons */}
           <div className="md:col-span-2">
-            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div className="bg-white rounded-lg shadow-md p-4 mb-4 md:mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Scoring</h2>
               
               <div className="grid grid-cols-4 gap-2 mb-4">
@@ -1002,7 +1011,7 @@ const CricketScoring = () => {
               
               <div className="max-h-80 overflow-y-auto">
                 {eventHistory.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-4 md:py-8 text-gray-500">
                     No events yet
                   </div>
                 ) : (
@@ -1035,7 +1044,7 @@ const CricketScoring = () => {
           {/* Stats tables */}
           <div>
             {/* Batsmen stats */}
-            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div className="bg-white rounded-lg shadow-md p-4 mb-4 md:mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-2">Batting</h2>
               
               <div className="overflow-x-auto">
@@ -1158,7 +1167,7 @@ const CricketScoring = () => {
                 p.status === 'not_out' &&
                 p.battingOrder === 0
               ).length === 0 ? (
-                <div className="text-center py-10">
+                <div className="text-center py-4 md:py-6 md:py-10">
                   <p className="text-gray-500">No available batsmen</p>
                 </div>
               ) : (

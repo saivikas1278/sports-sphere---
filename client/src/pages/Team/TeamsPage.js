@@ -1,23 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { 
-  FaUsers, 
-  FaPlus, 
-  FaSearch, 
-  FaFilter, 
-  FaTrophy,
-  FaMapMarkerAlt,
-  FaCalendarAlt,
-  FaUserFriends,
-  FaStar,
-  FaEye
-} from 'react-icons/fa';
+  Users, 
+  Search, 
+  Plus,
+  MapPin,
+  Calendar,
+  Star,
+  Trophy,
+  ListFilter
+} from 'lucide-react';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
-import GradientButton from '../../components/UI/GradientButton';
 import MyTeams from '../../components/Team/MyTeams';
+import CategoryFilterScroll from '../../components/UI/CategoryFilterScroll';
 import teamService from '../../services/teamService';
 import { showToast } from '../../utils/toast';
+
+const SPORTS = [
+  { id: 'all', label: 'All Sports' },
+  { id: 'basketball', label: 'Basketball' },
+  { id: 'soccer', label: 'Soccer' },
+  { id: 'cricket', label: 'Cricket' },
+  { id: 'tennis', label: 'Tennis' },
+  { id: 'badminton', label: 'Badminton' },
+  { id: 'volleyball', label: 'Volleyball' }
+];
+
+const LOCATIONS = ['All Locations', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Pune'];
 
 const TeamsPage = () => {
   const [activeTab, setActiveTab] = useState('browse');
@@ -25,130 +35,41 @@ const TeamsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSport, setSelectedSport] = useState('all');
-  const [selectedLocation, setSelectedLocation] = useState('all');
-  const { user } = useSelector(state => state.auth);
+  const [selectedLocation, setSelectedLocation] = useState('All Locations');
 
-  const sports = ['all', 'Basketball', 'Soccer', 'Cricket', 'Tennis', 'Badminton', 'Volleyball'];
-  const locations = ['all', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Pune'];
+  const fetchTeams = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const params = {};
+      if (selectedSport !== 'all') params.sport = selectedSport;
+      if (selectedLocation !== 'All Locations') params.location = selectedLocation;
+      
+      const response = await teamService.getTeams(params);
+      
+      if (response.data && response.data.data) {
+        setTeams(response.data.data);
+      } else {
+        setTeams([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch teams:', error);
+      showToast('Failed to load teams', 'error');
+      setTeams([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedSport, selectedLocation]);
 
   useEffect(() => {
     if (activeTab === 'browse') {
       fetchTeams();
     }
-  }, [activeTab, selectedSport, selectedLocation]);
-
-  const fetchTeams = async () => {
-    try {
-      setIsLoading(true);
-      const params = {};
-      if (selectedSport !== 'all') params.sport = selectedSport;
-      if (selectedLocation !== 'all') params.location = selectedLocation;
-      
-      // For now, using mock data until backend is ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockTeams = [
-        {
-          id: 1,
-          name: 'Mumbai Warriors',
-          sport: 'Basketball',
-          location: 'Mumbai',
-          members: 12,
-          maxMembers: 15,
-          logo: null,
-          description: 'Competitive basketball team looking for skilled players.',
-          wins: 18,
-          losses: 6,
-          rating: 4.5,
-          isPublic: true,
-          captain: 'Rohit Sharma',
-          founded: '2023-01-15',
-          achievements: ['City Championship 2023', 'League Winners 2024']
-        },
-        {
-          id: 2,
-          name: 'Delhi Thunder',
-          sport: 'Soccer',
-          location: 'Delhi',
-          members: 18,
-          maxMembers: 22,
-          logo: null,
-          description: 'Professional soccer team participating in state-level tournaments.',
-          wins: 24,
-          losses: 8,
-          rating: 4.7,
-          isPublic: true,
-          captain: 'Virat Singh',
-          founded: '2022-08-20',
-          achievements: ['State Cup Runners-up 2023', 'Regional Champions 2024']
-        },
-        {
-          id: 3,
-          name: 'Bangalore Blasters',
-          sport: 'Cricket',
-          location: 'Bangalore',
-          members: 16,
-          maxMembers: 20,
-          logo: null,
-          description: 'Cricket team focused on developing young talent.',
-          wins: 15,
-          losses: 10,
-          rating: 4.2,
-          isPublic: true,
-          captain: 'MS Dhoni Jr',
-          founded: '2023-03-10',
-          achievements: ['Youth League Champions 2024']
-        },
-        {
-          id: 4,
-          name: 'Chennai Challengers',
-          sport: 'Tennis',
-          location: 'Chennai',
-          members: 8,
-          maxMembers: 12,
-          logo: null,
-          description: 'Tennis club for intermediate to advanced players.',
-          wins: 12,
-          losses: 4,
-          rating: 4.6,
-          isPublic: true,
-          captain: 'Sania Mirza Jr',
-          founded: '2023-06-05',
-          achievements: ['Doubles Championship 2024']
-        },
-        {
-          id: 5,
-          name: 'Kolkata Knights',
-          sport: 'Badminton',
-          location: 'Kolkata',
-          members: 10,
-          maxMembers: 14,
-          logo: null,
-          description: 'Badminton team with focus on competitive play.',
-          wins: 20,
-          losses: 5,
-          rating: 4.8,
-          isPublic: true,
-          captain: 'Saina Nehwal Jr',
-          founded: '2022-12-01',
-          achievements: ['State Championship 2024', 'National Qualifiers 2024']
-        }
-      ];
-
-      setTeams(mockTeams);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching teams:', error);
-      showToast('Failed to load teams', 'error');
-      setIsLoading(false);
-    }
-  };
+  }, [activeTab, fetchTeams]);
 
   const handleJoinTeam = async (teamId) => {
     try {
-      // await teamService.joinTeam(teamId);
+      await teamService.joinTeam(teamId);
       showToast('Join request sent successfully!', 'success');
-      // Refresh teams data
       fetchTeams();
     } catch (error) {
       console.error('Error joining team:', error);
@@ -156,257 +77,211 @@ const TeamsPage = () => {
     }
   };
 
-  const filteredTeams = teams.filter(team => 
-    team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredTeams = teams.filter(team => {
+    const locationStr = team.homeVenue?.city || team.location || '';
+    return team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     team.sport.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    team.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    locationStr.toLowerCase().includes(searchTerm.toLowerCase())
+  });
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
   };
 
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, index) => (
-      <FaStar
+      <Star
         key={index}
-        className={`text-sm ${index < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'}`}
+        size={14}
+        className={`${index < Math.floor(rating) ? 'text-amber-400 fill-amber-400' : 'text-slate-300'} transition-all`}
       />
     ));
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Teams</h1>
-                <p className="mt-2 text-gray-600">
-                  Find teams to join or manage your existing teams
-                </p>
-              </div>
-              <GradientButton as={Link} to="/teams/create" className="flex items-center space-x-2">
-                <FaPlus className="text-sm" />
-                <span>Create Team</span>
-              </GradientButton>
-            </div>
+    <div className="container mx-auto px-4 py-4 md:py-8 relative z-10">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-6 mb-4 md:mb-8 p-4 md:p-8 rounded-[40px] glass-panel bg-white/40">
+          <div>
+            <h1 className="text-2xl md:text-4xl font-extrabold text-slate-800 mb-2 tracking-tight">Teams Hub</h1>
+            <p className="text-lg text-slate-500 font-medium">Find teams to join or manage your existing squads.</p>
           </div>
+          <Link
+            to="/teams/create"
+            className="flex items-center gap-2 px-4 md:px-6 py-3 bg-blue-500 text-white font-bold rounded-full shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:bg-blue-600 hover:scale-105 transition-all"
+          >
+            <Plus size={20} />
+            Create Team
+          </Link>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('browse')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'browse'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Browse Teams
-            </button>
-            <button
-              onClick={() => setActiveTab('myteams')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'myteams'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              My Teams
-            </button>
-          </nav>
+        <div className="flex flex-wrap items-center gap-4 mb-4 md:mb-8">
+          <button
+            onClick={() => setActiveTab('browse')}
+            className={`px-4 md:px-6 py-3 rounded-full font-bold text-sm transition-all ${
+              activeTab === 'browse'
+                ? 'bg-blue-500 text-white shadow-md'
+                : 'glass-panel text-slate-600 hover:bg-white/80'
+            }`}
+          >
+            Browse Teams
+          </button>
+          <button
+            onClick={() => setActiveTab('myteams')}
+            className={`px-4 md:px-6 py-3 rounded-full font-bold text-sm transition-all ${
+              activeTab === 'myteams'
+                ? 'bg-blue-500 text-white shadow-md'
+                : 'glass-panel text-slate-600 hover:bg-white/80'
+            }`}
+          >
+            My Teams
+          </button>
         </div>
 
         {/* Browse Teams Tab */}
         {activeTab === 'browse' && (
           <div>
             {/* Filters */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Search Teams
-                  </label>
-                  <div className="relative">
-                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search by name, sport, or location"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+            <div className="mb-4 md:mb-8 space-y-4">
+              <CategoryFilterScroll 
+                categories={SPORTS} 
+                activeCategory={selectedSport} 
+                onSelectCategory={setSelectedSport} 
+              />
+              
+              <div className="flex flex-col md:flex-row gap-4 px-2">
+                <div className="flex-1 relative">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <Search size={18} className="text-slate-400" />
                   </div>
+                  <input
+                    type="text"
+                    placeholder="Search by name, sport, or location..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-full text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-sm transition-all"
+                  />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sport
-                  </label>
-                  <select
-                    value={selectedSport}
-                    onChange={(e) => setSelectedSport(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {sports.map(sport => (
-                      <option key={sport} value={sport}>
-                        {sport === 'all' ? 'All Sports' : sport}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Location
-                  </label>
+                <div className="relative">
                   <select
                     value={selectedLocation}
                     onChange={(e) => setSelectedLocation(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="appearance-none w-full md:w-56 pl-10 pr-10 py-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-full text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-sm transition-all cursor-pointer"
                   >
-                    {locations.map(location => (
-                      <option key={location} value={location}>
-                        {location === 'all' ? 'All Locations' : location}
-                      </option>
+                    {LOCATIONS.map(location => (
+                      <option key={location} value={location}>{location}</option>
                     ))}
                   </select>
-                </div>
-                
-                <div className="flex items-end">
-                  <button
-                    onClick={fetchTeams}
-                    className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    <FaFilter className="mr-2" />
-                    Apply Filters
-                  </button>
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <ListFilter size={18} className="text-slate-400" />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Teams Grid */}
             {isLoading ? (
-              <div className="flex justify-center items-center py-12">
+              <div className="flex justify-center items-center py-4 md:py-6 md:py-10 md:py-20">
                 <LoadingSpinner size="lg" />
               </div>
+            ) : filteredTeams.length === 0 ? (
+              <div className="text-center py-4 md:py-6 md:py-10 md:py-20 bg-white/30 rounded-[40px] border border-dashed border-slate-300">
+                <Users size={48} className="text-slate-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-slate-700 mb-2">No teams found</h3>
+                <p className="text-slate-500 font-medium mb-4 md:mb-6">
+                  Try adjusting your search criteria or create your own team.
+                </p>
+                <Link
+                  to="/teams/create"
+                  className="inline-flex items-center gap-2 px-4 md:px-6 py-3 bg-blue-500 text-white font-bold rounded-full shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:bg-blue-600 transition-all"
+                >
+                  <Plus size={18} />
+                  Create Your Team
+                </Link>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {filteredTeams.map(team => (
-                  <div key={team.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border">
-                    <div className="p-6">
-                      {/* Team Header */}
-                      <div className="flex items-center mb-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-4">
-                          {team.logo ? (
-                            <img src={team.logo} alt={team.name} className="w-10 h-10 rounded-full" />
-                          ) : (
-                            <FaUsers className="text-white text-lg" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg text-gray-900">{team.name}</h3>
-                          <div className="flex items-center mt-1">
-                            <span className="text-sm text-gray-600 mr-2">{team.sport}</span>
-                            <span className="text-xs text-gray-500">•</span>
-                            <span className="text-sm text-gray-600 ml-2 flex items-center">
-                              <FaMapMarkerAlt className="mr-1" />
-                              {team.location}
-                            </span>
-                          </div>
+                  <div key={team.id} className="p-4 md:p-6 rounded-[32px] glass-panel flex flex-col gap-5 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgb(0,0,255,0.08)] transition-all">
+                    {/* Header */}
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0 border border-white">
+                        {team.logo ? (
+                          <img src={team.logo} alt={team.name} className="w-full h-full object-cover rounded-2xl" />
+                        ) : (
+                          <Users size={24} className="text-blue-500" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-slate-800 truncate">{team.name}</h3>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                          <span className="bg-white/60 px-2 py-0.5 rounded-full">{team.sport}</span>
+                          <span className="flex items-center gap-1 bg-white/60 px-2 py-0.5 rounded-full">
+                            <MapPin size={10} className="text-blue-500" />
+                            <span className="truncate max-w-[80px]">{team.homeVenue?.city || team.location || 'Unknown'}</span>
+                          </span>
                         </div>
                       </div>
-
-                      {/* Team Stats */}
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="text-center bg-gray-50 rounded-lg p-3">
-                          <div className="flex items-center justify-center mb-1">
-                            {renderStars(team.rating)}
-                          </div>
-                          <p className="text-sm text-gray-600">Rating</p>
-                        </div>
-                        <div className="text-center bg-gray-50 rounded-lg p-3">
-                          <p className="text-lg font-semibold text-gray-900">
-                            {team.wins}W - {team.losses}L
-                          </p>
-                          <p className="text-sm text-gray-600">Record</p>
-                        </div>
-                      </div>
-
-                      {/* Team Info */}
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <FaUserFriends className="mr-2 text-gray-400" />
-                          <span>{team.members}/{team.maxMembers} Members</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <FaCalendarAlt className="mr-2 text-gray-400" />
-                          <span>Founded {formatDate(team.founded)}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <FaTrophy className="mr-2 text-gray-400" />
-                          <span>Captain: {team.captain}</span>
-                        </div>
-                      </div>
-
-                      {/* Description */}
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                        {team.description}
-                      </p>
-
-                      {/* Achievements */}
-                      {team.achievements && team.achievements.length > 0 && (
-                        <div className="mb-4">
-                          <p className="text-sm font-medium text-gray-700 mb-2">Recent Achievements:</p>
-                          <div className="space-y-1">
-                            {team.achievements.slice(0, 2).map((achievement, index) => (
-                              <p key={index} className="text-xs text-gray-600 bg-yellow-50 px-2 py-1 rounded">
-                                🏆 {achievement}
-                              </p>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
 
-                    {/* Team Actions */}
-                    <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center">
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white/50 p-3 rounded-2xl flex flex-col items-center justify-center border border-white">
+                        <div className="flex gap-0.5 mb-1">
+                          {renderStars(team.rating || 4.5)}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rating</span>
+                      </div>
+                      <div className="bg-white/50 p-3 rounded-2xl flex flex-col items-center justify-center border border-white">
+                        <span className="font-extrabold text-slate-700">
+                          {team.stats?.matchesWon || team.wins || 0}W - {team.stats?.matchesLost || team.losses || 0}L
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Record</span>
+                      </div>
+                    </div>
+
+                    {/* Info */}
+                    <div className="space-y-2.5 text-sm font-medium text-slate-600 bg-white/30 p-4 rounded-2xl">
+                      <div className="flex items-center gap-2.5">
+                        <Users size={16} className="text-blue-500 shrink-0" />
+                        <span>{team.players?.length || team.members || 0}/{team.tournament?.settings?.maxPlayersPerTeam || team.maxMembers || 15} Members</span>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <Calendar size={16} className="text-blue-500 shrink-0" />
+                        <span>Est. {formatDate(team.founded || team.createdAt || new Date())}</span>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <Trophy size={16} className="text-blue-500 shrink-0" />
+                        <span className="truncate">Captain: {team.captain?.firstName ? `${team.captain.firstName} ${team.captain.lastName}` : (team.captain || 'Unknown')}</span>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-sm text-slate-500 line-clamp-2 px-1">
+                      {team.description || 'A passionate sports team looking for new challenges.'}
+                    </p>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-3 mt-auto pt-2">
                       <Link
-                        to={`/teams/${team.id}`}
-                        className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+                        to={`/teams/${team._id || team.id}`}
+                        className="flex-1 py-3 bg-white text-slate-700 font-bold text-sm text-center rounded-xl border border-white hover:bg-slate-50 transition-colors shadow-sm"
                       >
-                        <FaEye className="mr-1" />
                         View Details
                       </Link>
                       <button
-                        onClick={() => handleJoinTeam(team.id)}
-                        className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                        onClick={() => handleJoinTeam(team._id || team.id)}
+                        className="flex-1 py-3 bg-blue-500 text-white font-bold text-sm rounded-xl shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:bg-blue-600 hover:scale-[1.02] transition-all"
                       >
-                        Request to Join
+                        Request Join
                       </button>
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
-
-            {filteredTeams.length === 0 && !isLoading && (
-              <div className="text-center py-12">
-                <FaUsers className="mx-auto text-gray-300 text-5xl mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Teams Found</h3>
-                <p className="text-gray-600 mb-6">
-                  Try adjusting your search criteria or create a new team.
-                </p>
-                <GradientButton as={Link} to="/teams/create">
-                  Create Your Team
-                </GradientButton>
               </div>
             )}
           </div>
@@ -414,11 +289,8 @@ const TeamsPage = () => {
 
         {/* My Teams Tab */}
         {activeTab === 'myteams' && (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">My Teams</h2>
-              <p className="text-gray-600">Teams you're a member or captain of</p>
-            </div>
+          <div className="p-4 md:p-8 rounded-[40px] glass-panel bg-white/40 min-h-[50vh]">
+            <h2 className="text-2xl font-bold text-slate-800 mb-4 md:mb-6 tracking-tight">Your Squads</h2>
             <MyTeams />
           </div>
         )}

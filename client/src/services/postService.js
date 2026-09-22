@@ -92,6 +92,18 @@ const postService = {
     return response;
   },
 
+  // Save post
+  savePost: async (id) => {
+    const response = await api.post(`/posts/${id}/save`);
+    return response;
+  },
+
+  // Report post
+  reportPost: async (id, reason) => {
+    const response = await api.post(`/posts/${id}/report`, { reason });
+    return response;
+  },
+
   // Get featured posts
   getFeaturedPosts: async () => {
     const response = await api.get('/posts', { 

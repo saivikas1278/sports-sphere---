@@ -141,8 +141,8 @@ const CricketScorer = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 mb-8 animate-fade-in">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-4 md:mb-8 animate-fade-in">
+      <div className="flex justify-between items-center mb-4 md:mb-6">
         <h2 className="text-xl font-semibold flex items-center text-gray-800">
           <FaBaseballBall className="mr-2 text-green-600" /> Cricket Scorer
         </h2>
@@ -154,7 +154,7 @@ const CricketScorer = () => {
         </Link>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <FaSearch className="text-gray-400" />
@@ -170,7 +170,7 @@ const CricketScorer = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-8">
+        <div className="flex justify-center items-center py-4 md:py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
       ) : (
@@ -182,7 +182,7 @@ const CricketScorer = () => {
                   <tr>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                       onClick={() => handleSort('matchTitle')}
                     >
                       <div className="flex items-center">
@@ -194,7 +194,7 @@ const CricketScorer = () => {
                     </th>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                       onClick={() => handleSort('matchType')}
                     >
                       <div className="flex items-center">
@@ -206,7 +206,7 @@ const CricketScorer = () => {
                     </th>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                       onClick={() => handleSort('date')}
                     >
                       <div className="flex items-center">
@@ -218,7 +218,7 @@ const CricketScorer = () => {
                     </th>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                       onClick={() => handleSort('status')}
                     >
                       <div className="flex items-center">
@@ -228,7 +228,7 @@ const CricketScorer = () => {
                         )}
                       </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -236,27 +236,27 @@ const CricketScorer = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredMatches.map(match => (
                     <tr key={match.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
                           <div className="text-sm font-medium text-gray-900">{match.matchTitle}</div>
                           <div className="text-sm text-gray-500">{match.teams.team1Name} vs {match.teams.team2Name}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{match.matchType}</div>
                         <div className="text-sm text-gray-500">{match.overs} overs</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{new Date(match.date).toLocaleDateString()}</div>
                         <div className="text-sm text-gray-500">{match.venue}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(match.status)}
                         {match.status === 'Completed' && (
                           <div className="text-sm text-gray-500 mt-1">{match.result.description}</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           {match.status === 'Upcoming' && (
                             <Link 
@@ -288,7 +288,7 @@ const CricketScorer = () => {
               </table>
             </div>
           ) : (
-            <div className="text-center py-8">
+            <div className="text-center py-4 md:py-8">
               <p className="text-gray-500">No cricket matches found. Create a new match to get started!</p>
               <Link 
                 to="/cricket/create"

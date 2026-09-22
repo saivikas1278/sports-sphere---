@@ -13,7 +13,8 @@ import {
   getUserProgress,
   searchFitnessContent,
   getFeaturedContent,
-  getContentByCategory
+  getContentByCategory,
+  getUserStats
 } from '../controllers/fitness.js';
 import { protect, authorize, optional } from '../middleware/auth.js';
 
@@ -104,5 +105,6 @@ router.post('/:id/rate', protect, ratingValidation, rateFitnessContent);
 router.post('/:id/bookmark', protect, bookmarkFitnessContent);
 router.post('/:id/progress', protect, progressValidation, trackProgress);
 router.get('/:id/progress', protect, getUserProgress);
+router.get('/stats', protect, getUserStats);
 
 export default router;

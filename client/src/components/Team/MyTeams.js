@@ -74,8 +74,8 @@ const MyTeams = () => {
 
   if (teams.length === 0) {
     return (
-      <div className="text-center py-8">
-        <FaUsers className="mx-auto text-gray-300 text-4xl mb-4" />
+      <div className="text-center py-4 md:py-8">
+        <FaUsers className="mx-auto text-gray-300 text-2xl md:text-4xl mb-4" />
         <h3 className="text-lg font-medium text-gray-700">No Teams Joined Yet</h3>
         <p className="text-gray-500 mt-2">Join or create a team to get started</p>
         <Link 

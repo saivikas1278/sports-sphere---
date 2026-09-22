@@ -23,10 +23,17 @@ const teamSchema = new mongoose.Schema({
   },
   players: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    role: { type: String, enum: ['captain', 'player', 'substitute'] },
+    role: { type: String, enum: ['captain', 'player', 'substitute', 'coach'] },
     jerseyNumber: Number,
     position: String,
     joinedAt: { type: Date, default: Date.now }
+  }],
+  invitations: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    role: { type: String, enum: ['captain', 'player', 'substitute', 'coach'], default: 'player' },
+    status: { type: String, enum: ['pending', 'accepted', 'declined'], default: 'pending' },
+    invitedAt: { type: Date, default: Date.now },
+    invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   }],
   tournament: {
     type: mongoose.Schema.Types.ObjectId,

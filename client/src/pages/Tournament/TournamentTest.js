@@ -29,7 +29,7 @@ const TournamentTest = () => {
   }, []);
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="container mx-auto p-4 md:p-8">
       <h1 className="text-2xl font-bold mb-4">Tournament API Test</h1>
       
       <button 

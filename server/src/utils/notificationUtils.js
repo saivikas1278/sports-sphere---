@@ -1,10 +1,9 @@
 import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import Profile from '../models/Profile.js';
-import emailService from './emailService.js';
 
-// Create notification with email sending
-export const createNotificationWithEmail = async (notificationData, io) => {
+// Create notification
+export const createNotification = async (notificationData, io) => {
   try {
     // Create notification
     const notification = new Notification(notificationData);
@@ -22,28 +21,8 @@ export const createNotificationWithEmail = async (notificationData, io) => {
       io.to(`user_${notification.recipient._id}`).emit('notification', notification);
     }
 
-    // Send email notification if enabled
-    if (recipientProfile?.preferences?.notifications?.email) {
-      const emailPreferences = recipientProfile.preferences.notifications.types;
-      const shouldSendEmail = checkEmailPreference(notification.type, emailPreferences);
-      
-      if (shouldSendEmail && notification.recipient.email) {
-        try {
-          await emailService.sendNotificationEmail(
-            notification.recipient.email,
-            notification.recipient.firstName,
-            {
-              title: notification.title,
-              message: notification.message,
-              type: notification.type
-            }
-          );
-          console.log('Email notification sent to:', notification.recipient.email);
-        } catch (emailError) {
-          console.error('Failed to send email notification:', emailError);
-        }
-      }
-    }
+    // Email notifications have been disabled
+    // We only send socket notifications now
 
     return notification;
   } catch (error) {
@@ -74,7 +53,7 @@ export const createBulkNotifications = async (notifications, io) => {
   try {
     const results = await Promise.allSettled(
       notifications.map(notificationData => 
-        createNotificationWithEmail(notificationData, io)
+        createNotification(notificationData, io)
       )
     );
     
@@ -110,7 +89,7 @@ export const NotificationTypes = {
 export const createLikeNotification = async (postAuthorId, likerId, postId, io) => {
   const liker = await User.findById(likerId).select('firstName lastName');
   
-  return createNotificationWithEmail({
+  return createNotification({
     recipient: postAuthorId,
     sender: likerId,
     type: NotificationTypes.LIKE,
@@ -126,7 +105,7 @@ export const createLikeNotification = async (postAuthorId, likerId, postId, io) 
 export const createCommentNotification = async (postAuthorId, commenterId, postId, io) => {
   const commenter = await User.findById(commenterId).select('firstName lastName');
   
-  return createNotificationWithEmail({
+  return createNotification({
     recipient: postAuthorId,
     sender: commenterId,
     type: NotificationTypes.COMMENT,
@@ -142,7 +121,7 @@ export const createCommentNotification = async (postAuthorId, commenterId, postI
 export const createFollowNotification = async (userId, followerId, io) => {
   const follower = await User.findById(followerId).select('firstName lastName');
   
-  return createNotificationWithEmail({
+  return createNotification({
     recipient: userId,
     sender: followerId,
     type: NotificationTypes.FOLLOW,
@@ -157,7 +136,7 @@ export const createFollowNotification = async (userId, followerId, io) => {
 export const createTeamInviteNotification = async (userId, inviterId, teamId, teamName, io) => {
   const inviter = await User.findById(inviterId).select('firstName lastName');
   
-  return createNotificationWithEmail({
+  return createNotification({
     recipient: userId,
     sender: inviterId,
     type: NotificationTypes.TEAM_INVITE,
@@ -186,7 +165,7 @@ export const createTournamentNotification = async (userIds, tournamentId, title,
 };
 
 export const createAchievementNotification = async (userId, achievementTitle, achievementDescription, io) => {
-  return createNotificationWithEmail({
+  return createNotification({
     recipient: userId,
     type: NotificationTypes.ACHIEVEMENT,
     title: 'Achievement Unlocked!',
@@ -199,7 +178,7 @@ export const createAchievementNotification = async (userId, achievementTitle, ac
 };
 
 const notificationUtils = {
-  createNotificationWithEmail,
+  createNotification,
   createBulkNotifications,
   createLikeNotification,
   createCommentNotification,

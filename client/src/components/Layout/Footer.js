@@ -63,9 +63,9 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+    <footer className="hidden md:block bg-gray-900 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 md:py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-8">
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center space-x-2 mb-4">
@@ -116,7 +116,7 @@ const Footer = () => {
         </div>
 
         {/* Newsletter */}
-        <div className="mt-8 pt-8 border-t border-gray-800">
+        <div className="mt-4 md:mt-8 pt-4 md:pt-8 border-t border-gray-800">
           <div className="md:flex md:items-center md:justify-between">
             <div className="md:flex-1">
               <h3 className="text-lg font-semibold text-white mb-2">
@@ -145,7 +145,7 @@ const Footer = () => {
         </div>
 
         {/* Bottom */}
-        <div className="mt-8 pt-8 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center">
+        <div className="mt-4 md:mt-8 pt-4 md:pt-8 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center">
           <p className="text-gray-400 text-sm">
             © {currentYear} SportSphere. All rights reserved.
           </p>

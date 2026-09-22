@@ -45,7 +45,7 @@ const GoogleCallback = () => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-4 md:p-8">
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
               <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,7 +54,7 @@ const GoogleCallback = () => {
             </div>
             <h3 className="mt-4 text-lg font-medium text-gray-900">Authentication Failed</h3>
             <p className="mt-2 text-sm text-gray-500">{error}</p>
-            <div className="mt-6">
+            <div className="mt-4 md:mt-6">
               <button
                 onClick={() => navigate('/login')}
                 className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
@@ -70,7 +70,7 @@ const GoogleCallback = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-4 md:p-8">
         <div className="text-center">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
             <LoadingSpinner size="md" color="blue" />

@@ -1,30 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  FaQuestionCircle, 
-  FaSearch, 
-  FaTrophy, 
-  FaUsers, 
-  FaDumbbell, 
-  FaVideo,
-  FaEnvelope,
-  FaPhone,
-  FaChevronRight,
-  FaChevronDown,
-  FaChevronUp,
-  FaTimes,
-  FaBookOpen
-} from 'react-icons/fa';
+  HelpCircle, 
+  Search, 
+  Trophy, 
+  Users, 
+  Dumbbell, 
+  Video,
+  Mail,
+  Phone,
+  ChevronRight,
+  ChevronDown,
+  X,
+  BookOpen
+} from 'lucide-react';
 
-const HelpPage = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedArticle, setSelectedArticle] = useState(null);
-  const [expandedFAQs, setExpandedFAQs] = useState({});
-
-  const helpCategories = [
+const helpCategories = [
     {
-      icon: FaTrophy,
+      icon: Trophy,
       title: 'Tournaments',
       description: 'Learn how to create, join, and manage tournaments',
       articles: [
@@ -51,7 +44,7 @@ const HelpPage = () => {
       ]
     },
     {
-      icon: FaUsers,
+      icon: Users,
       title: 'Teams',
       description: 'Everything about team creation and management',
       articles: [
@@ -78,7 +71,7 @@ const HelpPage = () => {
       ]
     },
     {
-      icon: FaDumbbell,
+      icon: Dumbbell,
       title: 'Fitness',
       description: 'Fitness tracking and workout management',
       articles: [
@@ -105,7 +98,7 @@ const HelpPage = () => {
       ]
     },
     {
-      icon: FaVideo,
+      icon: Video,
       title: 'Posts & Media',
       description: 'Sharing content and managing posts',
       articles: [
@@ -176,6 +169,12 @@ const HelpPage = () => {
     }
   ];
 
+const HelpPage = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [expandedFAQs, setExpandedFAQs] = useState({});
+
   // Search functionality
   const searchResults = useMemo(() => {
     if (!searchTerm.trim()) return null;
@@ -216,7 +215,7 @@ const HelpPage = () => {
     });
 
     return results;
-  }, [searchTerm, helpCategories, faqs]);
+  }, [searchTerm]);
 
   const toggleFAQ = (index) => {
     setExpandedFAQs(prev => ({
@@ -242,65 +241,59 @@ const HelpPage = () => {
   // If viewing an article, show article view
   if (selectedArticle) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-4 md:py-8 relative z-10 max-w-4xl">
         {/* Article Header */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <button
-                  onClick={closeArticle}
-                  className="mr-4 p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
-                >
-                  <FaTimes className="text-lg" />
-                </button>
-                <div className="flex items-center">
-                  <selectedCategory.icon className="text-2xl text-blue-600 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500">{selectedCategory.title}</p>
-                    <h1 className="text-2xl font-bold text-gray-900">{selectedArticle.title}</h1>
-                  </div>
-                </div>
+        <div className="p-4 md:p-8 rounded-[40px] glass-panel bg-white/40 mb-4 md:mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-6">
+          <div className="flex items-center">
+            <button
+              onClick={closeArticle}
+              className="mr-4 p-2 text-slate-400 hover:text-blue-500 rounded-full hover:bg-white/60 transition-all"
+            >
+              <ChevronRight className="transform rotate-180" size={24} />
+            </button>
+            <div className="flex items-center">
+              <selectedCategory.icon className="text-xl md:text-3xl text-blue-500 mr-4 shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-blue-500 uppercase tracking-wider mb-1">{selectedCategory.title}</p>
+                <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">{selectedArticle.title}</h1>
               </div>
-              <FaBookOpen className="text-2xl text-gray-300" />
             </div>
           </div>
+          <BookOpen className="text-slate-200 hidden md:block shrink-0" size={48} />
         </div>
 
         {/* Article Content */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            <div className="prose max-w-none">
-              <p className="text-gray-700 text-lg leading-relaxed">
-                {selectedArticle.content}
-              </p>
+        <div className="p-4 md:p-8 md:p-12 rounded-[40px] glass-panel bg-white/60">
+          <div className="prose max-w-none mb-4 md:mb-8">
+            <p className="text-slate-600 text-lg leading-relaxed font-medium">
+              {selectedArticle.content}
+            </p>
+          </div>
+          
+          {/* Tags */}
+          <div className="pt-4 md:pt-8 border-t border-white/60">
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Related Tags</p>
+            <div className="flex flex-wrap gap-2">
+              {selectedArticle.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="px-4 py-1.5 bg-blue-50/80 text-blue-600 text-sm font-bold rounded-full border border-blue-100"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
-            
-            {/* Tags */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <p className="text-sm font-medium text-gray-900 mb-3">Tags:</p>
-              <div className="flex flex-wrap gap-2">
-                {selectedArticle.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
+          </div>
 
-            {/* Back Button */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <button
-                onClick={closeArticle}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <FaChevronRight className="mr-2 transform rotate-180" />
-                Back to Help Center
-              </button>
-            </div>
+          {/* Back Button */}
+          <div className="mt-4 md:mt-8 pt-4 md:pt-8 border-t border-white/60">
+            <button
+              onClick={closeArticle}
+              className="inline-flex items-center px-4 md:px-6 py-3 bg-white text-slate-700 font-bold rounded-full border border-white/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+            >
+              <ChevronRight className="mr-2 transform rotate-180" size={18} />
+              Back to Help Center
+            </button>
           </div>
         </div>
       </div>
@@ -308,245 +301,250 @@ const HelpPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="container mx-auto px-4 py-4 md:py-8 relative z-10 max-w-6xl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <FaQuestionCircle className="mx-auto text-6xl mb-6 opacity-90" />
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+      <section className="mb-4 md:mb-6 md:mb-12">
+        <div className="p-4 md:p-6 md:p-12 rounded-[40px] bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-white/10 backdrop-blur-sm pointer-events-none"></div>
+          
+          <HelpCircle className="mx-auto mb-4 md:mb-6 text-white/80 relative z-10" size={64} />
+          <h1 className="text-2xl md:text-4xl md:text-5xl font-extrabold mb-4 relative z-10 tracking-tight">
             How can we help you?
           </h1>
-          <p className="text-xl opacity-90 mb-8">
+          <p className="text-xl text-blue-100 font-medium mb-4 md:mb-6 md:mb-10 max-w-2xl mx-auto relative z-10">
             Find answers to your questions and get the most out of SportSphere
           </p>
           
           {/* Search Bar */}
-          <div className="max-w-2xl mx-auto relative">
-            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <div className="max-w-2xl mx-auto relative z-10">
+            <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-slate-400" size={24} />
             <input
               type="text"
               placeholder="Search for help articles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-4 rounded-lg text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="w-full pl-14 pr-14 py-4 rounded-full text-slate-800 text-lg font-medium focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
             />
             {searchTerm && (
               <button
                 onClick={clearSearch}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-5 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
               >
-                <FaTimes />
+                <X size={24} />
               </button>
             )}
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Search Results */}
-        {searchResults && (
-          <div className="mb-16">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Search Results ({searchResults.length})
-              </h2>
-              <button
-                onClick={clearSearch}
-                className="text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Clear Search
-              </button>
+      {/* Search Results */}
+      {searchResults && (
+        <section className="mb-4 md:mb-8 md:mb-16">
+          <div className="flex items-center justify-between mb-4 md:mb-8">
+            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+              Search Results <span className="text-slate-400 ml-2">({searchResults.length})</span>
+            </h2>
+            <button
+              onClick={clearSearch}
+              className="text-blue-500 hover:text-blue-700 font-bold transition-colors"
+            >
+              Clear Search
+            </button>
+          </div>
+          
+          {searchResults.length === 0 ? (
+            <div className="text-center py-4 md:py-8 md:py-16 p-4 md:p-8 rounded-[40px] glass-panel bg-white/40 border border-dashed border-slate-300">
+              <Search className="mx-auto text-slate-300 mb-4 md:mb-6" size={48} />
+              <h3 className="text-xl font-bold text-slate-700 mb-2">No results found</h3>
+              <p className="text-slate-500 font-medium">Try different keywords or browse categories below</p>
             </div>
-            
-            {searchResults.length === 0 ? (
-              <div className="text-center py-8 bg-white rounded-lg">
-                <FaSearch className="mx-auto text-4xl text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No results found</h3>
-                <p className="text-gray-600">Try different keywords or browse categories below</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {searchResults.map((result, index) => (
-                  <div
-                    key={index}
-                    className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
-                  >
-                    {result.type === 'article' ? (
-                      <div>
-                        <div className="flex items-center mb-2">
-                          <result.categoryIcon className="text-lg text-blue-600 mr-2" />
-                          <span className="text-sm text-gray-500">{result.category}</span>
-                        </div>
-                        <button
-                          onClick={() => openArticle(
-                            helpCategories.find(cat => cat.title === result.category),
-                            result
-                          )}
-                          className="text-left w-full"
-                        >
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-blue-600">
-                            {result.title}
-                          </h3>
-                          <p className="text-gray-600 text-sm line-clamp-2">
-                            {result.content.substring(0, 200)}...
-                          </p>
-                        </button>
-                        <div className="flex flex-wrap gap-1 mt-3">
-                          {result.tags.slice(0, 3).map((tag, tagIndex) => (
-                            <span
-                              key={tagIndex}
-                              className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:gap-6">
+              {searchResults.map((result, index) => (
+                <div
+                  key={index}
+                  className="p-4 md:p-6 md:p-8 rounded-[32px] glass-panel bg-white/60 hover:shadow-lg transition-all"
+                >
+                  {result.type === 'article' ? (
+                    <div>
+                      <div className="flex items-center mb-3">
+                        <result.categoryIcon className="text-blue-500 mr-2 shrink-0" size={20} />
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{result.category}</span>
                       </div>
-                    ) : (
-                      <div>
-                        <div className="flex items-center mb-2">
-                          <FaQuestionCircle className="text-lg text-green-600 mr-2" />
-                          <span className="text-sm text-gray-500">FAQ</span>
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                          {result.question}
+                      <button
+                        onClick={() => openArticle(
+                          helpCategories.find(cat => cat.title === result.category),
+                          result
+                        )}
+                        className="text-left w-full group"
+                      >
+                        <h3 className="text-xl font-extrabold text-slate-800 mb-3 group-hover:text-blue-600 transition-colors">
+                          {result.title}
                         </h3>
-                        <p className="text-gray-600 text-sm">
-                          {result.answer.substring(0, 150)}...
+                        <p className="text-slate-600 font-medium text-sm line-clamp-2 leading-relaxed">
+                          {result.content.substring(0, 200)}...
                         </p>
-                        <div className="flex flex-wrap gap-1 mt-3">
-                          {result.tags.slice(0, 3).map((tag, tagIndex) => (
-                            <span
-                              key={tagIndex}
-                              className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
+                      </button>
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {result.tags.slice(0, 3).map((tag, tagIndex) => (
+                          <span
+                            key={tagIndex}
+                            className="px-3 py-1 bg-white/80 border border-slate-100 text-slate-600 text-xs font-bold rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Help Categories */}
-        {!searchResults && (
-          <div className="mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-              Browse by Category
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {helpCategories.map((category, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6"
-                >
-                  <category.icon className="text-3xl text-blue-600 mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    {category.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    {category.description}
-                  </p>
-                  <ul className="space-y-2">
-                    {category.articles.map((article, articleIndex) => (
-                      <li key={articleIndex}>
-                        <button
-                          onClick={() => openArticle(category, article)}
-                          className="text-blue-600 hover:text-blue-800 text-sm flex items-center justify-between group w-full text-left"
-                        >
-                          {article.title}
-                          <FaChevronRight className="text-xs opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* FAQ Section */}
-        {!searchResults && (
-          <div className="mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-              Frequently Asked Questions
-            </h2>
-            <div className="max-w-4xl mx-auto space-y-4">
-              {faqs.map((faq, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-lg shadow-md overflow-hidden"
-                >
-                  <button
-                    onClick={() => toggleFAQ(index)}
-                    className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
-                  >
-                    <h3 className="text-lg font-semibold text-gray-900 pr-4">
-                      {faq.question}
-                    </h3>
-                    {expandedFAQs[index] ? (
-                      <FaChevronUp className="text-blue-600 flex-shrink-0" />
-                    ) : (
-                      <FaChevronDown className="text-gray-400 flex-shrink-0" />
-                    )}
-                  </button>
-                  {expandedFAQs[index] && (
-                    <div className="px-6 pb-4">
-                      <div className="border-t border-gray-200 pt-4">
-                        <p className="text-gray-600 leading-relaxed">
-                          {faq.answer}
-                        </p>
-                        <div className="flex flex-wrap gap-2 mt-4">
-                          {faq.tags.map((tag, tagIndex) => (
-                            <span
-                              key={tagIndex}
-                              className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center mb-3">
+                        <HelpCircle className="text-green-500 mr-2 shrink-0" size={20} />
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">FAQ</span>
+                      </div>
+                      <h3 className="text-xl font-extrabold text-slate-800 mb-3">
+                        {result.question}
+                      </h3>
+                      <p className="text-slate-600 font-medium text-sm leading-relaxed">
+                        {result.answer.substring(0, 150)}...
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {result.tags.slice(0, 3).map((tag, tagIndex) => (
+                          <span
+                            key={tagIndex}
+                            className="px-3 py-1 bg-white/80 border border-slate-100 text-slate-600 text-xs font-bold rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   )}
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </section>
+      )}
 
-        {/* Contact Support */}
-        <div className="bg-blue-50 rounded-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+      {/* Help Categories */}
+      {!searchResults && (
+        <section className="mb-4 md:mb-8 md:mb-16">
+          <h2 className="text-xl md:text-3xl font-extrabold text-slate-800 mb-4 md:mb-8 text-center tracking-tight">
+            Browse by Category
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+            {helpCategories.map((category, index) => (
+              <div
+                key={index}
+                className="p-4 md:p-8 rounded-[40px] glass-panel bg-white/40 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col"
+              >
+                <div className="flex items-center gap-4 mb-4 md:mb-6">
+                  <div className="w-16 h-16 bg-white/80 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 shrink-0">
+                    <category.icon className="text-blue-500" size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-extrabold text-slate-800 mb-1">{category.title}</h3>
+                    <p className="text-slate-500 font-medium text-sm leading-relaxed">{category.description}</p>
+                  </div>
+                </div>
+                <ul className="space-y-3 mt-auto">
+                  {category.articles.map((article, articleIndex) => (
+                    <li key={articleIndex}>
+                      <button
+                        onClick={() => openArticle(category, article)}
+                        className="w-full flex items-center justify-between p-4 bg-white/60 rounded-2xl hover:bg-blue-50 text-slate-700 font-bold text-sm transition-all group"
+                      >
+                        <span className="text-left group-hover:text-blue-600 transition-colors">{article.title}</span>
+                        <ChevronRight className="text-slate-400 group-hover:text-blue-500 shrink-0 transition-colors" size={18} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* FAQ Section */}
+      {!searchResults && (
+        <section className="mb-4 md:mb-8 md:mb-16 max-w-4xl mx-auto">
+          <h2 className="text-xl md:text-3xl font-extrabold text-slate-800 mb-4 md:mb-8 text-center tracking-tight">
+            Frequently Asked Questions
+          </h2>
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <div
+                key={index}
+                className="rounded-[24px] glass-panel bg-white/60 overflow-hidden"
+              >
+                <button
+                  onClick={() => toggleFAQ(index)}
+                  className="w-full p-4 md:p-6 text-left flex items-center justify-between hover:bg-white/80 transition-colors"
+                >
+                  <h3 className="text-lg font-bold text-slate-800 pr-6 leading-snug">
+                    {faq.question}
+                  </h3>
+                  <div className={`w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 transition-transform duration-300 ${expandedFAQs[index] ? 'rotate-180 bg-blue-100 text-blue-500' : 'text-slate-400'}`}>
+                    <ChevronDown size={20} />
+                  </div>
+                </button>
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedFAQs[index] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <div className="p-4 md:p-6 pt-0 border-t border-slate-100/50 mt-2">
+                    <p className="text-slate-600 font-medium leading-relaxed">
+                      {faq.answer}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-4 md:mt-6">
+                      {faq.tags.map((tag, tagIndex) => (
+                        <span
+                          key={tagIndex}
+                          className="px-3 py-1 bg-white border border-slate-100 text-slate-500 text-xs font-bold rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Contact Support */}
+      <section className="max-w-4xl mx-auto">
+        <div className="p-4 md:p-6 md:p-12 rounded-[40px] glass-panel bg-white/40 text-center flex flex-col items-center">
+          <div className="w-12 md:w-20 h-12 md:h-20 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mb-4 md:mb-6">
+            <Mail size={40} />
+          </div>
+          <h2 className="text-2xl font-extrabold text-slate-800 mb-3 tracking-tight">
             Still need help?
           </h2>
-          <p className="text-gray-600 mb-6">
-            Can't find what you're looking for? Our support team is here to help.
+          <p className="text-slate-500 font-medium mb-4 md:mb-8 max-w-md">
+            Can't find what you're looking for? Our support team is here to help you get back in the game.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <Link
               to="/contact"
-              className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center justify-center px-4 md:px-8 py-4 bg-blue-500 text-white font-bold rounded-full shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:bg-blue-600 hover:-translate-y-0.5 transition-all"
             >
-              <FaEnvelope className="mr-2" />
+              <Mail className="mr-2 shrink-0" size={20} />
               Contact Support
             </Link>
             <a
               href="mailto:leelamadhav.nulakani@gmail.com"
-              className="inline-flex items-center justify-center px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg border border-blue-600 hover:bg-blue-50 transition-colors"
+              className="flex items-center justify-center px-4 md:px-8 py-4 bg-white text-slate-700 font-bold rounded-full border border-white/40 shadow-sm hover:shadow-md hover:bg-slate-50 transition-all"
             >
-              <FaPhone className="mr-2" />
-              Email Us
+              <Phone className="mr-2 shrink-0 text-blue-500" size={20} />
+              Email Us Directly
             </a>
           </div>
         </div>
-      </div>
+      </section>
+      
+      <div className="h-12 md:h-20" />
     </div>
   );
 };

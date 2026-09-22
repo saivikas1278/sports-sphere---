@@ -1,6 +1,5 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import emailService from '../utils/emailService.js';
 
 const router = express.Router();
 
@@ -61,8 +60,8 @@ router.post('/', contactValidation, async (req, res) => {
       priority
     };
 
-    // Send email
-    await emailService.sendContactFormEmail(contactData);
+    // Email sending has been disabled
+    console.log('Contact form submitted:', contactData);
 
     res.status(200).json({
       success: true,

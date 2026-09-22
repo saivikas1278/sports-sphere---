@@ -5,7 +5,7 @@ import { FaHeart, FaRegHeart, FaComment, FaShare, FaBookmark, FaRegBookmark, FaE
 import { toast } from 'react-toastify';
 import { getRelativeTime } from '../../utils/helpers';
 import { useTheme } from '../../context/ThemeContext';
-import { likePost, addComment, sharePost, deletePost } from '../../redux/slices/postSlice';
+import { likePost, addComment, sharePost, deletePost, savePost, reportPost } from '../../redux/slices/postSlice';
 
 const Post = ({ post }) => {
   const dispatch = useDispatch();
@@ -53,11 +53,22 @@ const Post = ({ post }) => {
   const hasVideos = post.videos && post.videos.length > 0;
 
   const handleLike = async () => {
+    // Optimistic UI update
+    const previousLiked = liked;
+    const previousLikes = likes;
+    
+    setLiked(!liked);
+    setLikes(liked ? likes - 1 : likes + 1);
+
     try {
       const result = await dispatch(likePost(post._id)).unwrap();
+      // Ensure state matches server response just in case
       setLiked(result.isLiked);
       setLikes(result.likesCount);
     } catch (error) {
+      // Revert on error
+      setLiked(previousLiked);
+      setLikes(previousLikes);
       console.error('Like error:', error);
       toast.error('Failed to like post');
     }
@@ -159,10 +170,32 @@ const Post = ({ post }) => {
     }
   };
 
-  const handleSave = () => {
-    setSaved(!saved);
-    // TODO: Implement save post functionality
-    toast.success(saved ? 'Post removed from saved' : 'Post saved');
+  const handleSave = async () => {
+    try {
+      const result = await dispatch(savePost(post._id)).unwrap();
+      setSaved(result.isSaved);
+      toast.success(result.isSaved ? 'Post saved' : 'Post removed from saved');
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save post');
+    }
+  };
+
+  const handleReport = async () => {
+    const reason = window.prompt('Please provide a reason for reporting this post:');
+    if (reason === null) return; // User cancelled
+    if (reason.trim() === '') {
+      toast.error('Please provide a reason');
+      return;
+    }
+
+    try {
+      await dispatch(reportPost({ id: post._id, reason: reason.trim() })).unwrap();
+      toast.success('Post reported successfully. Thank you.');
+    } catch (error) {
+      console.error('Report error:', error);
+      toast.error('Failed to report post');
+    }
   };
 
   const handleComment = async (e) => {
@@ -238,15 +271,13 @@ const Post = ({ post }) => {
     if (hasVideos && post.videos.length > 0) {
       return (
         <div className="relative bg-black">
-          <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-            <div className="w-16 h-16 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-              <FaPlay className="text-white text-3xl ml-1" />
-            </div>
-          </div>
           <video 
             src={typeof post.videos[0] === 'string' ? post.videos[0] : post.videos[0].url}
             className="w-full aspect-video object-contain cursor-pointer"
-            preload="none"
+            preload="metadata"
+            autoPlay
+            muted
+            loop
             onError={(e) => {
               console.error('Video failed to load:', e.target.src);
             }}
@@ -266,7 +297,7 @@ const Post = ({ post }) => {
   };
 
   return (
-    <div className={`rounded-xl shadow-md overflow-hidden mb-6 transition-all duration-300 hover:shadow-lg ${
+    <div className={`rounded-xl shadow-md overflow-hidden mb-4 md:mb-6 transition-all duration-300 hover:shadow-lg ${
       isDark ? 'bg-gray-800' : 'bg-white'
     }`}>
       {/* Post header */}
@@ -337,10 +368,18 @@ const Post = ({ post }) => {
                             ? 'text-gray-300 hover:bg-gray-700' 
                             : 'text-gray-700 hover:bg-gray-100'
                         }`}
-                        onClick={() => {
+                        onClick={async () => {
                           setShowDropdown(false);
-                          // TODO: Implement edit functionality
-                          toast.info('Edit functionality coming soon');
+                          const newContent = window.prompt('Edit your post content:', post.content);
+                          if (newContent !== null && newContent.trim() !== '') {
+                            try {
+                              const { updatePost } = await import('../../redux/slices/postSlice');
+                              await dispatch(updatePost({ id: post._id, postData: { content: newContent.trim() } })).unwrap();
+                              toast.success('Post updated successfully');
+                            } catch (error) {
+                              toast.error('Failed to update post');
+                            }
+                          }
                         }}
                       >
                         <FaEdit />
@@ -386,8 +425,7 @@ const Post = ({ post }) => {
                     }`}
                     onClick={() => {
                       setShowDropdown(false);
-                      // TODO: Implement report functionality
-                      toast.info('Report functionality coming soon');
+                      handleReport();
                     }}
                   >
                     <span>🚩</span>
@@ -616,7 +654,7 @@ const Post = ({ post }) => {
               isDark ? 'bg-gray-800' : 'bg-white'
             }`}
           >
-            <div className={`px-6 py-4 border-b transition-colors duration-300 ${
+            <div className={`px-4 md:px-6 py-4 border-b transition-colors duration-300 ${
               isDark ? 'border-gray-700' : 'border-gray-200'
             }`}>
               <h3 className={`text-lg font-semibold transition-colors duration-300 ${
@@ -626,7 +664,7 @@ const Post = ({ post }) => {
               </h3>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-4 md:p-6 space-y-4">
               {/* Copy Link Option */}
               <button
                 onClick={copyToClipboard}
@@ -733,7 +771,7 @@ const Post = ({ post }) => {
               </div>
             </div>
             
-            <div className={`px-6 py-4 border-t transition-colors duration-300 ${
+            <div className={`px-4 md:px-6 py-4 border-t transition-colors duration-300 ${
               isDark ? 'border-gray-700' : 'border-gray-200'
             }`}>
               <button

@@ -26,7 +26,7 @@ const FootballScorecard = ({ scorecard, match, onUpdate, canEdit }) => {
               min="0"
               value={scores.team1Score}
               onChange={(e) => handleScoreChange('team1Score', parseInt(e.target.value))}
-              className="w-20 text-center border rounded p-1"
+              className="w-12 md:w-20 text-center border rounded p-1"
             />
           ) : (
             <div className="text-2xl font-bold">{scores.team1Score}</div>
@@ -43,7 +43,7 @@ const FootballScorecard = ({ scorecard, match, onUpdate, canEdit }) => {
               min="0"
               value={scores.team2Score}
               onChange={(e) => handleScoreChange('team2Score', parseInt(e.target.value))}
-              className="w-20 text-center border rounded p-1"
+              className="w-12 md:w-20 text-center border rounded p-1"
             />
           ) : (
             <div className="text-2xl font-bold">{scores.team2Score}</div>

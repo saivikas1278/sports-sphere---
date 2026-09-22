@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { FaTrophy, FaUsers, FaVideo, FaRunning, FaBell, FaBaseballBall, FaSync } from 'react-icons/fa';
+import { 
+  Trophy, 
+  Users, 
+  Video, 
+  Activity, 
+  Bell, 
+  RefreshCcw,
+  Calendar,
+  ChevronRight
+} from 'lucide-react';
 import { showToast } from '../../utils/toast';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
-import AnimatedCard from '../../components/UI/AnimatedCard';
-import ScrollReveal from '../../components/UI/ScrollReveal';
-import GradientButton from '../../components/UI/GradientButton';
 import dashboardService from '../../services/dashboardService';
-import fitnessService from '../../services/fitnessService';
 
 const Dashboard = () => {
   const { user, isAuthenticated, loading } = useSelector((state) => state.auth);
@@ -22,20 +27,14 @@ const Dashboard = () => {
   const [recentActivities, setRecentActivities] = useState([]);
   const [notifications, setNotifications] = useState([]);
 
-  // Function to refresh dashboard data
   const refreshDashboard = async () => {
     if (!isAuthenticated || !user) return;
-    
     try {
       setIsLoading(true);
       const statsResponse = await dashboardService.getDashboardStats();
-      if (statsResponse.success) {
-        setStats(statsResponse.data);
-      }
+      if (statsResponse.success) setStats(statsResponse.data);
       const activitiesResponse = await dashboardService.getRecentActivities();
-      if (activitiesResponse.success) {
-        setRecentActivities(activitiesResponse.data);
-      }
+      if (activitiesResponse.success) setRecentActivities(activitiesResponse.data);
       showToast('Dashboard refreshed successfully', 'success');
     } catch (error) {
       showToast('Failed to refresh dashboard', 'error');
@@ -44,40 +43,26 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch real data from backend
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!isAuthenticated || !user) {
         setIsLoading(false);
         return;
       }
-
       try {
         setIsLoading(true);
-        
-        // Fetch dashboard stats
         const statsResponse = await dashboardService.getDashboardStats();
-        if (statsResponse.success) {
-          setStats(statsResponse.data);
-        }
+        if (statsResponse.success) setStats(statsResponse.data);
 
-        // Fetch recent activities
         const activitiesResponse = await dashboardService.getRecentActivities();
-        if (activitiesResponse.success) {
-          setRecentActivities(activitiesResponse.data);
-        }
+        if (activitiesResponse.success) setRecentActivities(activitiesResponse.data);
 
-        // Fetch notifications
         try {
           const notificationsResponse = await dashboardService.getNotifications();
-          if (notificationsResponse.success) {
-            setNotifications(notificationsResponse.data);
-          }
+          if (notificationsResponse.success) setNotifications(notificationsResponse.data);
         } catch (error) {
-          // Notifications endpoint might not exist yet, so don't show error
           console.log('Notifications not available yet');
         }
-        
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -85,13 +70,12 @@ const Dashboard = () => {
         setIsLoading(false);
       }
     };
-
     fetchDashboardData();
   }, [isAuthenticated, user]);
 
   if (loading || isLoading) {
     return (
-      <div className="flex justify-center items-center h-96">
+      <div className="flex justify-center items-center min-h-[60vh]">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -99,32 +83,23 @@ const Dashboard = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-10 right-10 w-64 h-64 bg-gradient-to-br from-blue-400/5 to-purple-400/5 rounded-full animate-pulse-slow"></div>
-          <div className="absolute bottom-10 left-10 w-80 h-80 bg-gradient-to-br from-purple-400/5 to-pink-400/5 rounded-full animate-pulse-slow" style={{animationDelay: '1s'}}></div>
-        </div>
-        
-        <div className="container mx-auto px-4 py-16 relative z-10">
-          <div className="max-w-md mx-auto text-center">
-            <AnimatedCard className="bg-white/80 backdrop-blur-sm p-8 border border-gray-200/50" glowEffect={true}>
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <FaTrophy className="text-white text-3xl" />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">Dashboard Access Required</h2>
-              <p className="text-gray-600 mb-8">Please sign in to access your personalized dashboard and track your sports journey.</p>
-              <div className="space-y-4">
-                <GradientButton as={Link} to="/login" size="lg" className="w-full">
-                  Sign In to Continue
-                </GradientButton>
-                <p className="text-sm text-gray-500">
-                  Don't have an account?{' '}
-                  <Link to="/register" className="text-blue-600 hover:text-blue-800 font-semibold">
-                    Sign up here
-                  </Link>
-                </p>
-              </div>
-            </AnimatedCard>
+      <div className="container mx-auto px-4 py-4 md:py-8 md:py-16 relative z-10 min-h-[80vh] flex items-center justify-center">
+        <div className="max-w-md w-full text-center p-4 md:p-8 rounded-[40px] glass-panel bg-white/40">
+          <div className="w-12 md:w-20 h-12 md:h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 text-blue-500 shadow-sm">
+            <Trophy size={32} />
+          </div>
+          <h2 className="text-xl md:text-3xl font-extrabold text-slate-800 mb-4 tracking-tight">Access Required</h2>
+          <p className="text-slate-500 mb-4 md:mb-8 font-medium">Please sign in to access your personalized dashboard and track your sports journey.</p>
+          <div className="space-y-4">
+            <Link to="/login" className="block w-full py-4 rounded-full bg-blue-500 text-white font-bold shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:bg-blue-600 transition-all hover:scale-[1.02]">
+              Sign In to Continue
+            </Link>
+            <p className="text-sm text-slate-500">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-blue-600 hover:text-blue-700 font-semibold transition-colors">
+                Sign up here
+              </Link>
+            </p>
           </div>
         </div>
       </div>
@@ -132,214 +107,178 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0">
-        <div className="absolute top-10 right-10 w-64 h-64 bg-gradient-to-br from-blue-400/5 to-purple-400/5 rounded-full animate-pulse-slow"></div>
-        <div className="absolute bottom-10 left-10 w-80 h-80 bg-gradient-to-br from-purple-400/5 to-pink-400/5 rounded-full animate-pulse-slow" style={{animationDelay: '1s'}}></div>
-      </div>
+    <div className="container mx-auto px-4 py-4 md:py-8 relative z-10">
       
-      <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Welcome Section */}
-        <ScrollReveal direction="up" duration={800}>
-          <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 rounded-2xl p-8 mb-8 text-white shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10"></div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full animate-float"></div>
-            
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    Welcome back, {user?.firstName || user?.name || 'Athlete'}!
-                  </h1>
-                  <p className="text-xl text-gray-200 mb-8">Track your sports journey and stay connected with your teams.</p>
-                </div>
-                <button
-                  onClick={refreshDashboard}
-                  disabled={isLoading}
-                  className="p-3 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50"
-                  title="Refresh Dashboard"
-                >
-                  <FaSync className={`text-white text-lg ${isLoading ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { 
-                    value: stats.tournaments, 
-                    label: 'Tournaments', 
-                    icon: FaTrophy, 
-                    color: 'from-yellow-400 to-orange-500',
-                    link: '/tournaments' 
-                  },
-                  { 
-                    value: stats.teams, 
-                    label: 'Teams', 
-                    icon: FaUsers, 
-                    color: 'from-blue-400 to-cyan-500',
-                    link: '/teams' 
-                  },
-                  { 
-                    value: stats.watchedVideos, 
-                    label: 'Videos Watched', 
-                    icon: FaVideo, 
-                    color: 'from-purple-400 to-pink-500',
-                    link: '/posts' 
-                  },
-                  { 
-                    value: stats.completedWorkouts, 
-                    label: 'Workouts', 
-                    icon: FaRunning, 
-                    color: 'from-green-400 to-emerald-500',
-                    link: '/fitness' 
-                  }
-                ].map((stat, index) => (
-                  <AnimatedCard key={index} className="bg-white/10 backdrop-blur-sm p-6 border border-white/20 cursor-pointer group" hoverScale={true}>
-                    <Link to={stat.link} className="block">
-                      <div className={`w-12 h-12 bg-gradient-to-r ${stat.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                        <stat.icon className="text-white text-xl" />
-                      </div>
-                      <h3 className="font-bold text-2xl mb-1 group-hover:text-blue-200 transition-colors">{stat.value}</h3>
-                      <p className="text-sm text-gray-300 group-hover:text-gray-200 transition-colors">{stat.label}</p>
-                    </Link>
-                  </AnimatedCard>
-                ))}
-              </div>
+      {/* Welcome Section */}
+      <div className="p-4 md:p-8 md:p-10 rounded-[40px] glass-panel bg-gradient-to-r from-blue-500/10 to-blue-300/10 mb-4 md:mb-6 md:mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-6">
+        <div>
+          <h1 className="text-2xl md:text-4xl md:text-5xl font-extrabold text-slate-800 mb-2 tracking-tight">
+            Welcome back, <span className="text-blue-600">{user?.firstName || user?.name || 'Athlete'}</span>!
+          </h1>
+          <p className="text-lg text-slate-500 font-medium">Track your sports journey and stay connected.</p>
+        </div>
+        <button
+          onClick={refreshDashboard}
+          disabled={isLoading}
+          className="p-3 bg-white/70 backdrop-blur-md rounded-full hover:bg-white transition-colors shadow-sm disabled:opacity-50 text-slate-600"
+          title="Refresh Dashboard"
+        >
+          <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6 md:mb-10">
+        {[
+          { value: stats.tournaments, label: 'Tournaments', icon: Trophy, color: 'text-orange-500', bg: 'bg-orange-50', link: '/tournaments' },
+          { value: stats.teams, label: 'Teams', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50', link: '/teams' },
+          { value: stats.watchedVideos, label: 'Posts', icon: Video, color: 'text-purple-500', bg: 'bg-purple-50', link: '/posts' },
+          { value: stats.completedWorkouts, label: 'Workouts', icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-50', link: '/fitness' }
+        ].map((stat, index) => (
+          <Link key={index} to={stat.link} className="p-4 md:p-6 rounded-[32px] glass-panel flex flex-col hover:-translate-y-1 transition-transform hover:shadow-[0_12px_40px_rgb(0,0,255,0.08)] group">
+            <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
+              <stat.icon size={24} />
+            </div>
+            <h3 className="font-extrabold text-xl md:text-3xl text-slate-800 mb-1">{stat.value}</h3>
+            <p className="text-sm text-slate-500 font-medium">{stat.label}</p>
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+        
+        {/* Main Content Column */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Quick Actions */}
+          <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-white/40">
+            <h2 className="text-2xl font-bold mb-4 md:mb-6 text-slate-800 tracking-tight">Quick Actions</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {[
+                { to: "/tournaments", icon: Trophy, label: "Tournaments" },
+                { to: "/dashboard/registrations", icon: Activity, label: "My Registrations" },
+                { to: "/teams", icon: Users, label: "Create Team" },
+                { to: "/matches", icon: Calendar, label: "Join Match" },
+                { to: "/fitness", icon: Activity, label: "Workout" }
+              ].map((action, index) => (
+                <Link key={index} to={action.to} className="p-5 rounded-2xl md:rounded-3xl glass-pill flex flex-col items-center justify-center text-center gap-3 hover:-translate-y-1 hover:bg-white/90 transition-all group">
+                  <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center transition-transform group-hover:scale-110">
+                    <action.icon size={20} />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-700">{action.label}</span>
+                </Link>
+              ))}
             </div>
           </div>
-        </ScrollReveal>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Quick Actions */}
-            <ScrollReveal direction="up" duration={600} delay={100}>
-              <AnimatedCard className="bg-white/80 backdrop-blur-sm p-8 border border-gray-200/50" glowEffect={true}>
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">Quick Actions</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[
-                    { to: "/tournaments", icon: FaTrophy, label: "Join Tournament" },
-                    { to: "/teams", icon: FaUsers, label: "Create Team" },
-                    { to: "/posts", icon: FaVideo, label: "View Posts" },
-                    { to: "/fitness", icon: FaRunning, label: "Start Workout" }
-                  ].map((action, index) => (
-                    <AnimatedCard 
-                      key={index}
-                      className="bg-gray-50 hover:bg-gray-100 p-6 group border border-gray-200/50"
-                      hoverScale={true}
-                      glowEffect={true}
-                    >
-                      <Link to={action.to} className="flex flex-col items-center text-center space-y-3">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                          <action.icon className="text-white text-xl" />
-                        </div>
-                        <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900">{action.label}</span>
-                      </Link>
-                    </AnimatedCard>
-                  ))}
-                </div>
-              </AnimatedCard>
-            </ScrollReveal>
-            
-            {/* Recent Activity */}
-            <ScrollReveal direction="up" duration={600} delay={400}>
-              <AnimatedCard className="bg-white/80 backdrop-blur-sm p-8 border border-gray-200/50" glowEffect={true}>
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">Recent Activity</h2>
-                {recentActivities.length > 0 ? (
-                  <div className="space-y-4">
-                    {recentActivities.map((activity, index) => (
-                      <div key={index} className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-600 rounded-lg flex items-center justify-center">
-                              {activity.icon === 'FaTrophy' && <FaTrophy className="text-white text-sm" />}
-                              {activity.icon === 'FaBaseballBall' && <FaBaseballBall className="text-white text-sm" />}
-                              {activity.icon === 'FaUsers' && <FaUsers className="text-white text-sm" />}
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-gray-800">{activity.title}</h3>
-                              <p className="text-sm text-gray-500">{activity.description}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              activity.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              activity.status === 'ongoing' ? 'bg-blue-100 text-blue-800' :
-                              activity.status === 'upcoming' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {activity.status}
-                            </span>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(activity.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
+
+          {/* Recent Activity */}
+          <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-white/40">
+            <h2 className="text-2xl font-bold mb-4 md:mb-6 text-slate-800 tracking-tight">Recent Activity</h2>
+            {recentActivities.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivities.map((activity, index) => (
+                  <div key={index} className="p-4 rounded-2xl bg-white/60 border border-white/40 hover:bg-white/80 transition-colors flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
+                        {activity.icon === 'FaTrophy' ? <Trophy size={20} /> : <Activity size={20} />}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">No recent activities yet</p>
-                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                      <GradientButton as={Link} to="/tournaments" size="sm">
-                        Join Tournament
-                      </GradientButton>
-                      <GradientButton as={Link} to="/teams" size="sm" variant="secondary">
-                        Create Team
-                      </GradientButton>
-                      <GradientButton as={Link} to="/fitness" size="sm" variant="outline">
-                        Start Workout
-                      </GradientButton>
+                      <div>
+                        <h3 className="font-bold text-slate-800">{activity.title}</h3>
+                        <p className="text-sm text-slate-500">{activity.description}</p>
+                      </div>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold ${
+                        activity.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                        activity.status === 'ongoing' ? 'bg-blue-100 text-blue-700' :
+                        activity.status === 'upcoming' ? 'bg-amber-100 text-amber-700' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {activity.status}
+                      </span>
+                      <p className="text-xs text-slate-400 font-medium">
+                        {new Date(activity.date).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
-                )}
-              </AnimatedCard>
-            </ScrollReveal>
-          </div>
-          
-          {/* Sidebar */}
-          <div className="space-y-8">
-            {/* Notifications */}
-            <ScrollReveal direction="left" duration={600} delay={500}>
-              <AnimatedCard className="bg-white/80 backdrop-blur-sm p-6 border border-gray-200/50" glowEffect={true}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-800 flex items-center">
-                    <FaBell className="mr-2 text-blue-500" />
-                    Notifications
-                    {notifications.length > 0 && (
-                      <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                        {notifications.length}
-                      </span>
-                    )}
-                  </h3>
-                  <Link to="/notifications" className="text-blue-600 hover:text-blue-800 text-sm font-semibold">
-                    View All
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 md:py-6 md:py-10 bg-white/30 rounded-2xl md:rounded-3xl">
+                <p className="text-slate-500 mb-4 md:mb-6 font-medium">No recent activities found.</p>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <Link to="/tournaments" className="px-4 md:px-6 py-2 rounded-full bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-colors">
+                    Join Tournament
+                  </Link>
+                  <Link to="/fitness" className="px-4 md:px-6 py-2 rounded-full bg-white text-slate-700 border border-slate-200 text-sm font-semibold hover:bg-slate-50 transition-colors">
+                    Start Workout
                   </Link>
                 </div>
-                {notifications.length > 0 ? (
-                  <div className="space-y-3">
-                    {notifications.slice(0, 5).map((notification, index) => (
-                      <div
-                        key={index}
-                        className="p-3 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-                      >
-                        <p className="text-sm text-gray-800">{notification.text}</p>
-                        <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-gray-500 mb-2">No notifications yet</p>
-                    <p className="text-xs text-gray-400">Stay tuned for updates!</p>
-                  </div>
-                )}
-              </AnimatedCard>
-            </ScrollReveal>
+              </div>
+            )}
           </div>
         </div>
+        
+        {/* Sidebar */}
+        <div className="space-y-8">
+          <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-white/40">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h3 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                <Bell size={20} className="text-blue-500" />
+                Notifications
+                {notifications.length > 0 && (
+                  <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                    {notifications.length}
+                  </span>
+                )}
+              </h3>
+              <button className="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center gap-1 transition-colors">
+                View All <ChevronRight size={16} />
+              </button>
+            </div>
+            
+            {notifications.length > 0 ? (
+              <div className="space-y-3">
+                {notifications.slice(0, 5).map((notification, index) => (
+                  <div key={index} className="p-4 rounded-2xl bg-white/60 border border-white/40 hover:bg-white/80 transition-colors cursor-pointer">
+                    <p className="text-sm font-medium text-slate-800 mb-1">{notification.text}</p>
+                    <p className="text-xs text-slate-400">{notification.time}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 md:py-6 md:py-10 bg-white/30 rounded-2xl md:rounded-3xl border border-dashed border-slate-300">
+                <p className="text-slate-500 font-medium">You're all caught up!</p>
+              </div>
+            )}
+          </div>
+          
+          {/* Player Analytics Overview */}
+          <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-white/60">
+            <h3 className="text-xl font-bold text-slate-800 tracking-tight mb-4">Registration Trends</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-500">Win Rate</span>
+                <span className="text-sm font-bold text-emerald-600">68%</span>
+              </div>
+              <div className="w-full bg-white/50 rounded-full h-2">
+                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '68%' }}></div>
+              </div>
+              
+              <div className="flex items-center justify-between mt-4">
+                <span className="text-sm font-medium text-slate-500">Matches Played</span>
+                <span className="text-sm font-bold text-blue-600">42 This Year</span>
+              </div>
+              <div className="w-full bg-white/50 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+              </div>
+            </div>
+            <Link to="/dashboard/registrations" className="block w-full py-3 mt-4 md:mt-6 text-center text-sm font-bold text-blue-600 bg-white/70 rounded-xl hover:bg-white transition-colors">
+              View Full History
+            </Link>
+          </div>
+        </div>
+        
       </div>
     </div>
   );

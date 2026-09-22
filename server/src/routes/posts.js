@@ -8,7 +8,9 @@ import {
   likePost,
   addComment,
   getUserPosts,
-  sharePost
+  sharePost,
+  savePost,
+  reportPost
 } from '../controllers/posts.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 import fileUpload from 'express-fileupload';
@@ -39,5 +41,7 @@ router.delete('/:id', deletePost);
 router.post('/:id/like', likePost);
 router.post('/:id/comments', addComment);
 router.post('/:id/share', sharePost);
+router.post('/:id/save', savePost);
+router.post('/:id/report', reportPost);
 
 export default router;

@@ -14,8 +14,8 @@ const TabSwitcher = ({ tabs, activeTab, onTabChange, variant = "pills" }) => {
     },
     buttons: {
       container: "flex space-x-2",
-      activeTab: "px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium shadow-lg transform scale-105 transition-all duration-300",
-      inactiveTab: "px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 cursor-pointer transition-all duration-300"
+      activeTab: "px-4 md:px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium shadow-lg transform scale-105 transition-all duration-300",
+      inactiveTab: "px-4 md:px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 cursor-pointer transition-all duration-300"
     }
   };
 

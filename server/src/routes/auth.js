@@ -66,16 +66,20 @@ router.post('/logout', logout);
 router.post('/forgot-password', forgotPassword);
 router.put('/reset-password/:resetToken', resetPassword);
 
+import passport from 'passport';
+
 // Google OAuth routes
-router.get('/google', googleAuth);
-router.get('/google/callback', googleAuthCallback);
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google/callback', passport.authenticate('google', { session: false }), googleAuthCallback);
+
+import os from 'os';
 
 // Protected routes
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 router.post('/avatar', protect, fileUpload({
   useTempFiles: true,
-  tempFileDir: '/tmp/',
+  tempFileDir: os.tmpdir(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   abortOnLimit: true
 }), uploadAvatar);

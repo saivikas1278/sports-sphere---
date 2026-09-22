@@ -1,190 +1,215 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaShieldAlt, FaDatabase, FaCookie, FaEye, FaUserShield, FaLock } from 'react-icons/fa';
+import { Shield, Database, Cookie, Eye, UserCheck, Lock } from 'lucide-react';
 
 const PrivacyPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="container mx-auto px-4 py-4 md:py-8 relative z-10 max-w-4xl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <FaShieldAlt className="mx-auto text-6xl mb-6 opacity-90" />
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+      <section className="mb-4 md:mb-6 md:mb-12">
+        <div className="p-4 md:p-6 md:p-12 rounded-[40px] bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-white/10 backdrop-blur-sm pointer-events-none"></div>
+          
+          <Shield className="mx-auto mb-4 md:mb-6 text-white/80 relative z-10" size={64} />
+          <h1 className="text-2xl md:text-4xl md:text-5xl font-extrabold mb-4 relative z-10 tracking-tight">
             Privacy Policy
           </h1>
-          <p className="text-xl opacity-90">
+          <p className="text-xl text-blue-100 font-medium mb-4 max-w-2xl mx-auto relative z-10">
             Your privacy matters to us. Learn how we protect and handle your data.
           </p>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Content */}
+      <div className="space-y-8">
+        
         {/* Last Updated */}
-        <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Last updated:</strong> August 15, 2025
+        <div className="p-4 md:p-6 rounded-[24px] glass-panel bg-blue-50/60 border border-blue-100 flex items-center justify-center">
+          <p className="text-sm font-bold text-blue-800 uppercase tracking-wider">
+            Last updated: <span className="text-blue-600">August 15, 2025</span>
           </p>
         </div>
 
         {/* Introduction */}
-        <div className="prose prose-lg max-w-none mb-12">
-          <p className="text-lg text-gray-700 leading-relaxed">
+        <div className="p-4 md:p-8 md:p-10 rounded-[32px] glass-panel bg-white/60">
+          <p className="text-lg text-slate-600 leading-relaxed font-medium">
             At SportSphere, we are committed to protecting your privacy and ensuring the security of your personal information. 
             This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.
           </p>
         </div>
 
         {/* Privacy Sections */}
-        <div className="space-y-12">
+        <div className="space-y-6">
+          
           {/* Information We Collect */}
-          <section>
-            <div className="flex items-center mb-6">
-              <FaDatabase className="text-3xl text-blue-600 mr-4" />
-              <h2 className="text-2xl font-bold text-gray-900">Information We Collect</h2>
+          <section className="p-4 md:p-8 md:p-10 rounded-[32px] glass-panel bg-white/40 hover:bg-white/60 transition-colors">
+            <div className="flex items-center mb-4 md:mb-8">
+              <div className="w-12 h-12 bg-blue-100 text-blue-500 rounded-2xl flex items-center justify-center mr-4 shrink-0 shadow-sm">
+                <Database size={24} />
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Information We Collect</h2>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Personal Information</h3>
-              <ul className="list-disc list-inside text-gray-700 space-y-2 mb-6">
-                <li>Name, email address, and profile information</li>
-                <li>Sports preferences and fitness goals</li>
-                <li>Team and tournament participation data</li>
-                <li>Workout and activity tracking information</li>
-              </ul>
+            
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                  Personal Information
+                </h3>
+                <ul className="space-y-3 ml-4">
+                  {['Name, email address, and profile information', 'Sports preferences and fitness goals', 'Team and tournament participation data', 'Workout and activity tracking information'].map((item, i) => (
+                    <li key={i} className="flex items-start">
+                      <span className="w-1.5 h-1.5 bg-slate-300 rounded-full mr-3 mt-2 shrink-0"></span>
+                      <span className="text-slate-600 font-medium leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
               
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Usage Information</h3>
-              <ul className="list-disc list-inside text-gray-700 space-y-2">
-                <li>How you interact with our platform</li>
-                <li>Device information and IP address</li>
-                <li>Browser type and operating system</li>
-                <li>Pages visited and time spent on the platform</li>
-              </ul>
+              <div>
+                <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center">
+                  <span className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
+                  Usage Information
+                </h3>
+                <ul className="space-y-3 ml-4">
+                  {['How you interact with our platform', 'Device information and IP address', 'Browser type and operating system', 'Pages visited and time spent on the platform'].map((item, i) => (
+                    <li key={i} className="flex items-start">
+                      <span className="w-1.5 h-1.5 bg-slate-300 rounded-full mr-3 mt-2 shrink-0"></span>
+                      <span className="text-slate-600 font-medium leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </section>
 
           {/* How We Use Information */}
-          <section>
-            <div className="flex items-center mb-6">
-              <FaEye className="text-3xl text-green-600 mr-4" />
-              <h2 className="text-2xl font-bold text-gray-900">How We Use Your Information</h2>
+          <section className="p-4 md:p-8 md:p-10 rounded-[32px] glass-panel bg-white/40 hover:bg-white/60 transition-colors">
+            <div className="flex items-center mb-4 md:mb-8">
+              <div className="w-12 h-12 bg-green-100 text-green-500 rounded-2xl flex items-center justify-center mr-4 shrink-0 shadow-sm">
+                <Eye size={24} />
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">How We Use Your Information</h2>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <ul className="list-disc list-inside text-gray-700 space-y-3">
-                <li>Provide and maintain our services</li>
-                <li>Personalize your experience and recommendations</li>
-                <li>Process tournament registrations and team formations</li>
-                <li>Send important notifications about your activities</li>
-                <li>Improve our platform and develop new features</li>
-                <li>Ensure platform security and prevent fraud</li>
-              </ul>
-            </div>
+            <ul className="space-y-4 ml-2">
+              {['Provide and maintain our services', 'Personalize your experience and recommendations', 'Process tournament registrations and team formations', 'Send important notifications about your activities', 'Improve our platform and develop new features', 'Ensure platform security and prevent fraud'].map((item, i) => (
+                <li key={i} className="flex items-center p-3 bg-white/60 rounded-xl border border-white/40">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-4 shrink-0"></span>
+                  <span className="text-slate-600 font-medium">{item}</span>
+                </li>
+              ))}
+            </ul>
           </section>
 
           {/* Data Security */}
-          <section>
-            <div className="flex items-center mb-6">
-              <FaLock className="text-3xl text-purple-600 mr-4" />
-              <h2 className="text-2xl font-bold text-gray-900">Data Security</h2>
+          <section className="p-4 md:p-8 md:p-10 rounded-[32px] glass-panel bg-white/40 hover:bg-white/60 transition-colors">
+            <div className="flex items-center mb-4 md:mb-8">
+              <div className="w-12 h-12 bg-purple-100 text-purple-500 rounded-2xl flex items-center justify-center mr-4 shrink-0 shadow-sm">
+                <Lock size={24} />
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Data Security</h2>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <p className="text-gray-700 mb-4">
-                We implement industry-standard security measures to protect your personal information:
-              </p>
-              <ul className="list-disc list-inside text-gray-700 space-y-2">
-                <li>Encryption of data in transit and at rest</li>
-                <li>Regular security audits and updates</li>
-                <li>Access controls and authentication measures</li>
-                <li>Secure hosting infrastructure</li>
-              </ul>
+            <p className="text-slate-600 font-medium mb-4 md:mb-6 leading-relaxed">
+              We implement industry-standard security measures to protect your personal information:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {['Encryption of data in transit and at rest', 'Regular security audits and updates', 'Access controls and authentication measures', 'Secure hosting infrastructure'].map((item, i) => (
+                <div key={i} className="p-4 bg-white/60 rounded-2xl border border-white/40 flex items-start">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full mr-3 mt-2 shrink-0"></span>
+                  <span className="text-slate-600 font-medium text-sm">{item}</span>
+                </div>
+              ))}
             </div>
           </section>
 
           {/* Cookies */}
-          <section>
-            <div className="flex items-center mb-6">
-              <FaCookie className="text-3xl text-orange-600 mr-4" />
-              <h2 className="text-2xl font-bold text-gray-900">Cookies and Tracking</h2>
+          <section className="p-4 md:p-8 md:p-10 rounded-[32px] glass-panel bg-white/40 hover:bg-white/60 transition-colors">
+            <div className="flex items-center mb-4 md:mb-8">
+              <div className="w-12 h-12 bg-orange-100 text-orange-500 rounded-2xl flex items-center justify-center mr-4 shrink-0 shadow-sm">
+                <Cookie size={24} />
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Cookies and Tracking</h2>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <p className="text-gray-700 mb-4">
-                We use cookies and similar technologies to enhance your experience:
-              </p>
-              <ul className="list-disc list-inside text-gray-700 space-y-2">
-                <li>Essential cookies for platform functionality</li>
-                <li>Analytics cookies to understand usage patterns</li>
-                <li>Preference cookies to remember your settings</li>
-              </ul>
-              <p className="text-gray-700 mt-4">
-                You can control cookie preferences through your browser settings.
-              </p>
-            </div>
+            <p className="text-slate-600 font-medium mb-4 md:mb-6 leading-relaxed">
+              We use cookies and similar technologies to enhance your experience:
+            </p>
+            <ul className="space-y-4 ml-2 mb-4 md:mb-6">
+              {['Essential cookies for platform functionality', 'Analytics cookies to understand usage patterns', 'Preference cookies to remember your settings'].map((item, i) => (
+                <li key={i} className="flex items-center p-3 bg-white/60 rounded-xl border border-white/40">
+                  <span className="w-2 h-2 bg-orange-500 rounded-full mr-4 shrink-0"></span>
+                  <span className="text-slate-600 font-medium">{item}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+              You can control cookie preferences through your browser settings.
+            </p>
           </section>
 
           {/* Your Rights */}
-          <section>
-            <div className="flex items-center mb-6">
-              <FaUserShield className="text-3xl text-indigo-600 mr-4" />
-              <h2 className="text-2xl font-bold text-gray-900">Your Rights</h2>
+          <section className="p-4 md:p-8 md:p-10 rounded-[32px] glass-panel bg-white/40 hover:bg-white/60 transition-colors">
+            <div className="flex items-center mb-4 md:mb-8">
+              <div className="w-12 h-12 bg-indigo-100 text-indigo-500 rounded-2xl flex items-center justify-center mr-4 shrink-0 shadow-sm">
+                <UserCheck size={24} />
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Your Rights</h2>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <p className="text-gray-700 mb-4">You have the right to:</p>
-              <ul className="list-disc list-inside text-gray-700 space-y-2">
-                <li>Access your personal data</li>
-                <li>Correct inaccurate information</li>
-                <li>Delete your account and data</li>
-                <li>Export your data</li>
-                <li>Opt-out of marketing communications</li>
-                <li>Object to data processing</li>
-              </ul>
+            <p className="text-slate-600 font-bold mb-4 md:mb-6">You have the right to:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {['Access your personal data', 'Correct inaccurate information', 'Delete your account and data', 'Export your data', 'Opt-out of marketing communications', 'Object to data processing'].map((item, i) => (
+                <div key={i} className="p-4 bg-white/60 rounded-2xl border border-white/40 flex items-start">
+                  <span className="w-2 h-2 bg-indigo-500 rounded-full mr-3 mt-2 shrink-0"></span>
+                  <span className="text-slate-600 font-medium text-sm">{item}</span>
+                </div>
+              ))}
             </div>
           </section>
 
           {/* Third-Party Services */}
-          <section>
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Third-Party Services</h2>
-              <p className="text-gray-700 mb-4">
-                We may use third-party services for:
-              </p>
-              <ul className="list-disc list-inside text-gray-700 space-y-2">
-                <li>Analytics and performance monitoring</li>
-                <li>Cloud storage and hosting</li>
-                <li>Payment processing</li>
-                <li>Email delivery services</li>
-              </ul>
-              <p className="text-gray-700 mt-4">
-                These services have their own privacy policies and we encourage you to review them.
-              </p>
+          <section className="p-4 md:p-8 md:p-10 rounded-[32px] glass-panel bg-white/40 hover:bg-white/60 transition-colors">
+            <h2 className="text-2xl font-extrabold text-slate-800 mb-4 md:mb-6 tracking-tight">Third-Party Services</h2>
+            <p className="text-slate-600 font-medium mb-4 md:mb-6 leading-relaxed">
+              We may use third-party services for:
+            </p>
+            <div className="flex flex-wrap gap-3 mb-4 md:mb-6">
+              {['Analytics and performance monitoring', 'Cloud storage and hosting', 'Payment processing', 'Email delivery services'].map((item, i) => (
+                <span key={i} className="px-4 py-2 bg-white/80 border border-slate-100 text-slate-600 font-bold text-sm rounded-full">
+                  {item}
+                </span>
+              ))}
             </div>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+              These services have their own privacy policies and we encourage you to review them.
+            </p>
           </section>
 
           {/* Contact Information */}
-          <section>
-            <div className="bg-blue-50 rounded-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Contact Us</h2>
-              <p className="text-gray-700 mb-4">
-                If you have questions about this Privacy Policy or our data practices, please contact us:
-              </p>
-              <div className="text-gray-700">
-                <p>Email: privacy@sportsphere.com</p>
-                <p>Address: SportSphere Privacy Team</p>
-                <p className="mt-4">
-                  <Link to="/contact" className="text-blue-600 hover:text-blue-800 font-semibold">
-                    Contact Support →
-                  </Link>
-                </p>
-              </div>
+          <section className="p-4 md:p-8 md:p-10 rounded-[32px] glass-panel bg-blue-50/80 border border-blue-100">
+            <h2 className="text-2xl font-extrabold text-slate-800 mb-4 tracking-tight">Contact Us</h2>
+            <p className="text-slate-600 font-medium mb-4 md:mb-6 leading-relaxed">
+              If you have questions about this Privacy Policy or our data practices, please contact us:
+            </p>
+            <div className="bg-white/60 rounded-2xl p-4 md:p-6 border border-white/40">
+              <p className="text-slate-700 font-bold mb-2">Email: <span className="text-blue-500 font-medium">privacy@sportsphere.com</span></p>
+              <p className="text-slate-700 font-bold mb-4 md:mb-6">Address: <span className="text-slate-600 font-medium">SportSphere Privacy Team</span></p>
+              <Link to="/contact" className="inline-flex items-center px-4 md:px-6 py-3 bg-blue-500 text-white font-bold rounded-full shadow-sm hover:bg-blue-600 hover:-translate-y-0.5 transition-all">
+                Contact Support
+              </Link>
             </div>
           </section>
         </div>
 
         {/* Changes to Policy */}
-        <div className="mt-12 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
-            <strong>Changes to this Policy:</strong> We may update this Privacy Policy from time to time. 
+        <div className="p-4 md:p-6 rounded-[24px] glass-panel bg-amber-50/60 border border-amber-100">
+          <p className="text-sm font-medium text-amber-800 leading-relaxed">
+            <strong className="font-extrabold block mb-1">Changes to this Policy:</strong> 
+            We may update this Privacy Policy from time to time. 
             We will notify you of any material changes by posting the new policy on this page and updating the "Last updated" date.
           </p>
         </div>
       </div>
+      
+      <div className="h-12 md:h-20" />
     </div>
   );
 };

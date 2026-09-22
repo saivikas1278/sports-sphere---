@@ -2,9 +2,15 @@ import { validationResult } from 'express-validator';
 import User from '../models/User.js';
 import Profile from '../models/Profile.js';
 import { sendTokenResponse } from '../utils/jwt.js';
-import emailService from '../utils/emailService.js';
 import crypto from 'crypto';
 import cloudinary from '../config/cloudinary.js';
+import { uploadImage } from '../utils/uploadUtils.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -85,15 +91,6 @@ export const register = async (req, res, next) => {
     });
     await profile.save();
     console.log('[REGISTER] Profile created for user:', user._id);
-
-    // Send welcome email (don't await to avoid blocking registration)
-    try {
-      await emailService.sendWelcomeEmail(user.email, user.firstName);
-      console.log('[REGISTER] Welcome email sent to:', user.email);
-    } catch (emailError) {
-      console.error('[REGISTER] Failed to send welcome email:', emailError);
-      // Don't fail registration if email fails
-    }
 
     sendTokenResponse(user, 201, res);
   } catch (error) {
@@ -258,22 +255,47 @@ export const uploadAvatar = async (req, res, next) => {
     }
 
     const file = req.files.avatar;
+    let avatarUrl = '';
+    let publicId = '';
 
-    // Upload to cloudinary
-    const result = await cloudinary.uploader.upload(file.tempFilePath, {
-      folder: 'avatars',
-      width: 300,
-      height: 300,
-      crop: 'fill',
-      gravity: 'face'
-    });
+    try {
+      // Upload to cloudinary
+      const result = await uploadImage(file.tempFilePath, {
+        folder: 'avatars',
+        width: 300,
+        height: 300,
+        crop: 'fill',
+        gravity: 'face'
+      });
+      avatarUrl = result.secure_url;
+      publicId = result.public_id;
+    } catch (cloudinaryError) {
+      console.error('[AVATAR] Cloudinary upload failed, falling back to local storage:', cloudinaryError);
+      
+      // Fallback: save to local uploads folder
+      const uploadsDir = path.join(__dirname, '../../uploads/avatars');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      const fileName = `user_${req.user.id}_${Date.now()}${path.extname(file.name)}`;
+      const filePath = path.join(uploadsDir, fileName);
+      
+      // Move file from temp to uploads
+      await file.mv(filePath);
+      
+      // Generate local URL (assuming backend is on same domain, or construct full URL)
+      // For local development, using relative path to API host
+      avatarUrl = `http://localhost:${process.env.PORT || 5000}/uploads/avatars/${fileName}`;
+      publicId = fileName;
+    }
 
     // Update user with new avatar
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { 
-        avatar: result.secure_url,
-        avatarPublicId: result.public_id
+        avatar: avatarUrl,
+        avatarPublicId: publicId
       },
       { new: true }
     );
@@ -428,20 +450,35 @@ export const resetPassword = async (req, res, next) => {
 // @route   GET /api/auth/google
 // @access  Public
 export const googleAuth = async (req, res, next) => {
-  // This would be handled by passport middleware in a real app
-  res.status(501).json({
-    success: false,
-    error: 'Google OAuth not implemented yet'
-  });
+  // Handled by passport in routes
 };
 
 // @desc    Google OAuth callback
 // @route   GET /api/auth/google/callback
 // @access  Public
 export const googleAuthCallback = async (req, res, next) => {
-  // This would be handled by passport middleware in a real app
-  res.status(501).json({
-    success: false,
-    error: 'Google OAuth callback not implemented yet'
-  });
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_failed`);
+    }
+    
+    const token = user.getSignedJwtToken();
+    
+    // Option 1: Set cookie then redirect
+    const options = {
+      expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000),
+      httpOnly: true
+    };
+    if (process.env.NODE_ENV === 'production') {
+      options.secure = true;
+    }
+    res.cookie('token', token, options);
+    
+    // Redirect to frontend
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard?token=${token}`);
+  } catch (error) {
+    console.error('Google OAuth Error:', error);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=server_error`);
+  }
 };

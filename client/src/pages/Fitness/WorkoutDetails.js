@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { FaArrowLeft, FaDumbbell, FaClock, FaFire, FaPlay, FaPause, FaStop, FaCheck } from 'react-icons/fa';
+import { 
+  ArrowLeft, 
+  Dumbbell, 
+  Clock, 
+  Flame, 
+  Play, 
+  Pause, 
+  Square, 
+  CheckCircle2,
+  Activity
+} from 'lucide-react';
 import { showToast } from '../../utils/toast';
+import LoadingSpinner from '../../components/UI/LoadingSpinner';
 
 const WorkoutDetails = () => {
   const navigate = useNavigate();
@@ -10,67 +21,52 @@ const WorkoutDetails = () => {
   const [workout, setWorkout] = useState(null);
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get workout data from location state or mock data
-    if (location.state?.workout) {
-      // Ensure the workout has the correct structure
-      const workoutData = location.state.workout;
-      if (!Array.isArray(workoutData.exercises)) {
-        workoutData.exercises = [];
-      }
-      setWorkout(workoutData);
-    } else {
-      // Fallback to mock data if no state
-      setWorkout({
-        id: id,
-        name: "Sample Workout",
-        sport: "cricket",
-        difficulty: "intermediate",
-        category: "strength",
-        duration: 45,
-        calories: 270,
-        description: "A comprehensive workout for cricket players focusing on strength and power.",
-        tags: ["Strength", "Power", "Intermediate"],
-        exercises: [
-          {
-            name: "Push-ups",
-            sets: 3,
-            reps: 15,
-            rest: 60,
-            description: "Standard push-ups to build chest and tricep strength",
-            videoUrl: "/images/workout-videos/video1.mp4"
-          },
-          {
-            name: "Pull-ups",
-            sets: 3,
-            reps: 8,
-            rest: 90,
-            description: "Pull-ups to strengthen back and biceps",
-            videoUrl: "/images/workout-videos/video2.mp4"
-          },
-          {
-            name: "Squats",
-            sets: 4,
-            reps: 20,
-            rest: 60,
-            description: "Bodyweight squats for leg strength and stability",
-            videoUrl: "/images/workout-videos/video3.mp4"
-          },
-          {
-            name: "Plank",
-            sets: 3,
-            duration: 45,
-            rest: 60,
-            description: "Hold plank position to strengthen core",
-            videoUrl: "/images/workout-videos/video4.mp4"
+    const fetchWorkout = async () => {
+      setLoading(true);
+      if (location.state?.workout) {
+        const workoutData = location.state.workout;
+        if (!Array.isArray(workoutData.exercises)) workoutData.exercises = [];
+        setWorkout(workoutData);
+        setLoading(false);
+      } else if (id) {
+        try {
+          const { default: fitnessService } = await import('../../services/fitnessService');
+          const response = await fitnessService.getFitnessContentById(id);
+          const workoutData = response.data?.data;
+          
+          if (workoutData) {
+            setWorkout({
+              id: workoutData._id,
+              name: workoutData.title,
+              sport: workoutData.category || "fitness",
+              difficulty: workoutData.difficulty || "intermediate",
+              category: workoutData.category || "strength",
+              duration: workoutData.duration || 45,
+              calories: workoutData.caloriesBurned?.average || 300,
+              description: workoutData.description || "",
+              tags: workoutData.tags || [],
+              exercises: workoutData.exercises || []
+            });
+          } else {
+            showToast("Workout not found", "error");
+            navigate('/fitness/browse-workouts');
           }
-        ]
-      });
-    }
-  }, [id, location.state]);
+        } catch (error) {
+          console.error("Failed to load workout", error);
+          showToast("Failed to load workout details", "error");
+          navigate('/fitness/browse-workouts');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    fetchWorkout();
+  }, [id, location.state, navigate]);
 
   const startWorkout = () => {
     if (exercises.length === 0) {
@@ -79,7 +75,6 @@ const WorkoutDetails = () => {
     }
     setIsWorkoutActive(true);
     setCurrentExerciseIndex(0);
-    setTimeRemaining(exercises[0]?.duration || 60);
     showToast('Workout started!', 'success');
   };
 
@@ -91,308 +86,300 @@ const WorkoutDetails = () => {
   const stopWorkout = () => {
     setIsWorkoutActive(false);
     setCurrentExerciseIndex(0);
-    setTimeRemaining(0);
     setIsPaused(false);
     showToast('Workout stopped', 'info');
   };
 
   const nextExercise = () => {
     if (currentExerciseIndex < workout.exercises.length - 1) {
-      setCurrentExerciseIndex(currentExerciseIndex + 1);
-      setTimeRemaining(workout.exercises[currentExerciseIndex + 1]?.duration || 60);
+      setCurrentExerciseIndex(prev => prev + 1);
     } else {
-      // Workout completed
       setIsWorkoutActive(false);
       showToast('Workout completed! Great job!', 'success');
     }
   };
 
   const completeExercise = () => {
-    if (currentExerciseIndex < workout.exercises.length - 1) {
-      nextExercise();
-    } else {
-      setIsWorkoutActive(false);
-      showToast('Workout completed! Great job!', 'success');
-    }
+    nextExercise();
   };
 
-  if (!workout) {
+  if (loading || !workout) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading workout...</p>
-        </div>
+      <div className="flex justify-center items-center h-screen bg-transparent">
+        <LoadingSpinner />
       </div>
     );
   }
 
-  // Safety check for exercises array
-  if (!Array.isArray(workout.exercises)) {
-    workout.exercises = [];
-  }
-
-  // Ensure exercises is always an array
   const exercises = Array.isArray(workout.exercises) ? workout.exercises : [];
   const currentExercise = exercises[currentExerciseIndex];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 flex items-center">
-          <button 
-            onClick={() => navigate('/fitness/browse-workouts')}
-            className="mr-4 text-gray-600 hover:text-gray-800 transition-colors"
-            aria-label="Go back"
-          >
-            <FaArrowLeft size={20} />
-          </button>
-          <h1 className="text-3xl font-bold text-gray-800">{workout.name}</h1>
-        </div>
+    <div className="container mx-auto px-4 py-4 md:py-8 relative z-10 max-w-6xl">
+      <div className="mb-4 md:mb-8 flex items-center">
+        <button 
+          onClick={() => navigate('/fitness/browse-workouts')}
+          className="w-10 h-10 rounded-full bg-white/60 border border-white flex items-center justify-center text-slate-500 hover:text-blue-500 hover:bg-white transition-colors shadow-sm mr-4"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-xl md:text-3xl font-extrabold text-slate-800 tracking-tight">{workout.name}</h1>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Workout Info */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">Workout Details</h2>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  workout.difficulty === 'beginner' ? 'bg-green-100 text-green-600' :
-                  workout.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-600' :
-                  'bg-red-100 text-red-600'
-                }`}>
-                  {workout.difficulty}
-                </span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+        
+        {/* Main Content Area */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Overview Card */}
+          <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-white/40 border border-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 md:p-8">
+              <span className={`px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider border shadow-sm ${
+                workout.difficulty === 'beginner' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                workout.difficulty === 'intermediate' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                'bg-rose-100 text-rose-700 border-rose-200'
+              }`}>
+                {workout.difficulty}
+              </span>
+            </div>
+            
+            <h2 className="text-xl font-extrabold text-slate-800 mb-4">Workout Overview</h2>
+            <p className="text-slate-600 font-medium mb-4 md:mb-8 max-w-lg">{workout.description}</p>
+            
+            <div className="grid grid-cols-3 gap-4 mb-4 md:mb-6">
+              <div className="bg-white/60 rounded-2xl p-4 border border-white flex flex-col items-center justify-center">
+                <Clock className="text-blue-500 mb-2" size={24} />
+                <span className="text-2xl font-black text-slate-800">{workout.duration}</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Mins</span>
               </div>
-              
-              <p className="text-gray-600 mb-4">{workout.description}</p>
-              
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <FaClock className="text-blue-500 mr-2" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-800">{workout.duration}</p>
-                  <p className="text-sm text-gray-600">Minutes</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <FaFire className="text-orange-500 mr-2" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-800">{workout.calories}</p>
-                  <p className="text-sm text-gray-600">Calories</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <FaDumbbell className="text-purple-500 mr-2" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-800">{exercises.length}</p>
-                  <p className="text-sm text-gray-600">Exercises</p>
-                </div>
+              <div className="bg-white/60 rounded-2xl p-4 border border-white flex flex-col items-center justify-center">
+                <Flame className="text-orange-500 mb-2" size={24} />
+                <span className="text-2xl font-black text-slate-800">{workout.calories}</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Cals</span>
               </div>
-
+              <div className="bg-white/60 rounded-2xl p-4 border border-white flex flex-col items-center justify-center">
+                <Dumbbell className="text-indigo-500 mb-2" size={24} />
+                <span className="text-2xl font-black text-slate-800">{exercises.length}</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Moves</span>
+              </div>
+            </div>
+            
+            {workout.tags && workout.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {workout.tags.map((tag, index) => (
-                  <span key={index} className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
-                    {tag}
+                  <span key={index} className="text-xs font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">
+                    #{tag}
                   </span>
                 ))}
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Workout Controls */}
-            {exercises.length > 0 && (
-              !isWorkoutActive ? (
-                <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Ready to Start?</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Click "Start Workout" to begin and see exercise videos
-                  </p>
-                  <button
-                    onClick={startWorkout}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition-colors flex items-center justify-center text-lg font-medium"
+          {/* Active Workout Display */}
+          {isWorkoutActive && currentExercise && exercises.length > 0 && (
+            <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-white/60 border-2 border-blue-200 shadow-lg shadow-blue-500/10">
+              <div className="flex justify-between items-center mb-4 md:mb-6">
+                <h2 className="text-2xl font-extrabold text-slate-800 flex items-center">
+                  <Activity className="text-blue-500 mr-3" size={24} />
+                  {currentExercise.name}
+                </h2>
+                <span className="text-sm font-bold text-slate-400">
+                  {currentExerciseIndex + 1} of {exercises.length}
+                </span>
+              </div>
+              
+              <p className="text-slate-600 font-medium mb-4 md:mb-6">{currentExercise.description}</p>
+              
+              {currentExercise.videoUrl ? (
+                <div className="rounded-2xl overflow-hidden mb-4 md:mb-8 border border-white shadow-sm bg-slate-900/5 aspect-video relative">
+                  <video
+                    className="w-full h-full object-cover"
+                    controls
+                    autoPlay
+                    loop
+                    preload="metadata"
                   >
-                    <FaPlay className="mr-2" />
-                    Start Workout
-                  </button>
+                    <source src={currentExercise.videoUrl} type="video/mp4" />
+                  </video>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Workout in Progress</h3>
-                  <div className="flex gap-3">
+                <div className="rounded-2xl border border-white shadow-sm bg-slate-100 aspect-video flex flex-col items-center justify-center text-slate-400 mb-4 md:mb-8">
+                  <Dumbbell size={48} className="mb-4 text-slate-300" />
+                  <span className="font-bold">No video available</span>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4 mb-4 md:mb-8">
+                <div className="bg-white rounded-2xl p-4 md:p-6 text-center border border-slate-100 shadow-sm">
+                  <span className="block text-2xl md:text-4xl font-black text-blue-500 mb-1">{currentExercise.sets || '-'}</span>
+                  <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">Sets</span>
+                </div>
+                <div className="bg-white rounded-2xl p-4 md:p-6 text-center border border-slate-100 shadow-sm">
+                  <span className="block text-2xl md:text-4xl font-black text-emerald-500 mb-1">
+                    {currentExercise.reps || currentExercise.duration || '-'}
+                  </span>
+                  <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+                    {currentExercise.reps ? 'Reps' : 'Secs'}
+                  </span>
+                </div>
+              </div>
+              
+              <button
+                onClick={completeExercise}
+                className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-2xl transition-all shadow-[0_8px_30px_rgb(16,185,129,0.3)] hover:-translate-y-1 flex items-center justify-center text-lg"
+              >
+                <CheckCircle2 className="mr-2" size={24} />
+                Done! Next Exercise
+              </button>
+            </div>
+          )}
+
+          {/* Exercise List */}
+          <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-white/40 border border-white">
+            <h3 className="text-xl font-extrabold text-slate-800 mb-4 md:mb-6">Workout Plan</h3>
+            
+            {exercises.length === 0 ? (
+              <div className="text-center py-4 md:py-6 md:py-12">
+                <Dumbbell size={48} className="mx-auto mb-4 text-slate-300" />
+                <p className="font-medium text-slate-500">No exercises found for this workout.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {exercises.map((exercise, index) => {
+                  const isActive = isWorkoutActive && index === currentExerciseIndex;
+                  const isCompleted = isWorkoutActive && index < currentExerciseIndex;
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      className={`p-5 rounded-2xl border transition-all ${
+                        isActive 
+                          ? 'bg-blue-50/50 border-blue-200 shadow-md' 
+                          : isCompleted
+                            ? 'bg-emerald-50/50 border-emerald-100'
+                            : 'bg-white/60 border-white hover:border-blue-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
+                            isActive ? 'bg-blue-500 text-white' : 
+                            isCompleted ? 'bg-emerald-500 text-white' : 
+                            'bg-slate-100 text-slate-500'
+                          }`}>
+                            {isCompleted ? <CheckCircle2 size={16} /> : index + 1}
+                          </div>
+                          <div>
+                            <h4 className={`font-bold ${isActive ? 'text-blue-900' : isCompleted ? 'text-emerald-900' : 'text-slate-800'}`}>
+                              {exercise.name}
+                            </h4>
+                            {exercise.description && (
+                              <p className="text-xs font-medium text-slate-500 line-clamp-1 mt-0.5">{exercise.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 ml-4">
+                          <span className={`font-extrabold ${isActive ? 'text-blue-600' : 'text-slate-600'}`}>
+                            {exercise.sets && exercise.reps 
+                              ? `${exercise.sets} × ${exercise.reps}` 
+                              : exercise.duration ? `${exercise.duration}s` : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="lg:col-span-1 space-y-8">
+          
+          {/* Main Action Button */}
+          {exercises.length > 0 && (
+            <div className="p-4 md:p-6 rounded-[32px] glass-panel bg-white/60 border border-white text-center">
+              {!isWorkoutActive ? (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mx-auto mb-4">
+                    <Play size={24} className="ml-1" />
+                  </div>
+                  <h3 className="text-lg font-extrabold text-slate-800 mb-2">Ready to sweat?</h3>
+                  <p className="text-sm font-medium text-slate-500 mb-4 md:mb-6">Hit start to begin your guided session.</p>
+                  <button
+                    onClick={startWorkout}
+                    className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-extrabold rounded-2xl hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all text-lg"
+                  >
+                    Start Workout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-extrabold text-slate-800 mb-4 md:mb-6">Workout Active</h3>
+                  <div className="flex flex-col gap-3">
                     <button
                       onClick={pauseWorkout}
-                      className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+                      className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-2xl transition-all shadow-sm flex items-center justify-center"
                     >
-                      <FaPause className="mr-2" />
+                      {isPaused ? <Play className="mr-2" size={18} /> : <Pause className="mr-2" size={18} />}
                       {isPaused ? 'Resume' : 'Pause'}
                     </button>
                     <button
                       onClick={stopWorkout}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+                      className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl transition-all shadow-sm flex items-center justify-center"
                     >
-                      <FaStop className="mr-2" />
+                      <Square className="mr-2" size={16} />
                       Stop
                     </button>
                   </div>
-                </div>
-              )
-            )}
-
-            {/* Current Exercise */}
-            {isWorkoutActive && currentExercise && exercises.length > 0 && (
-              <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800">Current Exercise</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="text-xl font-semibold mb-2 text-gray-800">{currentExercise.name}</h4>
-                  <p className="text-gray-600 mb-4">{currentExercise.description}</p>
-                  
-                  {/* Video Player */}
-                  {currentExercise.videoUrl && (
-                    <div className="mb-4">
-                      <video
-                        className="w-full h-64 rounded-lg object-cover"
-                        controls
-                        preload="metadata"
-                        onError={(e) => console.error('Video error:', e)}
-                        onLoadStart={() => console.log('Video loading started')}
-                        onCanPlay={() => console.log('Video can play')}
-                      >
-                        <source src={currentExercise.videoUrl} type="video/mp4" />
-                        Your browser does not support the video tag.
-                      </video>
-                    </div>
-                  )}
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-500">
-                        {currentExercise.sets || 'N/A'}
-                      </p>
-                      <p className="text-sm text-gray-600">Sets</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-500">
-                        {currentExercise.reps || currentExercise.duration || 'N/A'}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {currentExercise.reps ? 'Reps' : 'Seconds'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={completeExercise}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
-                  >
-                    <FaCheck className="mr-2" />
-                    Complete Exercise
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Exercise List */}
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800">Exercise List</h3>
-              {exercises.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <FaDumbbell size={48} className="mx-auto mb-4 text-gray-300" />
-                  <p>No exercises available for this workout.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {exercises.map((exercise, index) => (
-                    <div 
-                      key={index} 
-                      className={`p-4 rounded-lg transition-colors ${
-                        isWorkoutActive && index === currentExerciseIndex 
-                          ? 'bg-blue-50 border border-blue-200' 
-                          : 'bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h4 className="font-medium text-gray-800">{exercise.name}</h4>
-                          <p className="text-sm text-gray-600">{exercise.description}</p>
-                        </div>
-                        <div className="text-right text-sm text-gray-600">
-                          {exercise.sets && exercise.reps ? (
-                            <span>{exercise.sets} × {exercise.reps}</span>
-                          ) : (
-                            <span>{exercise.duration}s</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Video Player for each exercise */}
-                      {exercise.videoUrl && (
-                        <div className="mt-3">
-                          <video
-                            className="w-full h-48 rounded-lg object-cover"
-                            controls
-                            preload="none"
-                            onError={(e) => console.error('Exercise video error:', exercise.name, e)}
-                          >
-                            <source src={exercise.videoUrl} type="video/mp4" />
-                            Your browser does not support the video tag.
-                          </video>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                </>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800">Progress</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Completed:</span>
-                  <span className="font-medium text-gray-800">
-                    {isWorkoutActive ? currentExerciseIndex : 0} / {exercises.length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Remaining:</span>
-                  <span className="font-medium text-gray-800">
-                    {isWorkoutActive ? exercises.length - currentExerciseIndex : exercises.length}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${isWorkoutActive && exercises.length > 0 ? (currentExerciseIndex / exercises.length) * 100 : 0}%` 
-                    }}
-                  ></div>
-                </div>
+          {/* Progress (Shows when active) */}
+          {isWorkoutActive && exercises.length > 0 && (
+            <div className="p-4 md:p-6 rounded-[32px] glass-panel bg-white/40 border border-white">
+              <h3 className="text-lg font-extrabold text-slate-800 mb-4">Session Progress</h3>
+              
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-xl md:text-3xl font-black text-blue-500">
+                  {Math.round(((currentExerciseIndex) / exercises.length) * 100)}%
+                </span>
+                <span className="text-sm font-bold text-slate-400 mb-1">
+                  {currentExerciseIndex} of {exercises.length}
+                </span>
+              </div>
+              
+              <div className="h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full transition-all duration-500"
+                  style={{ width: `${(currentExerciseIndex / exercises.length) * 100}%` }}
+                />
               </div>
             </div>
+          )}
 
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800">Quick Actions</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => navigate('/fitness/workout-builder')}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
-                >
-                  Create Custom Workout
-                </button>
-                <button
-                  onClick={() => navigate('/fitness/timer')}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors"
-                >
-                  Use Workout Timer
-                </button>
-              </div>
+          {/* Quick Links */}
+          <div className="p-4 md:p-6 rounded-[32px] glass-panel bg-white/40 border border-white">
+            <h3 className="text-lg font-extrabold text-slate-800 mb-4">More Tools</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/fitness/workout-builder')}
+                className="w-full py-3 bg-white/60 text-slate-700 font-bold rounded-2xl border border-white shadow-sm hover:bg-white hover:text-blue-600 transition-colors"
+              >
+                Create Custom Workout
+              </button>
+              <button
+                onClick={() => navigate('/fitness/timer')}
+                className="w-full py-3 bg-white/60 text-slate-700 font-bold rounded-2xl border border-white shadow-sm hover:bg-white hover:text-blue-600 transition-colors"
+              >
+                Open Smart Timer
+              </button>
             </div>
           </div>
+          
         </div>
       </div>
     </div>

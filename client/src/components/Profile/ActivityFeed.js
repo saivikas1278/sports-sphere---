@@ -147,8 +147,8 @@ const ActivityFeed = () => {
 
   if (activities.length === 0) {
     return (
-      <div className="text-center py-8">
-        <FaClock className="mx-auto text-gray-300 text-4xl mb-4" />
+      <div className="text-center py-4 md:py-8">
+        <FaClock className="mx-auto text-gray-300 text-2xl md:text-4xl mb-4" />
         <h3 className="text-lg font-medium text-gray-700">No Recent Activity</h3>
         <p className="text-gray-500 mt-2">Your activities will appear here</p>
       </div>

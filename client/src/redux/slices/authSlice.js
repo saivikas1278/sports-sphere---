@@ -108,6 +108,18 @@ export const changePassword = createAsyncThunk(
   }
 );
 
+export const uploadAvatar = createAsyncThunk(
+  'auth/uploadAvatar',
+  async (file, { rejectWithValue }) => {
+    try {
+      const response = await authService.uploadAvatar(file);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Avatar upload failed');
+    }
+  }
+);
+
 const initialState = {
   user: null,
   token: localStorage.getItem('token'),
@@ -223,6 +235,24 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Upload Avatar
+      .addCase(uploadAvatar.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(uploadAvatar.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.user) {
+          state.user.avatar = action.payload.data.avatar;
+        } else {
+          state.user = action.payload.data;
+        }
+        state.error = null;
+      })
+      .addCase(uploadAvatar.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

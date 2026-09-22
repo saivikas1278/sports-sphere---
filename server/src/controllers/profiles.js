@@ -1,6 +1,7 @@
 import Profile from '../models/Profile.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
+import { createFollowNotification } from '../utils/notificationUtils.js';
 
 // @desc    Get user profile
 // @route   GET /api/profiles/:userId
@@ -136,21 +137,12 @@ export const followUser = async (req, res) => {
     await Promise.all([targetProfile.save(), currentProfile.save()]);
 
     // Create notification
-    const notification = new Notification({
-      recipient: targetUserId,
-      sender: currentUserId,
-      type: 'follow',
-      title: 'New Follower',
-      message: `${req.user.firstName} ${req.user.lastName} started following you`,
-      data: {
-        url: `/profile/${currentUserId}`
-      }
-    });
-    await notification.save();
-
-    // Emit socket event
     const io = req.app.get('io');
-    io.to(`user_${targetUserId}`).emit('notification', notification);
+    try {
+      await createFollowNotification(targetUserId, currentUserId, io);
+    } catch (notificationError) {
+      console.error('Failed to create follow notification:', notificationError);
+    }
 
     res.json({
       success: true,

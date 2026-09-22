@@ -107,7 +107,7 @@ const PhotoUploadForm = ({ onSuccess }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-4 md:mb-6">
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
@@ -155,7 +155,7 @@ const PhotoUploadForm = ({ onSuccess }) => {
               onClick={() => fileInputRef.current.click()}
               className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center mb-4 cursor-pointer hover:bg-gray-50"
             >
-              <FaCamera className="text-3xl text-gray-400 mb-2" />
+              <FaCamera className="text-xl md:text-3xl text-gray-400 mb-2" />
               <p className="text-gray-500">Click to select an image</p>
               <p className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP up to 5MB</p>
               <input
@@ -200,7 +200,7 @@ const PhotoUploadForm = ({ onSuccess }) => {
           </div>
           
           {/* Tags */}
-          <div className="mb-6">
+          <div className="mb-4 md:mb-6">
             <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
               <FaTags className="inline mr-1" /> Tags (comma-separated)
             </label>

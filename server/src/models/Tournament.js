@@ -55,6 +55,17 @@ const tournamentSchema = new mongoose.Schema({
     coordinates: {
       lat: Number,
       lng: Number
+    },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
+      },
+      coordinates: {
+        type: [Number],
+        index: '2dsphere'
+      }
     }
   },
   dates: {

@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaAppleAlt, FaArrowLeft, FaPlus, FaSearch } from 'react-icons/fa';
+import { 
+  ArrowLeft, 
+  Apple, 
+  Plus, 
+  Search, 
+  X,
+  Droplets,
+  Flame,
+  Wheat,
+  Beef
+} from 'lucide-react';
 
 const NutritionTracker = () => {
   const navigate = useNavigate();
@@ -35,15 +45,10 @@ const NutritionTracker = () => {
     { id: 7, name: 'Oats (1 cup)', calories: 154, protein: 5.3, carbs: 28, fat: 3 },
     { id: 8, name: 'Eggs (2 large)', calories: 140, protein: 12, carbs: 1, fat: 10 },
     { id: 9, name: 'Sweet Potato (1 medium)', calories: 112, protein: 2, carbs: 26, fat: 0.1 },
-    { id: 10, name: 'Salmon (100g)', calories: 208, protein: 25, carbs: 0, fat: 12 },
-    { id: 11, name: 'Avocado (1/2 medium)', calories: 160, protein: 2, carbs: 8.5, fat: 15 },
-    { id: 12, name: 'Spinach (1 cup)', calories: 7, protein: 0.9, carbs: 1.1, fat: 0.1 },
-    { id: 13, name: 'Quinoa (1 cup)', calories: 222, protein: 8, carbs: 39, fat: 3.6 },
-    { id: 14, name: 'Turkey Breast (100g)', calories: 135, protein: 30, carbs: 0, fat: 1 },
-    { id: 15, name: 'Apple (1 medium)', calories: 95, protein: 0.5, carbs: 25, fat: 0.3 }
+    { id: 10, name: 'Salmon (100g)', calories: 208, protein: 25, carbs: 0, fat: 12 }
   ];
 
-  const calculateDailyIntake = () => {
+  useEffect(() => {
     const totals = meals.reduce((acc, meal) => {
       acc.calories += meal.calories;
       acc.protein += meal.protein;
@@ -53,10 +58,6 @@ const NutritionTracker = () => {
     }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
     setDailyIntake({ ...totals, water: waterIntake });
-  };
-
-  useEffect(() => {
-    calculateDailyIntake();
   }, [meals, waterIntake]);
 
   const addFoodToMeal = (food, quantity = 1) => {
@@ -108,264 +109,248 @@ const NutritionTracker = () => {
     { id: 'snacks', name: 'Snacks', icon: '🍎' }
   ];
 
+  const MacroCard = ({ title, current, goal, colorClass, bgClass, icon: Icon }) => {
+    const percentage = getProgressPercentage(current, goal);
+    return (
+      <div className="p-4 md:p-6 rounded-[32px] glass-panel bg-white/40 border border-white relative overflow-hidden group">
+        <div className={`absolute -right-4 -top-4 w-16 md:w-24 h-16 md:h-24 ${bgClass}/20 rounded-full blur-2xl group-hover:${bgClass}/30 transition-all`}></div>
+        <div className="relative z-10 flex flex-col h-full">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-extrabold text-slate-500 uppercase tracking-widest">{title}</h3>
+            {Icon && <Icon className={colorClass} size={18} />}
+          </div>
+          
+          <div className="flex items-end justify-between mb-3 mt-auto">
+            <span className={`text-2xl md:text-4xl font-black ${colorClass}`}>{Math.round(current)}</span>
+            <span className="text-sm font-bold text-slate-400 mb-1">/ {goal}</span>
+          </div>
+          
+          <div className="h-2.5 bg-slate-200/50 rounded-full overflow-hidden shadow-inner w-full">
+            <div 
+              className={`h-full rounded-full transition-all duration-700 ease-out ${bgClass.replace('/20', '')}`} 
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8 animate-fade-in">
+    <div className="container mx-auto px-4 py-4 md:py-8 relative z-10 max-w-7xl animate-fade-in">
+      
       {/* Header */}
-      <div className="mb-6 flex items-center">
-        <button 
-          onClick={() => navigate('/fitness')}
-          className="mr-4 text-gray-600 hover:text-gray-800"
-        >
-          <FaArrowLeft size={20} />
-        </button>
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center">
-          <FaAppleAlt className="mr-3 text-green-600" /> Nutrition Tracker
-        </h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 gap-4">
+        <div className="flex items-center">
+          <button 
+            onClick={() => navigate('/fitness')}
+            className="w-10 h-10 rounded-full bg-white/60 border border-white flex items-center justify-center text-slate-500 hover:text-emerald-500 hover:bg-white transition-colors shadow-sm mr-4"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
+              <Apple className="text-emerald-500" size={32} />
+              Nutrition Tracker
+            </h1>
+            <p className="text-slate-500 font-medium">Log your meals and macros</p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-3 w-full md:w-auto">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="flex-1 md:flex-none px-4 py-3 bg-white/80 border border-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold text-slate-600 shadow-sm"
+          />
+          <button
+            onClick={() => { setSelectedMeal('breakfast'); setShowAddFood(true); }}
+            className="px-4 md:px-6 py-3 bg-emerald-500 text-white font-extrabold rounded-2xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/30 flex items-center shrink-0"
+          >
+            <Plus size={20} className="mr-1" />
+            <span className="hidden md:inline">Add Food</span>
+          </button>
+        </div>
       </div>
 
-      {/* Date Selector */}
-      <div className="mb-6 flex justify-between items-center">
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+      {/* Macros Overview */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-4 md:mb-8">
+        <div className="col-span-2 lg:col-span-1">
+          <MacroCard 
+            title="Calories" 
+            current={dailyIntake.calories} 
+            goal={goals.calories} 
+            colorClass="text-emerald-500"
+            bgClass="bg-emerald-500"
+            icon={Flame}
+          />
+        </div>
+        <MacroCard 
+          title="Protein" 
+          current={dailyIntake.protein} 
+          goal={goals.protein} 
+          colorClass="text-rose-500"
+          bgClass="bg-rose-500"
+          icon={Beef}
         />
-        <button
-          onClick={() => setShowAddFood(true)}
-          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-        >
-          <FaPlus className="mr-2" /> Add Food
-        </button>
-      </div>
-
-      {/* Daily Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Calories</h3>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl font-bold text-blue-600">{Math.round(dailyIntake.calories)}</span>
-            <span className="text-sm text-gray-500">/ {goals.calories}</span>
+        <MacroCard 
+          title="Carbs" 
+          current={dailyIntake.carbs} 
+          goal={goals.carbs} 
+          colorClass="text-amber-500"
+          bgClass="bg-amber-500"
+          icon={Wheat}
+        />
+        <MacroCard 
+          title="Fat" 
+          current={dailyIntake.fat} 
+          goal={goals.fat} 
+          colorClass="text-purple-500"
+          bgClass="bg-purple-500"
+        />
+        <div className="col-span-2 lg:col-span-1 p-4 md:p-6 rounded-[32px] glass-panel bg-white/40 border border-white relative overflow-hidden group flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-extrabold text-cyan-600 uppercase tracking-widest">Water</h3>
+            <Droplets className="text-cyan-500" size={18} />
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${getProgressPercentage(dailyIntake.calories, goals.calories)}%` }}
-            ></div>
+          
+          <div className="flex items-end justify-between mb-4">
+            <span className="text-2xl md:text-4xl font-black text-cyan-500">{waterIntake}</span>
+            <span className="text-sm font-bold text-slate-400 mb-1">/ {goals.water} gls</span>
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Protein (g)</h3>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl font-bold text-red-600">{Math.round(dailyIntake.protein)}</span>
-            <span className="text-sm text-gray-500">/ {goals.protein}</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-red-600 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${getProgressPercentage(dailyIntake.protein, goals.protein)}%` }}
-            ></div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Carbs (g)</h3>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl font-bold text-yellow-600">{Math.round(dailyIntake.carbs)}</span>
-            <span className="text-sm text-gray-500">/ {goals.carbs}</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-yellow-600 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${getProgressPercentage(dailyIntake.carbs, goals.carbs)}%` }}
-            ></div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Fat (g)</h3>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl font-bold text-purple-600">{Math.round(dailyIntake.fat)}</span>
-            <span className="text-sm text-gray-500">/ {goals.fat}</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${getProgressPercentage(dailyIntake.fat, goals.fat)}%` }}
-            ></div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Water (glasses)</h3>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl font-bold text-cyan-600">{waterIntake}</span>
-            <span className="text-sm text-gray-500">/ {goals.water}</span>
-          </div>
-          <div className="flex space-x-1 mt-2">
-            <button
-              onClick={() => addWater(1)}
-              className="flex-1 px-2 py-1 bg-cyan-100 hover:bg-cyan-200 text-cyan-700 text-xs rounded transition-colors"
-            >
-              +1
-            </button>
+          
+          <div className="flex space-x-2 mt-auto">
             <button
               onClick={() => setWaterIntake(Math.max(0, waterIntake - 1))}
-              className="flex-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded transition-colors"
+              className="flex-1 py-2 bg-white/60 hover:bg-white text-slate-500 font-bold rounded-xl border border-white shadow-sm transition-colors text-lg"
             >
-              -1
+              -
+            </button>
+            <button
+              onClick={() => addWater(1)}
+              className="flex-1 py-2 bg-cyan-100 hover:bg-cyan-200 text-cyan-600 font-bold rounded-xl border border-cyan-200 shadow-sm transition-colors text-lg"
+            >
+              +
             </button>
           </div>
         </div>
       </div>
 
-      {/* Meals */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          {mealTypes.slice(0, 2).map(mealType => (
-            <div key={mealType.id} className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                  <span className="mr-2 text-2xl">{mealType.icon}</span>
-                  {mealType.name}
-                </h2>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-gray-800">{Math.round(getMealCalories(mealType.id))} cal</p>
-                  <button
-                    onClick={() => {
-                      setSelectedMeal(mealType.id);
-                      setShowAddFood(true);
-                    }}
-                    className="text-green-600 hover:text-green-800 text-sm"
-                  >
-                    Add Food
-                  </button>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                {getMealsByType(mealType.id).map(meal => (
-                  <div key={meal.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-800">{meal.name}</p>
-                      <p className="text-sm text-gray-600">
-                        {Math.round(meal.calories)} cal • {Math.round(meal.protein)}g protein
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => removeFoodFromMeal(meal.id)}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                
-                {getMealsByType(mealType.id).length === 0 && (
-                  <p className="text-gray-500 text-center py-4">No foods added yet</p>
-                )}
+      {/* Meals Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
+        {mealTypes.map(mealType => (
+          <div key={mealType.id} className="p-4 md:p-6 md:p-8 rounded-[32px] glass-panel bg-white/40 border border-white">
+            <div className="flex items-center justify-between mb-4 md:mb-6 pb-4 border-b border-white/50">
+              <h2 className="text-xl font-extrabold text-slate-800 flex items-center">
+                <span className="mr-3 text-2xl">{mealType.icon}</span>
+                {mealType.name}
+              </h2>
+              <div className="text-right flex flex-col items-end">
+                <span className="text-2xl font-black text-slate-800 leading-none mb-1">
+                  {Math.round(getMealCalories(mealType.id))}
+                </span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">cals</span>
               </div>
             </div>
-          ))}
-        </div>
+            
+            <div className="space-y-3 mb-4 md:mb-6 min-h-[100px]">
+              {getMealsByType(mealType.id).map(meal => (
+                <div key={meal.id} className="flex items-center justify-between p-4 bg-white/60 border border-white rounded-2xl shadow-sm group">
+                  <div>
+                    <p className="font-extrabold text-slate-800">{meal.name}</p>
+                    <p className="text-xs font-bold text-slate-500 mt-1 flex gap-3">
+                      <span className="text-emerald-600">{Math.round(meal.calories)} cal</span>
+                      <span className="text-rose-600">{Math.round(meal.protein)}g P</span>
+                      <span className="text-amber-600">{Math.round(meal.carbs)}g C</span>
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => removeFoodFromMeal(meal.id)}
+                    className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 shadow-sm"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+              
+              {getMealsByType(mealType.id).length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 py-4">
+                  <Apple size={32} className="mb-2 opacity-50" />
+                  <p className="font-medium text-sm">No foods logged</p>
+                </div>
+              )}
+            </div>
 
-        <div className="space-y-6">
-          {mealTypes.slice(2).map(mealType => (
-            <div key={mealType.id} className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                  <span className="mr-2 text-2xl">{mealType.icon}</span>
-                  {mealType.name}
-                </h2>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-gray-800">{Math.round(getMealCalories(mealType.id))} cal</p>
-                  <button
-                    onClick={() => {
-                      setSelectedMeal(mealType.id);
-                      setShowAddFood(true);
-                    }}
-                    className="text-green-600 hover:text-green-800 text-sm"
-                  >
-                    Add Food
-                  </button>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                {getMealsByType(mealType.id).map(meal => (
-                  <div key={meal.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-800">{meal.name}</p>
-                      <p className="text-sm text-gray-600">
-                        {Math.round(meal.calories)} cal • {Math.round(meal.protein)}g protein
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => removeFoodFromMeal(meal.id)}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                
-                {getMealsByType(mealType.id).length === 0 && (
-                  <p className="text-gray-500 text-center py-4">No foods added yet</p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+            <button
+              onClick={() => { setSelectedMeal(mealType.id); setShowAddFood(true); }}
+              className="w-full py-3 bg-white/80 hover:bg-white text-emerald-600 font-extrabold rounded-2xl border border-emerald-100 shadow-sm transition-all flex items-center justify-center"
+            >
+              <Plus size={18} className="mr-2" /> Add to {mealType.name}
+            </button>
+          </div>
+        ))}
       </div>
 
       {/* Add Food Modal */}
       {showAddFood && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Add Food to {mealTypes.find(m => m.id === selectedMeal)?.name}
-              </h2>
-              <button
-                onClick={() => setShowAddFood(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/90 backdrop-blur-xl rounded-[40px] shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col border border-white overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            
+            <div className="p-4 md:p-6 md:p-8 border-b border-slate-200/50 bg-white/50">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="text-2xl font-extrabold text-slate-800">
+                  Add to {mealTypes.find(m => m.id === selectedMeal)?.name}
+                </h2>
+                <button
+                  onClick={() => setShowAddFood(false)}
+                  className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
-            <div className="mb-4">
               <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
                 <input
                   type="text"
-                  placeholder="Search foods..."
+                  placeholder="Search database..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 font-bold text-slate-700 shadow-sm"
                 />
               </div>
             </div>
 
-            <div className="max-h-64 overflow-y-auto space-y-2">
-              {filteredFoods.map(food => (
-                <div key={food.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
-                  <div>
-                    <p className="font-medium text-gray-800">{food.name}</p>
-                    <p className="text-sm text-gray-600">
-                      {food.calories} cal • {food.protein}g protein
-                    </p>
+            <div className="p-4 overflow-y-auto flex-grow custom-scrollbar bg-slate-50/50">
+              <div className="space-y-3">
+                {filteredFoods.map(food => (
+                  <div key={food.id} className="p-4 bg-white rounded-2xl border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all group flex justify-between items-center">
+                    <div>
+                      <p className="font-extrabold text-slate-800">{food.name}</p>
+                      <div className="flex gap-3 mt-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        <span className="text-emerald-600">{food.calories} cal</span>
+                        <span>{food.protein}g P</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => addFoodToMeal(food)}
+                      className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors"
+                    >
+                      <Plus size={20} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => addFoodToMeal(food)}
-                    className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                  >
-                    Add
-                  </button>
-                </div>
-              ))}
+                ))}
+                
+                {filteredFoods.length === 0 && (
+                  <div className="text-center py-4 md:py-6 md:py-12 text-slate-400">
+                    <Search size={48} className="mx-auto mb-4 opacity-30" />
+                    <p className="font-bold">No matching foods found.</p>
+                  </div>
+                )}
+              </div>
             </div>
+            
           </div>
         </div>
       )}

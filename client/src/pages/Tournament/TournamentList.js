@@ -97,12 +97,12 @@ const TournamentList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-4 md:py-8">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Tournaments</h1>
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">Tournaments</h1>
             <p className="text-gray-600">Discover and join exciting tournaments</p>
           </div>
           
@@ -118,7 +118,7 @@ const TournamentList = () => {
         </div>
 
         {/* Filters and Search */}
-        <AnimatedCard className="p-6 mb-8">
+        <AnimatedCard className="p-4 md:p-6 mb-4 md:mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search */}
             <div className="relative">
@@ -175,7 +175,7 @@ const TournamentList = () => {
 
         {/* Tournament Grid */}
         {filteredTournaments.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
             {filteredTournaments.map((tournament) => (
               <AnimatedCard key={tournament._id} className="overflow-hidden">
                 {/* Tournament Banner */}
@@ -211,7 +211,7 @@ const TournamentList = () => {
                 </div>
 
                 {/* Tournament Info */}
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                   <div className="flex items-start justify-between mb-3">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">{tournament.name}</h3>
                     {tournament.logo && (
@@ -307,7 +307,7 @@ const TournamentList = () => {
             ))}
           </div>
         ) : (
-          <AnimatedCard className="p-12 text-center">
+          <AnimatedCard className="p-4 md:p-6 md:p-12 text-center">
             <FaTrophy className="text-6xl text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">No Tournaments Found</h3>
             <p className="text-gray-600 mb-4">
@@ -327,7 +327,7 @@ const TournamentList = () => {
 
         {/* Quick Stats */}
         {tournaments.length > 0 && (
-          <AnimatedCard className="mt-12 p-6">
+          <AnimatedCard className="mt-4 md:mt-6 md:mt-12 p-4 md:p-6">
             <h3 className="text-lg font-semibold mb-4">Tournament Statistics</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">

@@ -19,7 +19,8 @@ import {
   FaEyeSlash,
   FaGamepad,
   FaMedal,
-  FaFire
+  FaFire,
+  FaUser
 } from 'react-icons/fa';
 import { loadUser } from '../../redux/slices/authSlice';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -129,7 +130,7 @@ const ProfilePage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Please log in to view your profile</h2>
-          <Link to="/login" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+          <Link to="/login" className="bg-blue-600 text-white px-4 md:px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
             Go to Login
           </Link>
         </div>
@@ -180,10 +181,10 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-4 md:py-8">
       <div className="container mx-auto px-4">
         {/* Profile Header */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+        <div className="bg-white rounded-xl shadow-lg p-4 md:p-8 mb-4 md:mb-8">
           <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
             {/* Profile Picture */}
             <div className="relative">
@@ -203,7 +204,7 @@ const ProfilePage = () => {
             <div className="flex-1 text-center md:text-left">
               {!isEditing ? (
                 <>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{profileData.personalInfo.fullName}</h1>
+                  <h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-2">{profileData.personalInfo.fullName}</h1>
                   <p className="text-gray-600 mb-4">{profileData.personalInfo.bio}</p>
                   <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-gray-600">
                     <div className="flex items-center">
@@ -282,12 +283,12 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
           {/* Left Column - Stats & Quick Actions */}
           <div className="space-y-8">
             {/* Stats */}
             {showStats && (
-              <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Stats</h2>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
@@ -315,7 +316,7 @@ const ProfilePage = () => {
             )}
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-3">
                 <Link 
@@ -350,7 +351,7 @@ const ProfilePage = () => {
             </div>
 
             {/* Contact Info */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Information</h2>
               {!isEditing ? (
                 <div className="space-y-3">
@@ -397,8 +398,8 @@ const ProfilePage = () => {
           {/* Right Column - Activity & Achievements */}
           <div className="lg:col-span-2 space-y-8">
             {/* Recent Activity */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex justify-between items-center mb-6">
+            <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
+              <div className="flex justify-between items-center mb-4 md:mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
                 <Link to="/dashboard" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
                   View All
@@ -425,8 +426,8 @@ const ProfilePage = () => {
             </div>
 
             {/* Achievements */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Achievements</h2>
+            <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 md:mb-6">Achievements</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {profileData.achievements.map((achievement) => (
                   <GlareHover

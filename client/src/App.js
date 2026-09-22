@@ -8,10 +8,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ThemeProvider } from './context/ThemeContext';
 
 // Layout Components
-import NavbarSwitcher from './components/Layout/NavbarSwitcher';
+import Navbar from './components/Layout/Navbar';
 import Footer from './components/Layout/Footer';
 import LoadingSpinner from './components/UI/LoadingSpinner';
-import SplashCursor from './components/UI/SplashCursor';
+import FloatingBottomNavigation from './components/UI/FloatingBottomNavigation';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -22,6 +22,12 @@ import TournamentHub from './pages/Tournament/TournamentHub';
 import TournamentDetails from './pages/Tournament/TournamentDetails';
 import TournamentCreatePage from './pages/Tournament/TournamentCreatePage';
 import LiveTournamentBoard from './pages/Tournament/LiveTournamentBoard';
+import TournamentDashboard from './pages/Tournament/TournamentDashboard';
+import ParticipantManagement from './pages/Tournament/ParticipantManagement';
+import CommunicationCenter from './pages/Tournament/CommunicationCenter';
+import TournamentBracket from './pages/Tournament/TournamentBracket';
+import ScoreEntry from './pages/Tournament/ScoreEntry';
+import FinancialReports from './pages/Tournament/FinancialReports';
 import PostsHub from './pages/Posts/PostsHub';
 import PostDetails from './pages/Posts/PostDetails';
 import FitnessHub from './pages/Fitness/FitnessHub';
@@ -41,6 +47,8 @@ import HelpPage from './pages/HelpPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import TeamsPage from './pages/Team/TeamsPage';
+import TeamCreatePage from './pages/Team/TeamCreatePage';
+import TeamDetails from './pages/Team/TeamDetails';
 import CricketHub from './pages/Cricket/CricketHub';
 import CricketCreateMatch from './pages/Cricket/CricketCreateMatch';
 
@@ -54,9 +62,26 @@ import KabaddiScoring from './pages/Matches/Scoring/KabaddiScoring';
 import MatchesHub from './pages/Matches/MatchesHub';
 import MatchDetails from './pages/Matches/MatchDetails';
 
-// Protected Route Component
-import ProtectedRoute from './components/Auth/ProtectedRoute';
+// Dashboard Subpages
+import MyRegistrations from './pages/Dashboard/MyRegistrations';
 
+// Team Subpages
+import TeamChat from './pages/Team/TeamChat';
+import PlayerStats from './pages/Team/PlayerStats';
+
+// Messages
+import ChatHub from './pages/Chat/ChatHub';
+
+// Protected Route
+import ProtectedRoute from './components/Routing/ProtectedRoute';
+
+// Admin Pages
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import UserManagement from './pages/Admin/UserManagement';
+import TournamentVerification from './pages/Admin/TournamentVerification';
+import ContentModeration from './pages/Admin/ContentModeration';
+import GlobalAnalytics from './pages/Admin/GlobalAnalytics';
+import PlatformSettings from './pages/Admin/PlatformSettings';
 // Redux Actions
 import { loadUser } from './redux/slices/authSlice';
 
@@ -73,6 +98,7 @@ const DynamicRedirect = ({ pattern, replacement }) => {
 
 function App() {
   const dispatch = useDispatch();
+  const location = useLocation();
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
 
   useEffect(() => {
@@ -106,10 +132,9 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen transition-colors duration-300 bg-white dark:bg-gray-900">
-        <SplashCursor />
-        <NavbarSwitcher />
-        <main className="flex-1">
+      <div className="min-h-screen transition-colors duration-300 bg-transparent">
+        <Navbar />
+        <main className="flex-1 pb-24">
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
@@ -130,89 +155,48 @@ function App() {
             />
             
             {/* Protected Routes */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/registrations" element={<ProtectedRoute><MyRegistrations /></ProtectedRoute>} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement /></ProtectedRoute>} />
+            <Route path="/admin/verification" element={<ProtectedRoute allowedRoles={['admin']}><TournamentVerification /></ProtectedRoute>} />
+            <Route path="/admin/moderation" element={<ProtectedRoute allowedRoles={['admin']}><ContentModeration /></ProtectedRoute>} />
+            <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={['admin']}><GlobalAnalytics /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><PlatformSettings /></ProtectedRoute>} />
             
             {/* Tournament Routes */}
             <Route path="/tournaments" element={<TournamentHub />} />
             <Route path="/tournaments/create" element={<TournamentCreatePage />} />
             <Route path="/tournaments/:id" element={<TournamentDetails />} />
-            <Route 
-              path="/tournaments/:id/live" 
-              element={
-                <ProtectedRoute>
-                  <LiveTournamentBoard />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/tournaments/:id/dashboard" element={<TournamentDashboard />} />
+            <Route path="/tournaments/:id/participants" element={<ProtectedRoute><ParticipantManagement /></ProtectedRoute>} />
+            <Route path="/tournaments/:id/communication" element={<ProtectedRoute><CommunicationCenter /></ProtectedRoute>} />
+            <Route path="/tournaments/:id/brackets" element={<ProtectedRoute><TournamentBracket /></ProtectedRoute>} />
+            <Route path="/tournaments/:id/scoring" element={<ProtectedRoute><ScoreEntry /></ProtectedRoute>} />
+            <Route path="/tournaments/:id/financials" element={<ProtectedRoute><FinancialReports /></ProtectedRoute>} />
+            <Route path="/tournaments/:id/live" element={<LiveTournamentBoard />} />
             
             {/* Team Routes */}
-            <Route 
-              path="/teams" 
-              element={
-                <ProtectedRoute>
-                  <TeamsPage />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/teams" element={<TeamsPage />} />
+            <Route path="/teams/create" element={<ProtectedRoute><TeamCreatePage /></ProtectedRoute>} />
+            <Route path="/teams/:id" element={<TeamDetails />} />
+            <Route path="/teams/:id/chat" element={<ProtectedRoute><TeamChat /></ProtectedRoute>} />
+            <Route path="/teams/:teamId/players/:playerId" element={<PlayerStats />} />
+            
+            {/* Messages */}
+            <Route path="/chat" element={<ProtectedRoute><ChatHub /></ProtectedRoute>} />
             
             {/* Match Routes */}
             <Route path="/matches" element={<MatchesHub />} />
             <Route path="/matches/:matchId" element={<MatchDetails />} />
-            <Route 
-              path="/matches/create" 
-              element={
-                <ProtectedRoute>
-                  <CreateMatch />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/matches/create/:sportId/teams" 
-              element={
-                <ProtectedRoute>
-                  <TeamSelection />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/matches/score/cricket/:matchId" 
-              element={
-                <ProtectedRoute>
-                  <CricketScoring />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/matches/score/badminton/:matchId" 
-              element={
-                <ProtectedRoute>
-                  <BadmintonScoring />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/matches/score/volleyball/:matchId" 
-              element={
-                <ProtectedRoute>
-                  <VolleyballScoring />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/matches/score/kabaddi/:matchId" 
-              element={
-                <ProtectedRoute>
-                  <KabaddiScoring />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/matches/create" element={<CreateMatch />} />
+            <Route path="/matches/create/:sportId/teams" element={<TeamSelection />} />
+            <Route path="/matches/score/cricket/:matchId" element={<CricketScoring />} />
+            <Route path="/matches/score/badminton/:matchId" element={<BadmintonScoring />} />
+            <Route path="/matches/score/volleyball/:matchId" element={<VolleyballScoring />} />
+            <Route path="/matches/score/kabaddi/:matchId" element={<KabaddiScoring />} />
             
             {/* Posts Routes */}
             <Route path="/posts" element={<PostsHub />} />
@@ -236,22 +220,8 @@ function App() {
             <Route path="/fitness/:id" element={<FitnessDetails />} />
             
             {/* User Routes */}
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings" 
-              element={
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             
             {/* Cricket Routes */}
             <Route path="/cricket" element={<CricketHub />} />
@@ -265,7 +235,8 @@ function App() {
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
-        <Footer />
+        {location.pathname !== '/login' && <Footer />}
+        <FloatingBottomNavigation />
         
         {/* Toast notifications */}
         <ToastContainer

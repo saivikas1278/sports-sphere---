@@ -44,7 +44,7 @@ const PhotoPost = ({ post }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6 transition-all duration-300 hover:shadow-lg">
+    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-4 md:mb-6 transition-all duration-300 hover:shadow-lg">
       {/* Post header */}
       <div className="p-4 flex items-center justify-between border-b">
         <div className="flex items-center space-x-3">

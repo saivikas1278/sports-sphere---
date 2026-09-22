@@ -110,6 +110,30 @@ export const sharePost = createAsyncThunk(
   }
 );
 
+export const savePost = createAsyncThunk(
+  'posts/savePost',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await postService.savePost(id);
+      return { id, isSaved: response.data.isSaved };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to save post');
+    }
+  }
+);
+
+export const reportPost = createAsyncThunk(
+  'posts/reportPost',
+  async ({ id, reason }, { rejectWithValue }) => {
+    try {
+      const response = await postService.reportPost(id, reason);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to report post');
+    }
+  }
+);
+
 export const fetchFeaturedPosts = createAsyncThunk(
   'posts/fetchFeaturedPosts',
   async (_, { rejectWithValue }) => {
@@ -330,7 +354,6 @@ const postSlice = createSlice({
       })
       // Add comment
       .addCase(addComment.fulfilled, (state, action) => {
-        const { postId, comment } = action.payload;
         postSlice.caseReducers.addCommentToPost(state, action);
       })
       .addCase(addComment.rejected, (state, action) => {
@@ -362,6 +385,21 @@ const postSlice = createSlice({
         // Update current post
         if (state.currentPost && state.currentPost._id === id) {
           state.currentPost.shares = shares;
+        }
+      })
+      // Save post
+      .addCase(savePost.fulfilled, (state, action) => {
+        const { id, isSaved } = action.payload;
+        
+        // Update in posts array
+        const post = state.posts.find(p => p._id === id);
+        if (post) {
+          post.isSaved = isSaved;
+        }
+        
+        // Update current post
+        if (state.currentPost && state.currentPost._id === id) {
+          state.currentPost.isSaved = isSaved;
         }
       })
       // Featured posts

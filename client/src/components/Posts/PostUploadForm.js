@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaCamera, FaVideo, FaTimesCircle, FaTags, FaMapMarkerAlt, FaImage, FaFileVideo, FaGlobeAmericas, FaUsers, FaLock, FaPlus } from 'react-icons/fa';
+import { FaCamera, FaVideo, FaTimesCircle, FaImage, FaGlobeAmericas, FaUsers, FaLock } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useTheme } from '../../context/ThemeContext';
 import { createPost } from '../../redux/slices/postSlice';
@@ -189,14 +189,14 @@ const PostUploadForm = ({ onSuccess }) => {
 
   if (!user) {
     return (
-      <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+      <div className={`text-center py-4 md:py-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
         <p>Please log in to create posts</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-8">
+    <div className="w-full max-w-2xl mx-auto mb-4 md:mb-8">
       {!showForm ? (
         <div 
           onClick={() => setShowForm(true)}
@@ -227,7 +227,7 @@ const PostUploadForm = ({ onSuccess }) => {
           rounded-xl shadow-lg border
           ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}
         `}>
-          <div className={`px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className={`px-4 md:px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <div className="flex items-center justify-between">
               <h3 className={`text-lg font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                 Create Post
@@ -241,7 +241,7 @@ const PostUploadForm = ({ onSuccess }) => {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6">
             {/* User Info */}
             <div className="flex items-center space-x-3">
               <img
@@ -486,7 +486,7 @@ const PostUploadForm = ({ onSuccess }) => {
                   type="button"
                   onClick={resetForm}
                   className={`
-                    px-6 py-2 rounded-lg transition-colors
+                    px-4 md:px-6 py-2 rounded-lg transition-colors
                     ${isDark 
                       ? 'text-gray-400 hover:text-gray-300' 
                       : 'text-gray-600 hover:text-gray-800'
@@ -498,7 +498,7 @@ const PostUploadForm = ({ onSuccess }) => {
                 <GradientButton
                   type="submit"
                   disabled={loading || !formData.title.trim() || !formData.content.trim()}
-                  className="px-6 py-2"
+                  className="px-4 md:px-6 py-2"
                 >
                   {loading ? (
                     <div className="flex items-center space-x-2">

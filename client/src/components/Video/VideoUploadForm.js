@@ -133,7 +133,7 @@ const VideoUploadForm = ({ onSuccess }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6 transition-all duration-300">
+    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-4 md:mb-6 transition-all duration-300">
       <div className="p-4">
         <div className="flex space-x-3">
           <img 
@@ -190,7 +190,7 @@ const VideoUploadForm = ({ onSuccess }) => {
                 <img 
                   src={thumbnailPreview} 
                   alt="Thumbnail" 
-                  className="h-20 rounded-lg border border-gray-200" 
+                  className="h-12 md:h-20 rounded-lg border border-gray-200" 
                 />
                 <button 
                   className="absolute top-1 right-1 bg-gray-800 bg-opacity-70 text-white rounded-full p-1 hover:bg-opacity-100"

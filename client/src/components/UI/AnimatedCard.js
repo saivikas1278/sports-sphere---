@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
 const AnimatedCard = ({ 
@@ -10,8 +10,10 @@ const AnimatedCard = ({
   borderGlow = false,
   backgroundPattern = false 
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const isHovered = false;
+  const mousePosition = { x: 0, y: 0 };
+  const setIsHovered = () => {};
+  const setMousePosition = () => {};
   const cardRef = useRef(null);
   const { isDark } = useTheme();
 

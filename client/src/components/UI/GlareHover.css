@@ -26,11 +26,11 @@
 }
 
 .glare-hover:hover {
-  cursor: pointer;
+  cursor: default;
 }
 
 .glare-hover:hover::before {
-  background-position: 100% 100%, 0 0;
+  background-position: -100% -100%, 0 0;
 }
 
 .glare-hover--play-once::before {
@@ -38,6 +38,6 @@
 }
 
 .glare-hover--play-once:hover::before {
-  transition: var(--gh-duration) ease;
-  background-position: 100% 100%, 0 0;
+  transition: none;
+  background-position: -100% -100%, 0 0;
 }

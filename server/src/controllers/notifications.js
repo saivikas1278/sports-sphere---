@@ -1,5 +1,4 @@
 import Notification from '../models/Notification.js';
-import emailService from '../utils/emailService.js';
 
 // @desc    Get user notifications
 // @route   GET /api/notifications
@@ -169,23 +168,7 @@ export const createNotification = async (req, res) => {
     const io = req.app.get('io');
     io.to(`user_${recipient}`).emit('notification', notification);
 
-    // Send email notification if user has email notifications enabled
-    try {
-      const recipientUser = notification.recipient;
-      if (recipientUser.email) {
-        await emailService.sendNotificationEmail(
-          recipientUser.email,
-          recipientUser.firstName,
-          {
-            title: notification.title,
-            message: notification.message
-          }
-        );
-      }
-    } catch (emailError) {
-      console.error('Failed to send notification email:', emailError);
-      // Don't fail the notification creation if email fails
-    }
+    // Email notification disabled
 
     res.status(201).json({
       success: true,

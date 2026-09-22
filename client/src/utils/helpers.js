@@ -246,20 +246,19 @@ export const isValidEmail = (email) => {
 
 // Validate password strength
 export const validatePassword = (password) => {
-  const minLength = password.length >= 8;
+  const minLength = password.length >= 6;
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  // Backend doesn't require special characters, so we remove it from isValid
   
   return {
-    isValid: minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
+    isValid: minLength && hasUpperCase && hasLowerCase && hasNumbers,
     criteria: {
       minLength,
       hasUpperCase,
       hasLowerCase,
-      hasNumbers,
-      hasSpecialChar
+      hasNumbers
     }
   };
 };

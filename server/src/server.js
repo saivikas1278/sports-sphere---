@@ -6,7 +6,6 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import connectDB from './config/database.js';
-import emailService from './utils/emailService.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import tournamentRoutes from './routes/tournaments.js';
@@ -18,9 +17,19 @@ import postRoutes from './routes/posts.js';
 import profileRoutes from './routes/profiles.js';
 import notificationRoutes from './routes/notifications.js';
 import contactRoutes from './routes/contact.js';
+import searchRoutes from './routes/search.js';
 import testRoutes from './routes/test.js';
+import chatRoutes from './routes/chat.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { setupSocketHandlers } from './utils/socketHandlers.js';
+import passport from 'passport';
+import './config/passport.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config();
@@ -40,11 +49,11 @@ const io = new Server(server, {
 // Connect to MongoDB
 connectDB();
 
-// Test email service connection
-emailService.testEmailConnection();
-
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: false
+}));
 
 // CORS configuration
 const corsOptions = {
@@ -67,6 +76,16 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Initialize passport
+app.use(passport.initialize());
+
+// Serve static files (like uploaded avatars)
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsDir));
+
 // Socket.io setup
 setupSocketHandlers(io);
 app.set('io', io);
@@ -83,7 +102,9 @@ app.use('/api/posts', postRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/search', searchRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

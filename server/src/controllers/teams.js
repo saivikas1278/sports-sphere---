@@ -3,6 +3,7 @@ import Team from '../models/Team.js';
 import Tournament from '../models/Tournament.js';
 import User from '../models/User.js';
 import Match from '../models/Match.js';
+import { createTeamInviteNotification } from '../utils/notificationUtils.js';
 
 // @desc    Get all teams
 // @route   GET /api/teams
@@ -400,6 +401,14 @@ export const addPlayerToTeam = async (req, res, next) => {
     // Populate team data
     await team.populate('players.user', 'firstName lastName avatar');
 
+    // Send team invite/addition notification
+    const io = req.app.get('io');
+    try {
+      await createTeamInviteNotification(req.body.userId, req.user.id, team._id, team.name, io);
+    } catch (notificationError) {
+      console.error('Failed to create team invite notification:', notificationError);
+    }
+
     res.status(200).json({
       success: true,
       data: team
@@ -527,6 +536,166 @@ export const getTeamMatches = async (req, res, next) => {
       count: matches.length,
       data: matches
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Send team invitation
+// @route   POST /api/teams/:id/invitations
+// @access  Private
+export const sendTeamInvitation = async (req, res, next) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ success: false, error: 'Team not found' });
+
+    if (team.captain.toString() !== req.user.id) {
+      return res.status(401).json({ success: false, error: 'Not authorized' });
+    }
+
+    const { userId, role } = req.body;
+    
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+    // Check if user already in team
+    if (team.players.some(p => p.user.toString() === userId)) {
+      return res.status(400).json({ success: false, error: 'User is already in team' });
+    }
+
+    // Check if invite already exists
+    if (team.invitations && team.invitations.some(i => i.user.toString() === userId && i.status === 'pending')) {
+      return res.status(400).json({ success: false, error: 'User already has a pending invite' });
+    }
+
+    if (!team.invitations) team.invitations = [];
+    team.invitations.push({
+      user: userId,
+      role: role || 'player',
+      status: 'pending',
+      invitedBy: req.user.id
+    });
+
+    await team.save();
+
+    // Optionally notify the user
+    const io = req.app.get('io');
+    if (io) {
+      try {
+        await createTeamInviteNotification(userId, req.user.id, team._id, team.name, io);
+      } catch (err) {
+        console.error('Notification error', err);
+      }
+    }
+
+    res.status(200).json({ success: true, data: team });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Respond to team invitation
+// @route   PUT /api/teams/:id/invitations/:inviteId
+// @access  Private
+export const respondToInvitation = async (req, res, next) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ success: false, error: 'Team not found' });
+
+    const invite = team.invitations.id(req.params.inviteId);
+    if (!invite) return res.status(404).json({ success: false, error: 'Invite not found' });
+
+    if (invite.user.toString() !== req.user.id) {
+      return res.status(401).json({ success: false, error: 'Not authorized to respond to this invite' });
+    }
+
+    if (invite.status !== 'pending') {
+      return res.status(400).json({ success: false, error: 'Invite is no longer pending' });
+    }
+
+    const { status } = req.body; // 'accepted' or 'declined'
+    if (!['accepted', 'declined'].includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid status' });
+    }
+
+    invite.status = status;
+
+    if (status === 'accepted') {
+      // Add player to team
+      team.players.push({
+        user: req.user.id,
+        role: invite.role || 'player',
+        joinedAt: new Date()
+      });
+    }
+
+    await team.save();
+    res.status(200).json({ success: true, data: team });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update player role
+// @route   PUT /api/teams/:id/players/:userId/role
+// @access  Private
+export const updatePlayerRole = async (req, res, next) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ success: false, error: 'Team not found' });
+
+    if (team.captain.toString() !== req.user.id) {
+      return res.status(401).json({ success: false, error: 'Not authorized' });
+    }
+
+    const { role } = req.body;
+    const playerIndex = team.players.findIndex(p => p.user.toString() === req.params.userId);
+
+    if (playerIndex === -1) {
+      return res.status(404).json({ success: false, error: 'Player not found in team' });
+    }
+
+    if (req.params.userId === team.captain.toString()) {
+      return res.status(400).json({ success: false, error: 'Cannot change captain role this way' });
+    }
+
+    team.players[playerIndex].role = role;
+    await team.save();
+
+    res.status(200).json({ success: true, data: team });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get user's pending invitations
+// @route   GET /api/teams/invitations
+// @access  Private
+export const getMyInvitations = async (req, res, next) => {
+  try {
+    const teams = await Team.find({
+      'invitations': {
+        $elemMatch: { user: req.user.id, status: 'pending' }
+      }
+    }).select('name sport logo invitations');
+    
+    // map to extract the specific invitations
+    const invitations = [];
+    teams.forEach(team => {
+      team.invitations.forEach(inv => {
+        if (inv.user.toString() === req.user.id && inv.status === 'pending') {
+          invitations.push({
+            _id: inv._id,
+            team: { _id: team._id, name: team.name, logo: team.logo, sport: team.sport },
+            role: inv.role,
+            invitedAt: inv.invitedAt
+          });
+        }
+      });
+    });
+
+    res.status(200).json({ success: true, data: invitations });
   } catch (error) {
     next(error);
   }

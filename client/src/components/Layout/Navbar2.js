@@ -14,7 +14,8 @@ import {
   FaGamepad,
   FaCog,
   FaSignOutAlt,
-  FaNewspaper
+  FaNewspaper,
+  FaComments
 } from 'react-icons/fa';
 
 const Navbar2 = () => {
@@ -42,11 +43,12 @@ const Navbar2 = () => {
   }, []);
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: FaHome, color: 'from-blue-500 to-blue-700' },
+    { name: 'Home', path: '/', icon: FaHome, color: 'from-blue-500 to-blue-700' },
     { name: 'Cricket', path: '/cricket', icon: FaGamepad, color: 'from-green-500 to-green-700' },
     { name: 'Tournaments', path: '/tournaments', icon: FaTrophy, color: 'from-yellow-500 to-yellow-700' },
     { name: 'Posts', path: '/posts', icon: FaNewspaper, color: 'from-purple-500 to-purple-700' },
     { name: 'Fitness', path: '/fitness', icon: FaDumbbell, color: 'from-orange-500 to-orange-700' },
+    { name: 'Chat', path: '/chat', icon: FaComments, color: 'from-pink-500 to-pink-700' },
   ];
 
   const isActivePath = (path) => location.pathname.startsWith(path);
@@ -93,7 +95,7 @@ const Navbar2 = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-12 md:h-20">
             
             {/* Futuristic Logo */}
             <Link to="/" className="flex items-center space-x-4 group">
@@ -375,7 +377,7 @@ const Navbar2 = () => {
       </nav>
 
       {/* Spacer */}
-      <div className="h-20" />
+      <div className="h-12 md:h-20" />
     </>
   );
 };

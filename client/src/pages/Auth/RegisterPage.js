@@ -2,8 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { register, clearError } from '../../redux/slices/authSlice';
-import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import { validatePassword } from '../../utils/helpers';
+import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import { 
+  User, 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  AlertCircle,
+  ArrowRight,
+  ShieldCheck,
+  CheckCircle2,
+  Circle
+} from 'lucide-react';
 
 const RegisterPage = () => {
   const dispatch = useDispatch();
@@ -12,7 +24,7 @@ const RegisterPage = () => {
   const { loading, error } = useSelector((state) => state.auth);
   
   const [formData, setFormData] = useState({
-  fullName: '',
+    fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -28,12 +40,10 @@ const RegisterPage = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value,
     });
-
     if (name === 'password') {
       setPasswordValidation(validatePassword(value));
     }
@@ -41,15 +51,9 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('[RegisterPage] Form submit:', formData);
-    if (formData.password !== formData.confirmPassword) {
-      console.warn('[RegisterPage] Passwords do not match');
-      return;
-    }
-    if (!formData.acceptTerms) {
-      console.warn('[RegisterPage] Terms not accepted');
-      return;
-    }
+    if (formData.password !== formData.confirmPassword) return;
+    if (!formData.acceptTerms) return;
+    
     try {
       const result = await dispatch(register({
         fullName: formData.fullName,
@@ -57,346 +61,239 @@ const RegisterPage = () => {
         password: formData.password,
         role: formData.role,
       }));
-      console.log('[RegisterPage] Register result:', result);
       if (register.fulfilled.match(result)) {
         navigate('/dashboard');
       }
-    } catch (err) {
-      console.error('[RegisterPage] Register error:', err);
-    }
+    } catch (err) {}
   };
 
+  const isPasswordValid = passwordValidation.isValid;
+  const passwordsMatch = formData.password === formData.confirmPassword;
+  const canSubmit = !loading && formData.acceptTerms && isPasswordValid && passwordsMatch && formData.fullName && formData.email;
+
+  const renderValidationItem = (isValid, text) => (
+    <div className={`flex items-center gap-1.5 text-xs font-medium ${isValid ? 'text-green-600' : 'text-slate-400'}`}>
+      {isValid ? <CheckCircle2 size={14} className="text-green-500" /> : <Circle size={14} />}
+      {text}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="max-w-5xl w-full flex rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
-        {/* Left side - Image and brand */}
-        <div className="hidden md:block w-1/2 bg-gradient-to-br from-primary-600 to-purple-700 p-12 relative">
-          <div className="absolute inset-0 opacity-20">
-            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-              <defs>
-                <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <circle cx="10" cy="10" r="2" fill="white" />
-                </pattern>
-              </defs>
-              <path d="M0,0 L100,0 L100,100 L0,100 Z" fill="url(#dots)" />
-            </svg>
-          </div>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden z-10 py-4 md:py-6 md:py-10">
+      {/* Background decoration */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400/20 rounded-full blur-[100px] animate-pulse-slow" />
+        <div className="absolute bottom-0 right-0 w-[30rem] h-[30rem] bg-purple-400/20 rounded-full blur-[100px] animate-pulse-slow" style={{animationDelay: '2s'}} />
+      </div>
+
+      <div className="w-full max-w-5xl flex flex-col md:flex-row rounded-[40px] glass-panel bg-white/40 overflow-hidden shadow-[0_20px_60px_rgb(0,0,255,0.05)]">
+        
+        {/* Left Side (Branding / Info) */}
+        <div className="hidden md:flex w-5/12 p-4 md:p-6 md:p-12 bg-gradient-to-br from-blue-600 to-purple-700 flex-col justify-between relative overflow-hidden text-white">
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800&q=80')] opacity-20 mix-blend-overlay bg-cover bg-center" />
+          <div className="absolute inset-0 bg-blue-900/40 mix-blend-multiply" />
           
-          <div className="relative z-10 h-full flex flex-col">
-            <Link to="/" className="flex items-center space-x-2 mb-12">
-              <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-                <span className="text-2xl font-bold gradient-text">SS</span>
+          <div className="relative z-10">
+            <Link to="/" className="inline-flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-xl font-extrabold tracking-tighter">S</span>
               </div>
-              <span className="text-3xl font-bold text-white">SportSphere</span>
+              <span className="text-2xl font-bold tracking-tight">SportSphere</span>
             </Link>
+          </div>
+
+          <div className="relative z-10 mt-4 md:mt-6 md:mt-10 md:mt-20 mb-auto">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold mb-4 md:mb-6 leading-tight">
+              Join the future of sports.
+            </h1>
+            <p className="text-blue-100 text-lg leading-relaxed max-w-sm mb-4 md:mb-8">
+              Create an account to get access to tournaments, teams, and connect with athletes across the globe.
+            </p>
             
-            <div className="flex-grow flex flex-col justify-center">
-              <h2 className="text-4xl font-bold text-white mb-6">Join the Community</h2>
-              <p className="text-white/80 text-lg mb-8">Create an account to get access to tournaments, teams, and connect with athletes across the globe.</p>
-              
-              <div className="space-y-4">
-                <div className="flex items-center text-white/80">
-                  <svg className="w-6 h-6 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Organize and join tournaments</span>
-                </div>
-                <div className="flex items-center text-white/80">
-                  <svg className="w-6 h-6 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Create and manage teams</span>
-                </div>
-                <div className="flex items-center text-white/80">
-                  <svg className="w-6 h-6 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Access exclusive sports content</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-auto">
-              <p className="text-white/80 text-sm">
-                Already have an account?{' '}
-                <Link to="/login" className="text-white font-medium hover:underline">
-                  Sign in here
-                </Link>
-              </p>
-            </div>
+            <ul className="space-y-4 font-medium text-blue-100">
+              <li className="flex items-center gap-3"><CheckCircle2 className="text-blue-300" /> Organize & join tournaments</li>
+              <li className="flex items-center gap-3"><CheckCircle2 className="text-blue-300" /> Create & manage teams</li>
+              <li className="flex items-center gap-3"><CheckCircle2 className="text-blue-300" /> Access exclusive content</li>
+            </ul>
+          </div>
+
+          <div className="relative z-10 flex items-center gap-2 text-sm text-blue-200 font-medium">
+            <ShieldCheck size={18} />
+            Secure registration
           </div>
         </div>
-        
-        {/* Right side - Registration form */}
-        <div className="w-full md:w-1/2 bg-white p-8 md:p-12 overflow-y-auto max-h-screen animate-slide-up">
-          <div className="md:hidden flex justify-center mb-8">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">SS</span>
-              </div>
-              <span className="text-2xl font-bold gradient-text">SportSphere</span>
-            </Link>
-          </div>
-          
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-6 md:hidden">
-            Join the Community
-          </h2>
-          
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">
-            Create your account
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Fill in your details to get started
-          </p>
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+        {/* Right Side (Form) */}
+        <div className="w-full md:w-7/12 p-4 md:p-8 md:p-14 flex flex-col justify-center bg-white/60 backdrop-blur-xl">
+          <div className="md:hidden flex items-center justify-center gap-2 mb-4 md:mb-8">
+            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-xl font-extrabold text-white tracking-tighter">S</span>
+            </div>
+            <span className="text-2xl font-bold text-slate-800 tracking-tight">SportSphere</span>
+          </div>
+
+          <div className="mb-4 md:mb-8 text-center md:text-left">
+            <h2 className="text-xl md:text-3xl font-extrabold text-slate-800 tracking-tight mb-2">Create Account</h2>
+            <p className="text-slate-500 font-medium">Fill in your details to get started</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-danger-50 border-l-4 border-danger-500 text-danger-700 p-4 rounded-md flex items-start">
-                <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <span>{error}</span>
+              <div className="p-4 rounded-2xl bg-red-50 border border-red-100 flex items-start gap-3">
+                <AlertCircle className="text-red-500 mt-0.5 shrink-0" size={18} />
+                <p className="text-sm font-medium text-red-700">{error}</p>
               </div>
             )}
 
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="fullName"
-                    name="fullName"
-                    type="text"
-                    required
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    className="input pl-10 py-3 border-gray-300 focus:ring-primary-500 focus:border-primary-500 block w-full rounded-lg"
-                    placeholder="Enter your full name"
-                  />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Full Name */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <User size={20} className="text-slate-400" />
                 </div>
+                <input
+                  name="fullName"
+                  type="text"
+                  required
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className="w-full pl-11 pr-4 py-3.5 bg-white/80 border border-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 rounded-2xl text-slate-700 font-medium placeholder-slate-400 transition-all outline-none"
+                  placeholder="Full Name"
+                />
               </div>
 
+              {/* Email */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Mail size={20} className="text-slate-400" />
+                </div>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full pl-11 pr-4 py-3.5 bg-white/80 border border-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 rounded-2xl text-slate-700 font-medium placeholder-slate-400 transition-all outline-none"
+                  placeholder="Email Address"
+                />
+              </div>
+            </div>
+
+            {/* Role Selection */}
+            <div>
+              <p className="text-sm font-semibold text-slate-700 mb-2">I am a:</p>
+              <div className="grid grid-cols-3 gap-3">
+                {['player', 'organizer', 'fan'].map(role => (
+                  <label key={role} className={`cursor-pointer text-center px-2 py-3 rounded-2xl border-2 transition-all font-semibold text-sm capitalize ${formData.role === role ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-white bg-white/60 text-slate-500 hover:border-blue-200'}`}>
+                    <input type="radio" name="role" value={role} checked={formData.role === role} onChange={handleChange} className="hidden" />
+                    {role}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Password */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email address
-                </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                    </svg>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Lock size={20} className="text-slate-400" />
                   </div>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="input pl-10 py-3 border-gray-300 focus:ring-primary-500 focus:border-primary-500 block w-full rounded-lg"
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                  I am a
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <select
-                    id="role"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    className="input pl-10 py-3 border-gray-300 focus:ring-primary-500 focus:border-primary-500 block w-full rounded-lg"
-                  >
-                    <option value="player">Player</option>
-                    <option value="organizer">Tournament Organizer</option>
-                    <option value="fan">Sports Fan</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="input pl-10 py-3 pr-10 border-gray-300 focus:ring-primary-500 focus:border-primary-500 block w-full rounded-lg"
-                    placeholder="Create a password"
+                    className="w-full pl-11 pr-12 py-3.5 bg-white/80 border border-white focus:border-blue-400 focus:ring-4 focus:ring-blue-100 rounded-2xl text-slate-700 font-medium placeholder-slate-400 transition-all outline-none"
+                    placeholder="Create Password"
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-blue-500 transition-colors"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    <svg
-                      className="h-5 w-5 text-gray-400 hover:text-gray-700 transition duration-150"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      {showPassword ? (
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
-                        />
-                      ) : (
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      )}
-                    </svg>
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-                
-                {formData.password && (
-                  <div className="mt-3 text-xs grid grid-cols-2 gap-2">
-                    <div className={`flex items-center ${passwordValidation.criteria?.minLength ? 'text-success-600' : 'text-gray-500'}`}>
-                      <span className={`w-5 h-5 mr-1 rounded-full flex items-center justify-center ${passwordValidation.criteria?.minLength ? 'bg-success-100' : 'bg-gray-100'}`}>
-                        {passwordValidation.criteria?.minLength ? '✓' : '○'}
-                      </span>
-                      At least 8 characters
-                    </div>
-                    <div className={`flex items-center ${passwordValidation.criteria?.hasUpperCase ? 'text-success-600' : 'text-gray-500'}`}>
-                      <span className={`w-5 h-5 mr-1 rounded-full flex items-center justify-center ${passwordValidation.criteria?.hasUpperCase ? 'bg-success-100' : 'bg-gray-100'}`}>
-                        {passwordValidation.criteria?.hasUpperCase ? '✓' : '○'}
-                      </span>
-                      One uppercase letter
-                    </div>
-                    <div className={`flex items-center ${passwordValidation.criteria?.hasLowerCase ? 'text-success-600' : 'text-gray-500'}`}>
-                      <span className={`w-5 h-5 mr-1 rounded-full flex items-center justify-center ${passwordValidation.criteria?.hasLowerCase ? 'bg-success-100' : 'bg-gray-100'}`}>
-                        {passwordValidation.criteria?.hasLowerCase ? '✓' : '○'}
-                      </span>
-                      One lowercase letter
-                    </div>
-                    <div className={`flex items-center ${passwordValidation.criteria?.hasNumbers ? 'text-success-600' : 'text-gray-500'}`}>
-                      <span className={`w-5 h-5 mr-1 rounded-full flex items-center justify-center ${passwordValidation.criteria?.hasNumbers ? 'bg-success-100' : 'bg-gray-100'}`}>
-                        {passwordValidation.criteria?.hasNumbers ? '✓' : '○'}
-                      </span>
-                      One number
-                    </div>
-                    <div className={`flex items-center ${passwordValidation.criteria?.hasSpecialChar ? 'text-success-600' : 'text-gray-500'}`}>
-                      <span className={`w-5 h-5 mr-1 rounded-full flex items-center justify-center ${passwordValidation.criteria?.hasSpecialChar ? 'bg-success-100' : 'bg-gray-100'}`}>
-                        {passwordValidation.criteria?.hasSpecialChar ? '✓' : '○'}
-                      </span>
-                      One special character
-                    </div>
-                  </div>
-                )}
               </div>
 
+              {/* Confirm Password */}
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm Password
-                </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Lock size={20} className="text-slate-400" />
                   </div>
                   <input
-                    id="confirmPassword"
                     name="confirmPassword"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`input pl-10 py-3 border-gray-300 focus:ring-primary-500 focus:border-primary-500 block w-full rounded-lg ${
-                      formData.confirmPassword && formData.password !== formData.confirmPassword ? 'border-danger-500' : ''
-                    }`}
-                    placeholder="Confirm your password"
+                    className={`w-full pl-11 pr-4 py-3.5 bg-white/80 border ${formData.confirmPassword && !passwordsMatch ? 'border-red-400 focus:ring-red-100' : 'border-white focus:border-blue-400 focus:ring-blue-100'} focus:ring-4 rounded-2xl text-slate-700 font-medium placeholder-slate-400 transition-all outline-none`}
+                    placeholder="Confirm Password"
                   />
                 </div>
-                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                  <p className="mt-1 text-sm text-danger-600 flex items-center">
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    Passwords do not match
-                  </p>
-                )}
               </div>
             </div>
 
-            <div className="flex items-center">
-              <input
-                id="acceptTerms"
-                name="acceptTerms"
-                type="checkbox"
-                checked={formData.acceptTerms}
-                onChange={handleChange}
-                className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-700">
-                I agree to the{' '}
-                <Link to="/terms" className="text-primary-600 hover:text-primary-500">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link to="/privacy" className="text-primary-600 hover:text-primary-500">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
+            {/* Password Validation Display */}
+            {formData.password && (
+              <div className="bg-white/40 p-3 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-y-2">
+                {renderValidationItem(passwordValidation.criteria?.minLength, "6+ characters")}
+                {renderValidationItem(passwordValidation.criteria?.hasUpperCase, "1 uppercase")}
+                {renderValidationItem(passwordValidation.criteria?.hasNumbers, "1 number")}
+              </div>
+            )}
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading || !formData.acceptTerms || !passwordValidation.isValid || formData.password !== formData.confirmPassword}
-                className="btn-primary w-full py-3 rounded-lg text-white font-medium transition-all duration-300 transform hover:scale-[1.02] focus:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-md hover:shadow-lg"
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center">
-                    <LoadingSpinner size="sm" color="white" />
-                    <span className="ml-2">Creating account...</span>
-                  </div>
-                ) : 'Create Account'}
-              </button>
-            </div>
-            
-            <div className="mt-6 text-center text-sm text-gray-600 md:hidden">
-              Already have an account?{' '}
-              <Link
-                to="/login"
-                className="font-medium text-primary-600 hover:text-primary-500"
-              >
-                Sign in here
-              </Link>
-            </div>
+            {formData.confirmPassword && !passwordsMatch && (
+              <p className="text-sm font-medium text-red-500 flex items-center gap-1">
+                <AlertCircle size={14} /> Passwords do not match
+              </p>
+            )}
+
+            {/* Terms Checkbox */}
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <div className="relative flex items-center justify-center mt-0.5">
+                <input
+                  type="checkbox"
+                  name="acceptTerms"
+                  checked={formData.acceptTerms}
+                  onChange={handleChange}
+                  className="peer appearance-none w-5 h-5 border-2 border-slate-300 rounded-md checked:bg-blue-500 checked:border-blue-500 transition-colors"
+                />
+                <CheckCircle2 size={14} className="text-white absolute opacity-0 peer-checked:opacity-100 pointer-events-none" />
+              </div>
+              <span className="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">
+                I agree to the <Link to="/terms" className="text-blue-600 hover:underline">Terms of Service</Link> and <Link to="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>
+              </span>
+            </label>
+
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="w-full py-4 rounded-2xl bg-blue-500 text-white font-bold shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:bg-blue-600 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 mt-2"
+            >
+              {loading ? (
+                <>
+                  <LoadingSpinner size="sm" color="white" />
+                  <span>Creating Account...</span>
+                </>
+              ) : (
+                <>
+                  Create Account <ArrowRight size={20} />
+                </>
+              )}
+            </button>
           </form>
+
+          <div className="mt-4 md:mt-8 text-center text-slate-500 font-medium">
+            Already have an account?{' '}
+            <Link to="/login" className="text-blue-600 font-bold hover:text-blue-700 hover:underline transition-all">
+              Sign in here
+            </Link>
+          </div>
+          
         </div>
       </div>
     </div>

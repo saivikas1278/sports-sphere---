@@ -31,7 +31,7 @@ const VolleyballScorecard = ({ scorecard, match, onUpdate, canEdit }) => {
                 max="3"
                 value={scores.team1Sets}
                 onChange={(e) => handleScoreChange('team1Sets', parseInt(e.target.value))}
-                className="w-20 text-center border rounded p-1"
+                className="w-12 md:w-20 text-center border rounded p-1"
               />
             ) : (
               <div className="text-2xl font-bold">{scores.team1Sets}</div>
@@ -45,7 +45,7 @@ const VolleyballScorecard = ({ scorecard, match, onUpdate, canEdit }) => {
                 min="0"
                 value={scores.currentSetTeam1}
                 onChange={(e) => handleScoreChange('currentSetTeam1', parseInt(e.target.value))}
-                className="w-20 text-center border rounded p-1"
+                className="w-12 md:w-20 text-center border rounded p-1"
               />
             ) : (
               <div className="text-2xl font-bold">{scores.currentSetTeam1}</div>
@@ -66,7 +66,7 @@ const VolleyballScorecard = ({ scorecard, match, onUpdate, canEdit }) => {
                 max="3"
                 value={scores.team2Sets}
                 onChange={(e) => handleScoreChange('team2Sets', parseInt(e.target.value))}
-                className="w-20 text-center border rounded p-1"
+                className="w-12 md:w-20 text-center border rounded p-1"
               />
             ) : (
               <div className="text-2xl font-bold">{scores.team2Sets}</div>
@@ -80,7 +80,7 @@ const VolleyballScorecard = ({ scorecard, match, onUpdate, canEdit }) => {
                 min="0"
                 value={scores.currentSetTeam2}
                 onChange={(e) => handleScoreChange('currentSetTeam2', parseInt(e.target.value))}
-                className="w-20 text-center border rounded p-1"
+                className="w-12 md:w-20 text-center border rounded p-1"
               />
             ) : (
               <div className="text-2xl font-bold">{scores.currentSetTeam2}</div>

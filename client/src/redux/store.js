@@ -9,6 +9,7 @@ import uiSlice from './slices/uiSlice';
 import postSlice from './slices/postSlice';
 import notificationSlice from './slices/notificationSlice';
 import profileSlice from './slices/profileSlice';
+import chatReducer from './slices/chatSlice';
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +23,7 @@ export const store = configureStore({
     posts: postSlice,
     notifications: notificationSlice,
     profile: profileSlice,
+    chat: chatReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

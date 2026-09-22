@@ -87,7 +87,7 @@ const teamService = {
 
   // Update member role
   updateMemberRole: async (teamId, memberId, role) => {
-    const response = await api.put(`/teams/${teamId}/members/${memberId}/role`, { role });
+    const response = await api.put(`/teams/${teamId}/players/${memberId}/role`, { role });
     return response;
   },
 
@@ -171,8 +171,8 @@ const teamService = {
   },
 
   // Invite player to team
-  invitePlayer: async (teamId, email, message = '') => {
-    const response = await api.post(`/teams/${teamId}/invite`, { email, message });
+  invitePlayer: async (teamId, userId, role = 'player') => {
+    const response = await api.post(`/teams/${teamId}/invitations`, { userId, role });
     return response;
   },
 
@@ -183,14 +183,14 @@ const teamService = {
   },
 
   // Accept team invitation
-  acceptInvitation: async (invitationId) => {
-    const response = await api.post(`/teams/invitations/${invitationId}/accept`);
+  acceptInvitation: async (teamId, invitationId) => {
+    const response = await api.put(`/teams/${teamId}/invitations/${invitationId}`, { status: 'accepted' });
     return response;
   },
 
   // Reject team invitation
-  rejectInvitation: async (invitationId) => {
-    const response = await api.post(`/teams/invitations/${invitationId}/reject`);
+  rejectInvitation: async (teamId, invitationId) => {
+    const response = await api.put(`/teams/${teamId}/invitations/${invitationId}`, { status: 'declined' });
     return response;
   },
 

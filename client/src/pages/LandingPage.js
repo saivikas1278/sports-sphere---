@@ -1,76 +1,61 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import AnimatedCard from '../components/UI/AnimatedCard';
-import ScrollReveal from '../components/UI/ScrollReveal';
-import GradientButton from '../components/UI/GradientButton';
-import MagneticButton from '../components/UI/MagneticButton';
-import ParticleBackground from '../components/UI/ParticleBackground';
+import { 
+  Trophy, 
+  Video, 
+  Activity, 
+  Users, 
+  Clock, 
+  Dumbbell,
+  ArrowRight,
+  Sparkles,
+  MapPin,
+  Search
+} from 'lucide-react';
 import FloatingElements from '../components/UI/FloatingElements';
 
 const LandingPage = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
-
-  const features = [
-    {
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      ),
-      title: 'Tournament Management',
-      description: 'Create and manage tournaments with automatic bracket generation, live scoring, and real-time updates.',
-    },
-    {
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        </svg>
-      ),
-      title: 'Video Sharing',
-      description: 'Share highlight reels, training videos, and match recordings with the community.',
-    },
-    {
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      ),
-      title: 'Fitness Tracking',
-      description: 'Track workouts, monitor progress, and access personalized fitness content and nutrition guides.',
-    },
-    {
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-      title: 'Team Management',
-      description: 'Build and manage teams, invite players, and coordinate team activities and schedules.',
-    },
-    {
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-9 0a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V6a2 2 0 00-2-2" />
-        </svg>
-      ),
-      title: 'Live Scoring',
-      description: 'Real-time match scoring with live updates, statistics tracking, and instant notifications.',
-    },
-    {
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-        </svg>
-      ),
-      title: 'Multi-Sport Support',
-      description: 'Support for multiple sports including football, basketball, tennis, volleyball, and more.',
-    },
-  ];
+  const navigate = useNavigate();
 
   const sports = [
     'Football', 'Basketball', 'Tennis', 'Volleyball', 'Baseball', 'Soccer',
     'Cricket', 'Badminton', 'Table Tennis', 'Hockey', 'Rugby', 'Wrestling'
+  ];
+
+
+  const features = [
+    {
+      icon: Trophy,
+      title: 'Tournament Management',
+      description: 'Create and manage tournaments with automatic bracket generation, live scoring, and real-time updates.',
+    },
+    {
+      icon: Video,
+      title: 'Video Sharing',
+      description: 'Share highlight reels, training videos, and match recordings with the community.',
+    },
+    {
+      icon: Activity,
+      title: 'Fitness Tracking',
+      description: 'Track workouts, monitor progress, and access personalized fitness content and nutrition guides.',
+    },
+    {
+      icon: Users,
+      title: 'Team Management',
+      description: 'Build and manage teams, invite players, and coordinate team activities and schedules.',
+    },
+    {
+      icon: Clock,
+      title: 'Live Scoring',
+      description: 'Real-time match scoring with live updates, statistics tracking, and instant notifications.',
+    },
+    {
+      icon: Dumbbell,
+      title: 'Multi-Sport Support',
+      description: 'Support for multiple sports including football, basketball, tennis, volleyball, and more.',
+    },
   ];
 
   const stats = [
@@ -82,248 +67,155 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      <FloatingElements />
       
-        <ParticleBackground particleCount={30} color="#3b82f6" />
-        <FloatingElements />
-        
-        
-          <section className="relative bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white min-h-screen flex items-center">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
-            <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/10 rounded-full animate-float"></div>
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full animate-float" style={{animationDelay: '2s'}}></div>
-          <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-pink-500/10 rounded-full animate-float" style={{animationDelay: '4s'}}></div>
-            </div>
-            
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 z-10">
-          <div className="text-center">
-            <ScrollReveal direction="up" distance={100} duration={800}>
-          <h1 className="text-6xl md:text-8xl font-bold mb-6 animate-gradient bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            SportSphere
-          </h1>
-            </ScrollReveal>
-            
-            <ScrollReveal direction="up" distance={50} duration={800} delay={200}>
-          <p className="text-2xl md:text-3xl mb-8 text-gray-200 font-light">
-            Unified Multi-Sport Scoring & Fitness Hub
-          </p>
-            </ScrollReveal>
-            
-            <ScrollReveal direction="up" distance={30} duration={800} delay={400}>
-          <p className="text-lg mb-12 text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            Connect, compete, and excel in your favorite sports with our comprehensive platform 
-            for tournament management, live scoring, video sharing, and fitness tracking.
-          </p>
-            </ScrollReveal>
-            
-            <ScrollReveal direction="up" distance={20} duration={800} delay={600}>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            {isAuthenticated ? (
-              <Link to="/dashboard">
-            <GradientButton 
-              size="lg"
-              className="transform hover:scale-110 transition-all duration-300"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-              Go to Dashboard
-            </GradientButton>
-              </Link>
-            ) : (
-              <>
-            <Link to="/register">
-              <GradientButton 
-                size="lg"
-                className="transform hover:scale-110 transition-all duration-300"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Get Started Free
-              </GradientButton>
-            </Link>
-            
-            <Link to="/tournaments">
-              <MagneticButton 
-                className="px-8 py-4 border-2 border-white/30 text-white hover:border-white/60 rounded-xl backdrop-blur-sm bg-white/10 font-semibold transition-all duration-300"
-              >
-                Explore Tournaments
-              </MagneticButton>
-            </Link>
-              </>
-            )}
-          </div>
-            </ScrollReveal>
-          </div>
-            </div>
-          </section>
 
-          {/* Stats Section */}
-      <section className="py-20 bg-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <ScrollReveal direction="up" duration={600}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, index) => (
-                <AnimatedCard 
-                  key={index} 
-                  className="text-center p-8 bg-white/80 backdrop-blur-sm border border-gray-200/50"
-                  tiltEffect={true}
-                  glowEffect={true}
-                >
-                  <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
-                    {stat.number}
-                  </div>
-                  <div className="text-gray-600 font-medium">{stat.label}</div>
-                </AnimatedCard>
-              ))}
+      {/* Trending Near You Section */}
+      <section className="py-4 md:py-6 md:py-12 relative z-10 pt-4 md:pt-8 md:pt-16 md:pt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-end mb-4 md:mb-8">
+            <div>
+              <h2 className="text-xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                Trending Tournaments
+              </h2>
+              <p className="text-slate-500 font-medium mt-1">Popular events happening right now</p>
             </div>
-          </ScrollReveal>
+            <Link to="/tournaments" className="hidden sm:flex text-blue-500 font-bold items-center gap-1 hover:text-blue-700 transition-colors">
+              View All <ArrowRight size={16} />
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+            {[
+              { title: "Summer Classic 5v5", sport: "Basketball", location: "Downtown Arena, NY", date: "Aug 15 - Aug 20", fee: "$50/team", prize: "$1000", image: "https://images.unsplash.com/photo-1542652694-40abf526446e?w=800&q=80", color: "from-orange-500 to-red-500" },
+              { title: "City League Championship", sport: "Soccer", location: "Central Park Fields, NY", date: "Sep 01 - Sep 10", fee: "$100/team", prize: "$2500", image: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80", color: "from-green-500 to-emerald-500" },
+              { title: "Pro-Am Open", sport: "Tennis", location: "Memorial Courts, NY", date: "Aug 25 - Aug 28", fee: "$30/player", prize: "$500", image: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&q=80", color: "from-blue-500 to-indigo-500" },
+            ].map((t, idx) => (
+              <Link key={idx} to={`/tournaments?location=NY&sport=${t.sport}`} className="group relative rounded-2xl md:rounded-3xl overflow-hidden glass-panel border border-white shadow-sm hover:shadow-xl transition-all hover:-translate-y-1 block">
+                <div className="h-48 w-full relative">
+                  <img src={t.image} alt={t.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
+                  <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-extrabold text-white bg-gradient-to-r ${t.color}`}>
+                    {t.sport}
+                  </div>
+                </div>
+                <div className="p-4 md:p-6 bg-white/60">
+                  <h3 className="text-xl font-bold text-slate-800 mb-2 truncate group-hover:text-blue-600 transition-colors">{t.title}</h3>
+                  <div className="flex items-center text-slate-500 text-sm font-medium mb-3">
+                    <MapPin size={14} className="mr-1 text-slate-400" />
+                    <span className="truncate">{t.location}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm pt-4 border-t border-slate-200/60">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Date</span>
+                      <span className="font-semibold text-slate-700">{t.date}</span>
+                    </div>
+                    <div className="flex flex-col text-right">
+                      <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Prize</span>
+                      <span className="font-extrabold text-blue-600">{t.prize}</span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-4 md:mt-6 sm:hidden text-center">
+            <Link to="/tournaments" className="inline-flex text-blue-500 font-bold items-center gap-1 hover:text-blue-700 transition-colors">
+              View All Tournaments <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-24 bg-gradient-to-br from-slate-50 to-blue-50 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-10 right-10 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full animate-pulse-slow"></div>
-          <div className="absolute bottom-10 left-10 w-80 h-80 bg-gradient-to-br from-purple-400/10 to-pink-400/10 rounded-full animate-pulse-slow" style={{animationDelay: '1s'}}></div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <ScrollReveal direction="up" duration={800}>
-            <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Everything You Need for 
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Sports Management</span>
-              </h2>
-              <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-                From organizing tournaments to tracking fitness goals, SportSphere provides 
-                all the tools you need in one unified platform.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <ScrollReveal 
-                key={index} 
-                direction="up" 
-                duration={600} 
-                delay={index * 100}
-              >
-                <AnimatedCard
-                  className="h-full bg-white/70 backdrop-blur-sm border border-gray-200/50 p-8 group"
-                  tiltEffect={true}
-                  glowEffect={true}
-                  hoverScale={true}
-                  borderGlow={true}
-                >
-                  <div className="text-blue-600 mb-6 transform group-hover:scale-110 transition-transform duration-300">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
-                      {React.cloneElement(feature.icon, { className: "w-8 h-8 text-white" })}
-                    </div>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors duration-300">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
-                </AnimatedCard>
-              </ScrollReveal>
+      {/* Stats Section */}
+      <section className="py-4 md:py-6 md:py-12 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+            {stats.map((stat, index) => (
+              <div key={index} className="p-4 md:p-8 rounded-[32px] glass-panel text-center hover:-translate-y-1 transition-transform">
+                <div className="text-2xl md:text-4xl md:text-5xl font-extrabold text-blue-600 mb-2">
+                  {stat.number}
+                </div>
+                <div className="text-slate-500 font-medium">{stat.label}</div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Sports Section */}
-      <section className="py-24 bg-white relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-50/50 via-transparent to-purple-50/50"></div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <ScrollReveal direction="up" duration={800}>
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Multi-Sport <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Support</span>
-              </h2>
-              <p className="text-xl text-gray-600">
-                Comprehensive support for all your favorite sports
-              </p>
-            </div>
-          </ScrollReveal>
+      {/* Features Section */}
+      <section className="py-4 md:py-6 md:py-12 md:py-24 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-4 md:mb-8 md:mb-16">
+            <h2 className="text-xl md:text-3xl md:text-4xl font-bold text-slate-800 mb-4 tracking-tight">
+              Everything You Need
+            </h2>
+            <p className="text-lg text-slate-500 max-w-2xl mx-auto">
+              From organizing tournaments to tracking fitness goals, we provide all the tools in one unified, beautiful platform.
+            </p>
+          </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <div key={index} className="p-4 md:p-8 rounded-[32px] glass-panel flex flex-col items-start gap-4 hover:-translate-y-2 hover:shadow-[0_12px_40px_rgb(0,0,255,0.08)] transition-all">
+                  <div className="w-14 h-14 rounded-2xl bg-white/70 shadow-sm flex items-center justify-center text-blue-500 mb-2">
+                    <Icon size={28} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800">
+                    {feature.title}
+                  </h3>
+                  <p className="text-slate-500 leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Sports Categories */}
+      <section className="py-4 md:py-6 md:py-10 md:py-20 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-xl md:text-3xl font-bold text-slate-800 mb-4 md:mb-6 md:mb-12 tracking-tight">Supported Sports</h2>
+          <div className="flex flex-wrap justify-center gap-4">
             {sports.map((sport, index) => (
-              <ScrollReveal 
-                key={index} 
-                direction="up" 
-                duration={400} 
-                delay={index * 50}
-              >
-                <AnimatedCard 
-                  className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 text-center group border border-gray-200/50"
-                  hoverScale={true}
-                  glowEffect={true}
-                >
-                  <span className="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors duration-300">
-                    {sport}
-                  </span>
-                  <div className="mt-2 w-8 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mx-auto transform scale-0 group-hover:scale-100 transition-transform duration-300"></div>
-                </AnimatedCard>
-              </ScrollReveal>
+              <div key={index} className="px-4 md:px-6 py-3 rounded-full glass-pill text-slate-700 font-medium hover:bg-white/80 hover:text-blue-600 transition-colors cursor-default">
+                {sport}
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10"></div>
-          <div className="absolute top-20 right-20 w-72 h-72 bg-blue-500/10 rounded-full animate-pulse-slow"></div>
-          <div className="absolute bottom-20 left-20 w-96 h-96 bg-purple-500/10 rounded-full animate-pulse-slow" style={{animationDelay: '1s'}}></div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <ScrollReveal direction="up" duration={800}>
-            <h2 className="text-4xl md:text-5xl font-bold mb-8">
-              Ready to Get <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Started?</span>
+      <section className="py-32 relative z-10 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="p-4 md:p-6 md:p-12 md:p-16 rounded-[40px] glass-panel bg-white/40">
+            <h2 className="text-2xl md:text-4xl md:text-5xl font-extrabold mb-4 md:mb-6 text-slate-800 tracking-tight">
+              Ready to Play?
             </h2>
-          </ScrollReveal>
-          
-          <ScrollReveal direction="up" duration={800} delay={200}>
-            <p className="text-xl mb-12 text-gray-200 max-w-3xl mx-auto leading-relaxed">
-              Join thousands of athletes, teams, and organizers who are already using 
-              SportSphere to manage their sports activities.
+            <p className="text-xl text-slate-500 mb-4 md:mb-6 md:mb-10 max-w-2xl mx-auto">
+              Join thousands of athletes, teams, and organizers who are already using SportSphere to manage their sports activities.
             </p>
-          </ScrollReveal>
-          
-          {!isAuthenticated && (
-            <ScrollReveal direction="up" duration={800} delay={400}>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-                <GradientButton 
-                  as={Link}
-                  to="/register"
-                  size="lg"
-                  className="transform hover:scale-110 transition-all duration-300"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  Sign Up Free
-                </GradientButton>
-                
-                <MagneticButton 
-                  as={Link}
-                  to="/contact"
-                  className="px-8 py-4 border-2 border-white/30 text-white hover:border-white/60 rounded-xl backdrop-blur-sm bg-white/10 font-semibold transition-all duration-300"
-                >
-                  Contact Sales
-                </MagneticButton>
+            
+            {!isAuthenticated && (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/register">
+                  <button className="w-full sm:w-auto px-4 md:px-8 py-4 rounded-full bg-blue-500 text-white font-bold shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:scale-105 transition-transform">
+                    Sign Up Free
+                  </button>
+                </Link>
+                <Link to="/contact">
+                  <button className="w-full sm:w-auto px-4 md:px-8 py-4 rounded-full glass-panel text-slate-700 font-semibold hover:bg-white/80 hover:scale-105 transition-transform">
+                    Contact Us
+                  </button>
+                </Link>
               </div>
-            </ScrollReveal>
-          )}
+            )}
+          </div>
         </div>
       </section>
     </div>

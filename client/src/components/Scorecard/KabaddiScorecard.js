@@ -44,7 +44,7 @@ const KabaddiScorecard = ({ scorecard, match, onUpdate, canEdit }) => {
                 min="0"
                 value={scores.team1RaidPoints}
                 onChange={(e) => handleScoreChange('team1RaidPoints', parseInt(e.target.value))}
-                className="w-20 text-center border rounded p-1"
+                className="w-12 md:w-20 text-center border rounded p-1"
               />
             ) : (
               <div className="text-xl">{scores.team1RaidPoints}</div>
@@ -58,7 +58,7 @@ const KabaddiScorecard = ({ scorecard, match, onUpdate, canEdit }) => {
                 min="0"
                 value={scores.team1TacklePoints}
                 onChange={(e) => handleScoreChange('team1TacklePoints', parseInt(e.target.value))}
-                className="w-20 text-center border rounded p-1"
+                className="w-12 md:w-20 text-center border rounded p-1"
               />
             ) : (
               <div className="text-xl">{scores.team1TacklePoints}</div>
@@ -82,7 +82,7 @@ const KabaddiScorecard = ({ scorecard, match, onUpdate, canEdit }) => {
                 min="0"
                 value={scores.team2RaidPoints}
                 onChange={(e) => handleScoreChange('team2RaidPoints', parseInt(e.target.value))}
-                className="w-20 text-center border rounded p-1"
+                className="w-12 md:w-20 text-center border rounded p-1"
               />
             ) : (
               <div className="text-xl">{scores.team2RaidPoints}</div>
@@ -96,7 +96,7 @@ const KabaddiScorecard = ({ scorecard, match, onUpdate, canEdit }) => {
                 min="0"
                 value={scores.team2TacklePoints}
                 onChange={(e) => handleScoreChange('team2TacklePoints', parseInt(e.target.value))}
-                className="w-20 text-center border rounded p-1"
+                className="w-12 md:w-20 text-center border rounded p-1"
               />
             ) : (
               <div className="text-xl">{scores.team2TacklePoints}</div>

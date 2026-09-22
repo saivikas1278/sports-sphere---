@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../services/api';
 
 // Set auth token for all requests
 export const setAuthToken = (token) => {

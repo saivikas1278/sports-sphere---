@@ -247,9 +247,81 @@ export const generateBracket = createAsyncThunk(
   }
 );
 
+export const fetchTournamentSchedule = createAsyncThunk(
+  'tournaments/fetchTournamentSchedule',
+  async (tournamentId, { rejectWithValue }) => {
+    try {
+      const response = await tournamentService.getTournamentSchedule(tournamentId);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch schedule');
+    }
+  }
+);
+
+export const fetchTournamentBracket = createAsyncThunk(
+  'tournaments/fetchTournamentBracket',
+  async (tournamentId, { rejectWithValue }) => {
+    try {
+      const response = await tournamentService.getBracket(tournamentId);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch bracket');
+    }
+  }
+);
+
+export const fetchTournamentStandings = createAsyncThunk(
+  'tournaments/fetchTournamentStandings',
+  async (tournamentId, { rejectWithValue }) => {
+    try {
+      const response = await tournamentService.getStandings(tournamentId);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch standings');
+    }
+  }
+);
+
+export const approveRegistration = createAsyncThunk(
+  'tournaments/approveRegistration',
+  async ({ tournamentId, teamId }, { rejectWithValue }) => {
+    try {
+      const response = await tournamentService.approveTeamRegistration(tournamentId, teamId);
+      return { teamId, response };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to approve registration');
+    }
+  }
+);
+
+export const rejectRegistration = createAsyncThunk(
+  'tournaments/rejectRegistration',
+  async ({ tournamentId, teamId }, { rejectWithValue }) => {
+    try {
+      const response = await tournamentService.rejectTeamRegistration(tournamentId, teamId);
+      return { teamId, response };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to reject registration');
+    }
+  }
+);
+
 const initialState = {
   tournaments: [],
   currentTournament: null,
+  schedule: null,
+  bracket: null,
+  standings: null,
   loading: false,
   error: null,
   pagination: {
@@ -436,6 +508,41 @@ const tournamentSlice = createSlice({
       .addCase(generateBracket.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Approve Registration
+      .addCase(approveRegistration.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(approveRegistration.fulfilled, (state, action) => {
+        state.loading = false;
+        // Mock update: we assume backend removes it from pending or changes status
+      })
+      .addCase(approveRegistration.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Reject Registration
+      .addCase(rejectRegistration.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(rejectRegistration.fulfilled, (state, action) => {
+        state.loading = false;
+      })
+      .addCase(rejectRegistration.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch Schedule
+      .addCase(fetchTournamentSchedule.fulfilled, (state, action) => {
+        state.schedule = action.payload.schedule || action.payload;
+      })
+      // Fetch Bracket
+      .addCase(fetchTournamentBracket.fulfilled, (state, action) => {
+        state.bracket = action.payload.bracket || action.payload;
+      })
+      // Fetch Standings
+      .addCase(fetchTournamentStandings.fulfilled, (state, action) => {
+        state.standings = action.payload;
       });
   },
 });
@@ -447,4 +554,5 @@ export const {
   updateTournamentStatus,
   addTournamentMatch 
 } = tournamentSlice.actions;
+
 export default tournamentSlice.reducer;

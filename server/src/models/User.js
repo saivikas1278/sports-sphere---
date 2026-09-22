@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['player', 'organizer', 'fan'],
+    enum: ['player', 'organizer', 'fan', 'admin'],
     default: 'player'
   },
   bio: {
@@ -99,6 +99,7 @@ const userSchema = new mongoose.Schema({
   }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
   lastActive: {
     type: Date,
     default: Date.now

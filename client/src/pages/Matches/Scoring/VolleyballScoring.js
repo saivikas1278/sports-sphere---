@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaUndo, FaRedo, FaPlus, FaMinus, FaFlag, FaCheck, FaExchangeAlt } from 'react-icons/fa';
+import { FaUndo, FaPlus, FaMinus, FaFlag, FaCheck, FaExchangeAlt } from 'react-icons/fa';
 import LoadingSpinner from '../../../components/UI/LoadingSpinner';
+import { showToast } from '../../../utils/toast';
+import matchService from '../../../services/matchService';
 
 const VolleyballScoring = () => {
   const { matchId } = useParams();
@@ -56,19 +58,20 @@ const VolleyballScoring = () => {
   useEffect(() => {
     const fetchMatchData = async () => {
       try {
-        // In a real app, fetch from API
-        // const response = await fetch(`/api/matches/${matchId}`);
-        // const data = await response.json();
-        
-        // For demo purposes, get from localStorage
-        const matchData = JSON.parse(localStorage.getItem(`match_${matchId}`) || null);
+        const response = await matchService.getMatch(matchId);
+        let matchData = null;
+        if (response.success && response.data) {
+          matchData = response.data;
+        } else if (response.data && response.data.data) {
+          matchData = response.data.data;
+        }
         
         if (!matchData) {
           throw new Error('Match not found');
         }
         
         // Check if we already have a summary
-        const summaryData = JSON.parse(localStorage.getItem(`match_${matchId}_summary`) || null);
+        const summaryData = matchData.scorecard;
         
         // Initialize match state
         setMatch({
@@ -127,21 +130,23 @@ const VolleyballScoring = () => {
     fetchMatchData();
   }, [matchId, navigate]);
   
-  // Save score to localStorage
   useEffect(() => {
     if (match && !loading) {
-      // Get or initialize summary data
-      const existingSummary = JSON.parse(localStorage.getItem(`match_${matchId}_summary`) || '{}');
-      
-      // Update with current volleyball score
       const updatedSummary = {
-        ...existingSummary,
         lastUpdated: new Date().toISOString(),
         volleyball: score
       };
-      
-      // Save to localStorage
-      localStorage.setItem(`match_${matchId}_summary`, JSON.stringify(updatedSummary));
+
+      const saveToApi = async () => {
+        try {
+          await matchService.updateMatch(matchId, {
+            scorecard: updatedSummary
+          });
+        } catch (error) {
+          console.error('Failed to save score update', error);
+        }
+      };
+      saveToApi();
     }
   }, [score, match, matchId, loading]);
   
@@ -414,7 +419,7 @@ const VolleyballScoring = () => {
   };
   
   // Complete match and save results
-  const completeMatch = () => {
+  const completeMatch = async () => {
     // Create final match summary
     const team1Sets = score.sets.filter(set => set === true).length;
     const team2Sets = score.sets.filter(set => set === false).length;
@@ -463,8 +468,15 @@ const VolleyballScoring = () => {
       }
     };
     
-    // Save to localStorage (in a real app, this would be an API call)
-    localStorage.setItem(`match_${match.id}_completed`, JSON.stringify(completedMatch));
+    try {
+      await matchService.updateMatch(match.id, {
+        status: 'completed',
+        result: { summary: resultSummary },
+        scorecard: completedMatch
+      });
+    } catch (err) {
+      console.error('Failed to save match summary', err);
+    }
     
     // Navigate to match details page
     navigate(`/matches/${match.id}`);
@@ -480,11 +492,11 @@ const VolleyballScoring = () => {
   
   if (!match) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8 text-center">
-          <div className="text-5xl text-gray-400 mx-auto mb-4">🏐</div>
+      <div className="container mx-auto px-4 py-4 md:py-8">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 md:p-8 text-center">
+          <div className="text-xl md:text-3xl md:text-5xl text-gray-400 mx-auto mb-4">🏐</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Match Not Found</h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-4 md:mb-6">
             The match you're looking for doesn't exist or has been removed.
           </p>
           <button
@@ -499,10 +511,10 @@ const VolleyballScoring = () => {
   }
   
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-4 md:py-8">
       <div className="max-w-4xl mx-auto">
         {/* Match Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -550,7 +562,7 @@ const VolleyballScoring = () => {
           
           {/* Game Status */}
           {score.timeoutInProgress && (
-            <div className="bg-yellow-50 p-4 rounded-lg mb-6 text-center">
+            <div className="bg-yellow-50 p-4 rounded-lg mb-4 md:mb-6 text-center">
               <div className="text-lg font-medium text-yellow-800">
                 Timeout in Progress
               </div>
@@ -561,7 +573,7 @@ const VolleyballScoring = () => {
           )}
           
           {score.gameOver ? (
-            <div className="bg-blue-50 p-4 rounded-lg mb-6 text-center">
+            <div className="bg-blue-50 p-4 rounded-lg mb-4 md:mb-6 text-center">
               <div className="text-lg font-medium text-blue-800">
                 Match Complete
               </div>
@@ -591,7 +603,7 @@ const VolleyballScoring = () => {
         </div>
         
         {/* Scoreboard */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 md:mb-6">
           <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
             <div className="text-xl font-bold">
               Set {score.currentSet}
@@ -602,9 +614,9 @@ const VolleyballScoring = () => {
             </div>
           </div>
           
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             {/* Sets Display */}
-            <div className="grid grid-cols-6 mb-6 border-b pb-4">
+            <div className="grid grid-cols-6 mb-4 md:mb-6 border-b pb-4">
               <div className="col-span-1"></div>
               <div className="text-center font-semibold">Set 1</div>
               <div className="text-center font-semibold">Set 2</div>
@@ -660,7 +672,7 @@ const VolleyballScoring = () => {
             </div>
             
             {/* Timeouts Display */}
-            <div className="mt-6 grid grid-cols-2 gap-4">
+            <div className="mt-4 md:mt-6 grid grid-cols-2 gap-4">
               <div className="border rounded-lg p-3">
                 <div className="text-sm font-medium text-center mb-2">Timeouts - {match.teams.team1.name}</div>
                 <div className="flex justify-center">
@@ -697,10 +709,10 @@ const VolleyballScoring = () => {
         
         {/* Score Control Buttons */}
         {!score.gameOver && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
             <h2 className="text-xl font-semibold mb-4 text-center">Score Controls</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
               {/* Team 1 Controls */}
               <div className="border rounded-lg p-4">
                 <div className="text-center mb-3 font-medium">{match.teams.team1.name}</div>
@@ -834,12 +846,12 @@ const VolleyballScoring = () => {
         
         {/* Match Complete Section */}
         {score.gameOver && (
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <div className="text-4xl mb-4">🎉</div>
+          <div className="bg-white rounded-lg shadow-md p-4 md:p-6 text-center">
+            <div className="text-2xl md:text-4xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold text-gray-900 mb-3">
               Match Complete
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4 md:mb-6">
               {score.winner === 'team1' ? match.teams.team1.name : match.teams.team2.name} won the match
               {' '}{score.sets.filter(set => set === (score.winner === 'team1')).length}-{score.sets.filter(set => set === (score.winner !== 'team1')).length}
             </p>
