@@ -12,6 +12,10 @@ const teamSchema = new mongoose.Schema({
     trim: true,
     maxlength: [10, 'Short name cannot exceed 10 characters']
   },
+  contactPhone: {
+    type: String,
+    trim: true
+  },
   logo: {
     type: String,
     default: null

@@ -35,7 +35,8 @@ const TournamentDetails = () => {
   const [teamData, setTeamData] = useState({
     name: '',
     shortName: '',
-    description: ''
+    description: '',
+    contactPhone: ''
   });
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
@@ -122,6 +123,7 @@ const TournamentDetails = () => {
           name: teamData.name.trim(),
           shortName: teamData.shortName.trim() || teamData.name.trim().substring(0, 10),
           description: teamData.description.trim(),
+          contactPhone: teamData.contactPhone.trim(),
           players: players
         }
       }));
@@ -129,7 +131,7 @@ const TournamentDetails = () => {
       if (registerForTournament.fulfilled.match(result)) {
         showToast('Registration successful! You have joined the tournament.', 'success');
         setShowRegistrationForm(false);
-        setTeamData({ name: '', shortName: '', description: '' });
+        setTeamData({ name: '', shortName: '', description: '', contactPhone: '' });
         setSelectedPlayers([]);
         setUserSearchQuery('');
         setAvailableUsers([]);
@@ -620,6 +622,20 @@ const TournamentDetailsContent = ({
                       placeholder="Brief description"
                       rows="3"
                       className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-slate-700 resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Captain's Phone Number <span className="text-slate-400 font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="tel"
+                      name="contactPhone"
+                      value={teamData.contactPhone}
+                      onChange={handleTeamDataChange}
+                      placeholder="Enter contact number"
+                      className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-slate-700"
                     />
                   </div>
 

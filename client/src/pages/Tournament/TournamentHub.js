@@ -30,6 +30,7 @@ const TournamentHub = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { tournaments, loading } = useSelector((state) => state.tournaments);
+  const { user } = useSelector((state) => state.auth);
   
   // Basic Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,7 +42,7 @@ const TournamentHub = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [locationFilter, setLocationFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
-  const [feeFilter, setFeeFilter] = useState(1000); // default max fee
+  const [feeFilter, setFeeFilter] = useState(10000); // default max fee
   const [prizeFilter, setPrizeFilter] = useState(0); // default min prize
 
   const locationObj = useLocation();
@@ -140,18 +141,16 @@ const TournamentHub = () => {
       <div className="max-w-6xl mx-auto">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-6 mb-4 md:mb-8 p-4 md:p-8 rounded-[40px] glass-panel bg-white/40">
-          <div>
-            <h1 className="text-2xl md:text-4xl font-extrabold text-slate-800 mb-2 tracking-tight">Tournament Hub</h1>
-            <p className="text-lg text-slate-500 font-medium">Browse, discover, and join tournaments.</p>
-          </div>
-          <Link
-            to="/tournaments/create"
-            className="flex items-center gap-2 px-4 md:px-6 py-3 bg-blue-500 text-white font-bold rounded-full shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:bg-blue-600 hover:scale-105 transition-all"
-          >
-            <Plus size={20} />
-            Organize Tournament
-          </Link>
+        <div className="flex justify-end mb-4 md:mb-8">
+          {user && user.role === 'organizer' && (
+            <Link
+              to="/tournaments/create"
+              className="flex items-center gap-2 px-4 md:px-6 py-3 bg-blue-500 text-white font-bold rounded-full shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:bg-blue-600 hover:scale-105 transition-all"
+            >
+              <Plus size={20} />
+              Organize Tournament
+            </Link>
+          )}
         </div>
         
         {/* Filters Section */}
@@ -163,7 +162,7 @@ const TournamentHub = () => {
           />
           
           <div className="flex flex-col md:flex-row gap-4 px-2">
-            <div className="flex-1 relative">
+            <div className="flex-1 relative flex items-center">
               <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                 <Search size={18} className="text-slate-400" />
               </div>
@@ -172,11 +171,18 @@ const TournamentHub = () => {
                 placeholder="Search by tournament name, location, or organizer..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-full text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-sm transition-all"
+                className="w-full pl-12 pr-12 py-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-full text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-sm transition-all"
               />
+              <button 
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`absolute right-2 p-2 rounded-full transition-colors ${showAdvancedFilters ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                title="Advanced Filters"
+              >
+                <Filter size={18} />
+              </button>
             </div>
             
-            <div className="flex gap-2 bg-white/60 p-1 rounded-full border border-white/40 shadow-sm">
+            <div className="flex gap-2 bg-white/60 p-1 rounded-full border border-white/40 shadow-sm self-start md:self-auto">
               <button 
                 onClick={() => setViewMode('list')}
                 className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${viewMode === 'list' ? 'bg-blue-500 text-white shadow-sm' : 'text-slate-600 hover:bg-white/50'}`}
@@ -190,16 +196,6 @@ const TournamentHub = () => {
                 <MapPin size={16} /> Map
               </button>
             </div>
-
-            <button
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`flex items-center justify-center gap-2 px-4 md:px-6 py-3 rounded-full font-bold transition-all shadow-sm ${
-                showAdvancedFilters ? 'bg-blue-500 text-white shadow-[0_4px_14px_0_rgb(59,130,246,0.39)]' : 'bg-white/60 text-slate-700 hover:bg-white/90 border border-white/40'
-              }`}
-            >
-              <Filter size={18} />
-              Filters
-            </button>
           </div>
 
           {/* Advanced Filters Panel */}
@@ -244,15 +240,15 @@ const TournamentHub = () => {
                 <input
                   type="range"
                   min="0"
-                  max="1000"
-                  step="10"
+                  max="10000"
+                  step="100"
                   value={feeFilter}
                   onChange={(e) => setFeeFilter(Number(e.target.value))}
                   className="w-full accent-blue-500 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer mt-3"
                 />
                 <div className="flex justify-between text-xs text-slate-400 font-medium">
                   <span>Free</span>
-                  <span>$1000+</span>
+                  <span>$10,000+</span>
                 </div>
               </div>
 

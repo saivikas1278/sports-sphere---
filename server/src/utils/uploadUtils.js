@@ -15,14 +15,9 @@ export const uploadToCloudinary = async (filePath, options = {}) => {
       throw new Error(`File not found: ${filePath}`);
     }
 
-    // Get a synchronized timestamp
+    // Get a synchronized timestamp from the real internet time
     const currentTimestamp = await getCloudinaryTimestamp();
-    
-    // Validate the timestamp
-    if (!isValidTimestamp(currentTimestamp)) {
-      console.warn('[uploadToCloudinary] Generated timestamp may be invalid, proceeding anyway');
-    }
-    
+
     // Default options with synchronized timestamp
     const defaultOptions = {
       timestamp: currentTimestamp,
@@ -36,11 +31,7 @@ export const uploadToCloudinary = async (filePath, options = {}) => {
       ...options
     };
 
-    console.log('[uploadToCloudinary] Uploading with options:', {
-      ...uploadOptions,
-      timestamp: uploadOptions.timestamp,
-      timestampDate: new Date(uploadOptions.timestamp * 1000).toISOString()
-    });
+    console.log('[uploadToCloudinary] Uploading with options:', uploadOptions);
 
     // Perform upload with retry logic
     let retryCount = 0;
@@ -48,10 +39,8 @@ export const uploadToCloudinary = async (filePath, options = {}) => {
 
     while (retryCount < maxRetries) {
       try {
-        // Update timestamp for each retry to ensure it's fresh
         if (retryCount > 0) {
           uploadOptions.timestamp = await getCloudinaryTimestamp();
-          console.log(`[uploadToCloudinary] Retry ${retryCount} with fresh timestamp:`, uploadOptions.timestamp);
         }
         
         const result = await cloudinary.uploader.upload(filePath, uploadOptions);

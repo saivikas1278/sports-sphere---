@@ -3,6 +3,7 @@ import Match from '../models/Match.js';
 import Tournament from '../models/Tournament.js';
 import Team from '../models/Team.js';
 import Scorecard from '../models/Scorecard.js';
+import User from '../models/User.js';
 import { emitScoreUpdate, emitMatchEvent } from '../utils/socketHandlers.js';
 
 // @desc    Get all matches
@@ -483,6 +484,57 @@ export const startMatch = async (req, res, next) => {
   }
 };
 
+// @desc    Update player statistics for a match
+// @route   PATCH /api/matches/:id/player-stats
+// @access  Private (Organizer/Team members)
+export const updateMatchPlayerStats = async (req, res, next) => {
+  try {
+    const { playerStats } = req.body;
+
+    const match = await Match.findById(req.params.id)
+      .populate('tournament')
+      .populate('homeTeam')
+      .populate('awayTeam');
+
+    if (!match) {
+      return res.status(404).json({
+        success: false,
+        error: 'Match not found'
+      });
+    }
+
+    // Check authorization - tournament organizer or team members
+    const isOrganizer = match.tournament.organizer.toString() === req.user.id;
+    const isTeamMember = match.homeTeam.players.some(p => p.user?.toString() === req.user.id) ||
+                        match.awayTeam.players.some(p => p.user?.toString() === req.user.id);
+
+    if (!isOrganizer && !isTeamMember) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authorized to update player stats for this match'
+      });
+    }
+
+    if (match.status === 'scheduled') {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot update player stats for a scheduled match'
+      });
+    }
+
+    match.playerStats = playerStats;
+    await match.save();
+
+    res.status(200).json({
+      success: true,
+      data: match.playerStats,
+      message: 'Player stats updated successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    End match
 // @route   PUT /api/matches/:id/end
 // @access  Private (Organizer only)
@@ -529,6 +581,30 @@ export const endMatch = async (req, res, next) => {
 
     await match.homeTeam.updateStats(homeResult);
     await match.awayTeam.updateStats(awayResult);
+
+    // Update individual user stats
+    const allPlayers = [
+      ...match.homeTeam.players,
+      ...match.awayTeam.players
+    ];
+
+    for (const player of allPlayers) {
+      if (player.user) {
+        const user = await User.findById(player.user);
+        if (user) {
+          user.stats.matchesPlayed = (user.stats.matchesPlayed || 0) + 1;
+          
+          const isHomeTeam = match.homeTeam.players.some(p => p.user?.toString() === player.user.toString());
+          const isAwayTeam = match.awayTeam.players.some(p => p.user?.toString() === player.user.toString());
+          
+          if ((isHomeTeam && homeResult.result === 'win') || 
+              (isAwayTeam && awayResult.result === 'win')) {
+            user.stats.matchesWon = (user.stats.matchesWon || 0) + 1;
+          }
+          await user.save({ validateBeforeSave: false });
+        }
+      }
+    }
 
     // Emit match status change via socket
     const io = req.app.get('io');
@@ -678,6 +754,30 @@ export const updateMatchResult = async (req, res, next) => {
     }
     if (typeof match.awayTeam.updateStats === 'function') {
       await match.awayTeam.updateStats(awayResult);
+    }
+
+    // Update individual user stats
+    const allPlayers = [
+      ...match.homeTeam.players,
+      ...match.awayTeam.players
+    ];
+
+    for (const player of allPlayers) {
+      if (player.user) {
+        const user = await User.findById(player.user);
+        if (user) {
+          user.stats.matchesPlayed = (user.stats.matchesPlayed || 0) + 1;
+          
+          const isHomeTeam = match.homeTeam.players.some(p => p.user?.toString() === player.user.toString());
+          const isAwayTeam = match.awayTeam.players.some(p => p.user?.toString() === player.user.toString());
+          
+          if ((isHomeTeam && homeResult.result === 'win') || 
+              (isAwayTeam && awayResult.result === 'win')) {
+            user.stats.matchesWon = (user.stats.matchesWon || 0) + 1;
+          }
+          await user.save({ validateBeforeSave: false });
+        }
+      }
     }
 
     // Emit match completion via socket

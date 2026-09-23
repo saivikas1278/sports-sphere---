@@ -13,7 +13,8 @@ import {
   endMatch,
   getLiveMatches,
   getUpcomingMatches,
-  getMatchStats
+  getMatchStats,
+  updateMatchPlayerStats
 } from '../controllers/matches.js';
 import { protect, authorize, optional } from '../middleware/auth.js';
 
@@ -53,6 +54,7 @@ router.delete('/:id', protect, authorize('organizer'), deleteMatch);
 
 // Match management routes (accessible to organizers and team members)
 router.patch('/:id/score', protect, updateMatchScore);
+router.patch('/:id/player-stats', protect, updateMatchPlayerStats);
 router.patch('/:id/result', protect, updateMatchResult);
 router.post('/:id/events', protect, eventValidation, addMatchEvent);
 router.patch('/:id/start', protect, startMatch);

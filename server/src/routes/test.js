@@ -1,7 +1,7 @@
 import express from 'express';
 import { protect } from '../middleware/auth.js';
 import { uploadImage, uploadVideo } from '../utils/uploadUtils.js';
-import { getCurrentTimestamp, getCloudinaryTimestamp } from '../utils/timeSync.js';
+import { getCloudinaryTimestamp } from '../utils/timeSync.js';
 
 const router = express.Router();
 
@@ -45,7 +45,6 @@ router.get('/timestamp', async (req, res) => {
   try {
     const serverTime = new Date();
     const localTimestamp = Math.round(Date.now() / 1000);
-    const syncedTimestamp = await getCurrentTimestamp();
     const cloudinaryTimestamp = await getCloudinaryTimestamp();
     
     res.json({
@@ -53,13 +52,10 @@ router.get('/timestamp', async (req, res) => {
       data: {
         serverTime: serverTime.toISOString(),
         localTimestamp: localTimestamp,
-        syncedTimestamp: syncedTimestamp,
         cloudinaryTimestamp: cloudinaryTimestamp,
         timezoneOffset: serverTime.getTimezoneOffset(),
-        syncedTime: new Date(syncedTimestamp * 1000).toISOString(),
         cloudinaryTime: new Date(cloudinaryTimestamp * 1000).toISOString(),
         timeDifference: {
-          localVsSync: localTimestamp - syncedTimestamp,
           localVsCloudinary: localTimestamp - cloudinaryTimestamp
         }
       }
