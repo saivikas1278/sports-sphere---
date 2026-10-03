@@ -69,6 +69,8 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  verificationToken: String,
+  verificationExpire: Date,
   preferences: {
     notifications: {
       email: { type: Boolean, default: true },
@@ -100,6 +102,8 @@ const userSchema = new mongoose.Schema({
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+  likedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+  commentedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
   lastActive: {
     type: Date,
     default: Date.now

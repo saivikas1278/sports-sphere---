@@ -81,18 +81,15 @@ const TournamentDashboard = () => {
     user._id === currentTournament.organizer?._id
   );
 
-  // Mock data for UI fidelity if backend doesn't populate pending/approved teams fully yet
-  const mockPendingTeams = [
-    { _id: 't1', name: 'Thunderbolts', captain: 'John Doe', dateApplied: '2025-08-01' },
-    { _id: 't2', name: 'Neon Strikers', captain: 'Jane Smith', dateApplied: '2025-08-02' }
-  ];
+  const registeredTeams = currentTournament.registeredTeams || [];
   
-  const mockApprovedTeams = currentTournament.registeredTeams?.length > 0 
-    ? currentTournament.registeredTeams.map(t => (typeof t === 'object' ? t : { _id: t, name: 'Registered Team', captain: 'Unknown' }))
-    : [{ _id: 't3', name: 'Ice Breakers', captain: 'Mike Johnson', dateApplied: '2025-07-28' }];
-
-  const pendingList = currentTournament.pendingRegistrations || mockPendingTeams;
-  const approvedList = currentTournament.approvedRegistrations || mockApprovedTeams;
+  const pendingList = registeredTeams
+    .filter(rt => rt.status === 'pending' && rt.team)
+    .map(rt => (typeof rt.team === 'object' ? rt.team : { _id: rt.team, name: 'Loading...', captain: 'Loading...' }));
+    
+  const approvedList = registeredTeams
+    .filter(rt => rt.status === 'approved' && rt.team)
+    .map(rt => (typeof rt.team === 'object' ? rt.team : { _id: rt.team, name: 'Loading...', captain: 'Loading...' }));
 
   const totalCapacity = currentTournament.maxTeams || 16;
   const spotsTaken = approvedList.length;

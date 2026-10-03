@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Message from '../models/Message.js';
 
 export const setupSocketHandlers = (io) => {
   // Middleware for socket authentication
@@ -200,6 +201,40 @@ export const setupSocketHandlers = (io) => {
     socket.on('leave-chat', (conversationId) => {
       socket.leave(`chat-${conversationId}`);
       console.log(`💬 User ${socket.id} left chat ${conversationId}`);
+    });
+
+    // Handle Team/Tournament Chat Rooms
+    socket.on('join_room', ({ roomType, roomId }) => {
+      socket.join(`${roomType}_${roomId}`);
+      console.log(`💬 User ${socket.id} joined ${roomType} room ${roomId}`);
+    });
+
+    socket.on('leave_room', ({ roomType, roomId }) => {
+      socket.leave(`${roomType}_${roomId}`);
+      console.log(`💬 User ${socket.id} left ${roomType} room ${roomId}`);
+    });
+
+    socket.on('send_message', async (data) => {
+      try {
+        const { roomType, roomId, text, senderId, isAnnouncement } = data;
+        
+        // Save to MongoDB
+        const newMessage = await Message.create({
+          roomType,
+          roomId,
+          text,
+          sender: senderId,
+          isAnnouncement: isAnnouncement || false
+        });
+        
+        // Populate sender info
+        await newMessage.populate('sender', 'firstName lastName username profilePicture');
+        
+        // Emit to room
+        io.to(`${roomType}_${roomId}`).emit('new_message', newMessage);
+      } catch (err) {
+        console.error('Error saving room message:', err);
+      }
     });
 
     // Handle disconnection

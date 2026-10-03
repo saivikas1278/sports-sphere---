@@ -62,6 +62,18 @@ const tournamentService = {
     return response;
   },
 
+  // Update match score (live)
+  updateMatchScore: async (tournamentId, matchId, scoreData) => {
+    const response = await api.put(`/tournaments/${tournamentId}/matches/${matchId}/score`, scoreData);
+    return response;
+  },
+
+  // Update cricket ball (live)
+  updateCricketBall: async (tournamentId, matchId, ballData) => {
+    const response = await api.put(`/tournaments/${tournamentId}/matches/${matchId}/cricket-ball`, ballData);
+    return response;
+  },
+
   // Get tournament standings
   getStandings: async (tournamentId) => {
     const response = await api.get(`/tournaments/${tournamentId}/standings`);

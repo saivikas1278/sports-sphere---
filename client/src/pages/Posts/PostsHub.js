@@ -123,10 +123,10 @@ const PostsHub = () => {
           />
           
           <div className="flex flex-col md:flex-row gap-4 px-2">
-            <div className="flex-1 relative">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                <Search size={18} className="text-slate-400" />
-              </div>
+            <form onSubmit={(e) => e.preventDefault()} className="flex-1 relative">
+              <button type="submit" className="absolute inset-y-0 left-4 flex items-center text-slate-400 hover:text-blue-500 transition-colors" title="Search">
+                <Search size={18} />
+              </button>
               <input
                 type="text"
                 placeholder="Search posts, users, or tags..."
@@ -134,7 +134,7 @@ const PostsHub = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-white/60 backdrop-blur-md border border-white/40 rounded-full text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-sm transition-all"
               />
-            </div>
+            </form>
             
             <div className="flex flex-wrap gap-3">
               {/* Media Type */}

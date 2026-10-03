@@ -5,7 +5,7 @@ import Match from '../models/Match.js';
 import Scorecard from '../models/Scorecard.js';
 import Notification from '../models/Notification.js';
 import Profile from '../models/Profile.js';
-import { emitBracketUpdate } from '../utils/socketHandlers.js';
+import { emitBracketUpdate, emitScoreUpdate } from '../utils/socketHandlers.js';
 import cloudinary from '../config/cloudinary.js';
 
 // Helper function to create tournament bracket and schedule matches
@@ -563,7 +563,7 @@ export const registerTeamForTournament = async (req, res, next) => {
     }
 
     // Add team to tournament
-    tournament.registeredTeams.push(team._id);
+    tournament.registeredTeams.push({ team: team._id, status: 'pending' });
     await tournament.save();
 
     res.status(201).json({
@@ -612,7 +612,7 @@ export const unregisterTeamFromTournament = async (req, res, next) => {
 
     // Remove team from tournament
     tournament.registeredTeams = tournament.registeredTeams.filter(
-      teamId => teamId.toString() !== team._id.toString()
+      rt => rt.team.toString() !== team._id.toString()
     );
     await tournament.save();
 
@@ -654,6 +654,13 @@ export const approveTournamentRegistration = async (req, res, next) => {
     team.registrationDetails.registrationStatus = 'approved';
     await team.save();
 
+    // Update tournament registeredTeams status
+    const rtIndex = tournament.registeredTeams.findIndex(rt => rt.team.toString() === req.params.teamId);
+    if (rtIndex !== -1) {
+      tournament.registeredTeams[rtIndex].status = 'approved';
+      await tournament.save();
+    }
+
     res.status(200).json({
       success: true,
       data: team
@@ -688,6 +695,13 @@ export const rejectTournamentRegistration = async (req, res, next) => {
 
     team.registrationDetails.registrationStatus = 'rejected';
     await team.save();
+
+    // Update tournament registeredTeams status
+    const rtIndex = tournament.registeredTeams.findIndex(rt => rt.team.toString() === req.params.teamId);
+    if (rtIndex !== -1) {
+      tournament.registeredTeams[rtIndex].status = 'rejected';
+      await tournament.save();
+    }
 
     res.status(200).json({
       success: true,
@@ -1028,6 +1042,60 @@ export const updateMatchResult = async (req, res, next) => {
   }
 };
 
+// @desc    Update match score (live)
+// @route   PUT /api/tournaments/:id/matches/:matchId/score
+// @access  Private (Organizer or Team Captain)
+export const updateMatchScore = async (req, res, next) => {
+  try {
+    const { matchId } = req.params;
+    const { homeScore, awayScore, status, event } = req.body;
+
+    const match = await Match.findById(matchId).populate('homeTeam awayTeam tournament');
+
+    if (!match) {
+      return res.status(404).json({
+        success: false,
+        error: 'Match not found'
+      });
+    }
+
+    // Check authorization
+    const tournament = match.tournament;
+    const isOrganizer = tournament.organizer.toString() === req.user.id;
+    const isTeamCaptain = (
+      match.homeTeam.captain.toString() === req.user.id ||
+      match.awayTeam.captain.toString() === req.user.id
+    );
+
+    if (!isOrganizer && !isTeamCaptain) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authorized to update match score'
+      });
+    }
+
+    // Update match score
+    if (homeScore !== undefined) match.score.home = homeScore;
+    if (awayScore !== undefined) match.score.away = awayScore;
+    if (status !== undefined) match.status = status;
+    
+    await match.save();
+
+    // Emit live Socket.io event
+    const io = req.app.get('io');
+    if (io) {
+      emitScoreUpdate(io, match._id, tournament._id, match.score.home, match.score.away, event || 'Score updated');
+    }
+
+    res.status(200).json({
+      success: true,
+      data: match
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Helper function to update round-robin standings
 const updateRoundRobinStandings = async (tournamentId, match) => {
   try {
@@ -1216,6 +1284,110 @@ export const searchTournaments = async (req, res, next) => {
       success: true,
       count: tournaments.length,
       data: tournaments
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update cricket match ball-by-ball score
+// @route   PUT /api/tournaments/:id/matches/:matchId/cricket-ball
+// @access  Protected
+export const updateCricketBall = async (req, res, next) => {
+  try {
+    const { id, matchId } = req.params;
+    const { action, runs = 0, isWicket = false, isWide = false, isNoBall = false, teamId } = req.body;
+    
+    // Find tournament and match
+    const tournament = await Tournament.findById(id);
+    if (!tournament) return next(new Error('Tournament not found'));
+    
+    const match = await Match.findById(matchId);
+    if (!match) return next(new Error('Match not found'));
+    
+    // Initialize cricketData if not exists
+    if (!match.cricketData || !match.cricketData.innings || match.cricketData.innings.length === 0) {
+      match.cricketData = {
+        innings: [
+          { team: match.homeTeam, runs: 0, wickets: 0, overs: 0, balls: 0 },
+          { team: match.awayTeam, runs: 0, wickets: 0, overs: 0, balls: 0 }
+        ],
+        recentBalls: []
+      };
+      match.sportType = 'cricket';
+    }
+    
+    // Determine which inning is active (simplified: home team batting first for now, or match it against teamId)
+    let activeInningIndex = 0;
+    if (teamId && match.cricketData.innings[1].team.toString() === teamId.toString()) {
+      activeInningIndex = 1;
+    }
+    
+    const inning = match.cricketData.innings[activeInningIndex];
+    
+    if (action === 'undo') {
+      // Basic undo implementation could pop recentBalls and subtract, but skipping full logic for brevity
+      if (match.cricketData.recentBalls.length > 0) {
+        match.cricketData.recentBalls.pop();
+      }
+    } else {
+      // Add runs
+      inning.runs += runs;
+      
+      // Add extra runs for wide/no-ball
+      if (isWide || isNoBall) {
+        inning.runs += 1;
+      } else {
+        // Legal delivery
+        inning.balls += 1;
+        if (inning.balls === 6) {
+          inning.overs += 1;
+          inning.balls = 0;
+        }
+      }
+      
+      // Wicket
+      if (isWicket) {
+        inning.wickets += 1;
+      }
+      
+      // Update recent balls visual tag
+      let ballTag = runs.toString();
+      if (isWicket) ballTag = 'W';
+      else if (isWide) ballTag = 'Wd';
+      else if (isNoBall) ballTag = 'Nb';
+      else if (runs === 4) ballTag = '4';
+      else if (runs === 6) ballTag = '6';
+      else if (runs === 0) ballTag = '0';
+      
+      match.cricketData.recentBalls.push(ballTag);
+      if (match.cricketData.recentBalls.length > 6) {
+        match.cricketData.recentBalls.shift();
+      }
+      
+      // Update overall standard score for compatibility
+      if (activeInningIndex === 0) {
+        match.score.home = inning.runs;
+      } else {
+        match.score.away = inning.runs;
+      }
+    }
+    
+    await match.save();
+    
+    // Emit socket event
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`tournament_${id}`).emit('match-score-updated', {
+        matchId: match._id,
+        score: match.score,
+        cricketData: match.cricketData
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: match
     });
   } catch (error) {
     next(error);

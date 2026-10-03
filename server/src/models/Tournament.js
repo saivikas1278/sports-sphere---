@@ -123,8 +123,9 @@ const tournamentSchema = new mongoose.Schema({
     default: null
   },
   registeredTeams: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Team'
+    team: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', required: true },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    registeredAt: { type: Date, default: Date.now }
   }],
   matches: [{
     type: mongoose.Schema.Types.ObjectId,

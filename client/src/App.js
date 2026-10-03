@@ -17,11 +17,13 @@ import FloatingBottomNavigation from './components/UI/FloatingBottomNavigation';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
+import VerifyEmail from './pages/Auth/VerifyEmail';
 import Dashboard from './pages/Dashboard/Dashboard';
 import TournamentHub from './pages/Tournament/TournamentHub';
 import TournamentDetails from './pages/Tournament/TournamentDetails';
 import TournamentCreatePage from './pages/Tournament/TournamentCreatePage';
 import LiveTournamentBoard from './pages/Tournament/LiveTournamentBoard';
+import ScoringPage from './pages/Tournament/ScoringPage';
 import TournamentDashboard from './pages/Tournament/TournamentDashboard';
 import ParticipantManagement from './pages/Tournament/ParticipantManagement';
 import CommunicationCenter from './pages/Tournament/CommunicationCenter';
@@ -153,6 +155,7 @@ function App() {
               path="/register" 
               element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" />} 
             />
+            <Route path="/verify-email/:token" element={<VerifyEmail />} />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -177,6 +180,7 @@ function App() {
             <Route path="/tournaments/:id/scoring" element={<ProtectedRoute><ScoreEntry /></ProtectedRoute>} />
             <Route path="/tournaments/:id/financials" element={<ProtectedRoute><FinancialReports /></ProtectedRoute>} />
             <Route path="/tournaments/:id/live" element={<LiveTournamentBoard />} />
+            <Route path="/tournaments/:id/matches/:matchId/score" element={<ScoringPage />} />
             
             {/* Team Routes */}
             <Route path="/teams" element={<TeamsPage />} />

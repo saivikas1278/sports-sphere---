@@ -8,6 +8,7 @@ import { GiCricketBat } from 'react-icons/gi';
 import LoadingSpinner from '../../../components/UI/LoadingSpinner';
 import { showToast } from '../../../utils/toast';
 import matchService from '../../../services/matchService';
+import socket from '../../../services/socket';
 
 const CricketScoring = () => {
   const { matchId } = useParams();
@@ -248,6 +249,18 @@ const CricketScoring = () => {
     
     // Check if match is won
     checkMatchWon();
+
+    // Emit live update
+    if (socket && match) {
+      const updatedScore = runs + runsScored;
+      socket.emit('score-update', {
+        matchId,
+        tournamentId: match.tournament,
+        homeScore: currentInnings === 1 ? (battingTeam.id === match.team1.id ? updatedScore : 0) : (battingTeam.id === match.team1.id ? updatedScore : target - 1),
+        awayScore: currentInnings === 1 ? (battingTeam.id === match.team2.id ? updatedScore : 0) : (battingTeam.id === match.team2.id ? updatedScore : target - 1),
+        event: `${runsScored} runs`
+      });
+    }
   };
   
   // Handle extras
@@ -298,6 +311,18 @@ const CricketScoring = () => {
     
     // Check if match is won
     checkMatchWon();
+
+    // Emit live update
+    if (socket && match) {
+      const updatedScore = runs + runs;
+      socket.emit('score-update', {
+        matchId,
+        tournamentId: match.tournament,
+        homeScore: currentInnings === 1 ? (battingTeam.id === match.team1.id ? updatedScore : 0) : (battingTeam.id === match.team1.id ? updatedScore : target - 1),
+        awayScore: currentInnings === 1 ? (battingTeam.id === match.team2.id ? updatedScore : 0) : (battingTeam.id === match.team2.id ? updatedScore : target - 1),
+        event: `${extraType.toUpperCase()} - ${runs} runs`
+      });
+    }
   };
   
   // Handle wicket
@@ -369,6 +394,15 @@ const CricketScoring = () => {
     
     // Check if match is won
     checkMatchWon();
+
+    // Emit live update
+    if (socket && match) {
+      socket.emit('match-event', {
+        matchId,
+        tournamentId: match.tournament,
+        event: `WICKET! ${type}`
+      });
+    }
   };
   
   // Add event to history

@@ -8,6 +8,7 @@ import {
 import teamService from '../../services/teamService';
 import { showToast } from '../../utils/toast';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import ChatRoom from '../../components/Chat/ChatRoom';
 
 const TeamDetails = () => {
   const { id } = useParams();
@@ -296,6 +297,15 @@ const TeamDetails = () => {
                 {activeTab === 'requests' && <span className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-t-full" />}
               </button>
             )}
+            {isMember && (
+              <button 
+                onClick={() => setActiveTab('chat')}
+                className={`pb-4 text-lg font-bold transition-all relative ${activeTab === 'chat' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                Team Chat
+                {activeTab === 'chat' && <span className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-t-full" />}
+              </button>
+            )}
           </div>
 
           {/* Tab Content */}
@@ -432,6 +442,17 @@ const TeamDetails = () => {
                     <p className="text-slate-500 font-medium">When users request to join, they will appear here.</p>
                   </div>
                 )}
+              </div>
+            )}
+            
+            {activeTab === 'chat' && isMember && (
+              <div className="h-[600px] -mx-4 -mb-4 md:-mx-8 md:-mb-8">
+                <ChatRoom 
+                  roomType="team" 
+                  roomId={team._id} 
+                  roomName={team.name}
+                  isModerator={isCaptain}
+                />
               </div>
             )}
           </div>

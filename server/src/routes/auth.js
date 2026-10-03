@@ -12,7 +12,8 @@ import {
   forgotPassword,
   resetPassword,
   googleAuth,
-  googleAuthCallback
+  googleAuthCallback,
+  verifyEmail
 } from '../controllers/auth.js';
 import { protect } from '../middleware/auth.js';
 
@@ -65,6 +66,7 @@ router.post('/login', loginValidation, login);
 router.post('/logout', logout);
 router.post('/forgot-password', forgotPassword);
 router.put('/reset-password/:resetToken', resetPassword);
+router.get('/verify-email/:token', verifyEmail);
 
 import passport from 'passport';
 

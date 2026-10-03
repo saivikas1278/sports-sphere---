@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { FaHeart, FaRegHeart, FaComment, FaShare, FaBookmark, FaRegBookmark, FaEllipsisH, FaPlay, FaTrash, FaEdit, FaCopy, FaWhatsapp, FaFacebook, FaTwitter, FaLinkedin } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaComment, FaShare, FaBookmark, FaRegBookmark, FaEllipsisH, FaPlay, FaTrash, FaEdit, FaCopy, FaWhatsapp, FaFacebook, FaTwitter, FaLinkedin, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { getRelativeTime } from '../../utils/helpers';
 import { useTheme } from '../../context/ThemeContext';
@@ -22,6 +22,32 @@ const Post = ({ post }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const openLightbox = (index) => {
+    setSelectedImageIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
+
+  const nextImage = (e) => {
+    e.stopPropagation();
+    if (post && post.images) {
+      setSelectedImageIndex((prev) => (prev === post.images.length - 1 ? 0 : prev + 1));
+    }
+  };
+
+  const prevImage = (e) => {
+    e.stopPropagation();
+    if (post && post.images) {
+      setSelectedImageIndex((prev) => (prev === 0 ? post.images.length - 1 : prev - 1));
+    }
+  };
   const dropdownRef = useRef(null);
   const shareModalRef = useRef(null);
   
@@ -224,37 +250,48 @@ const Post = ({ post }) => {
     await handleNativeShare();
   };
 
+  const getMediaUrl = (urlStr) => {
+    if (!urlStr) return '';
+    if (urlStr.startsWith('/uploads/')) {
+      return `http://localhost:5000${urlStr}`;
+    }
+    return urlStr;
+  };
+
   const renderMedia = () => {
     if (hasImages && post.images.length > 0) {
       return (
         <div className="relative bg-black">
           {post.images.length === 1 ? (
             <img 
-              src={typeof post.images[0] === 'string' ? post.images[0] : post.images[0].url}
+              src={getMediaUrl(typeof post.images[0] === 'string' ? post.images[0] : post.images[0].url)}
               alt={typeof post.images[0] === 'string' ? post.title : (post.images[0].alt || post.title)}
               className="w-full object-contain cursor-pointer max-h-96"
               loading="lazy"
+              onClick={() => openLightbox(0)}
               onError={(e) => {
-                console.error('Image failed to load:', e.target.src);
                 e.target.src = '/placeholder-image.svg'; // Fallback image
               }}
             />
           ) : (
             <div className="grid grid-cols-2 gap-1">
               {post.images.slice(0, 4).map((image, index) => (
-                <div key={index} className="relative">
+                <div key={index} className="relative aspect-square">
                   <img 
-                    src={typeof image === 'string' ? image : image.url}
-                    alt={typeof image === 'string' ? `${post.title} ${index + 1}` : (image.alt || `${post.title} ${index + 1}`)}
-                    className="w-full h-48 object-cover cursor-pointer"
+                    src={getMediaUrl(typeof image === 'string' ? image : image.url)}
+                    alt={`Post attachment ${index + 1}`}
+                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => openLightbox(index)}
                     loading="lazy"
                     onError={(e) => {
-                      console.error('Image failed to load:', e.target.src);
                       e.target.src = '/placeholder-image.svg'; // Fallback image
                     }}
                   />
                   {index === 3 && post.images.length > 4 && (
-                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                    <div 
+                      className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center cursor-pointer hover:bg-opacity-70 transition-all"
+                      onClick={() => openLightbox(3)}
+                    >
                       <span className="text-white text-xl font-bold">
                         +{post.images.length - 4}
                       </span>
@@ -271,20 +308,28 @@ const Post = ({ post }) => {
     if (hasVideos && post.videos.length > 0) {
       return (
         <div className="relative bg-black">
-          <video 
-            src={typeof post.videos[0] === 'string' ? post.videos[0] : post.videos[0].url}
-            className="w-full aspect-video object-contain cursor-pointer"
-            preload="metadata"
-            autoPlay
-            muted
-            loop
-            onError={(e) => {
-              console.error('Video failed to load:', e.target.src);
-            }}
-          >
-            Your browser does not support the video tag.
-          </video>
-          {post.videos.length > 1 && (
+          {videoError ? (
+            <div className="w-full aspect-video flex flex-col items-center justify-center text-white p-4">
+              <FaPlay className="w-12 h-12 mb-2 opacity-50" />
+              <p className="font-semibold text-center">Video unavailable</p>
+              <p className="text-xs text-slate-400 mt-1">The source file may have been removed.</p>
+            </div>
+          ) : (
+            <video 
+              src={getMediaUrl(typeof post.videos[0] === 'string' ? post.videos[0] : post.videos[0].url)}
+              className="w-full aspect-video object-contain cursor-pointer"
+              preload="metadata"
+              autoPlay
+              muted
+              loop
+              onError={(e) => {
+                setVideoError(true);
+              }}
+            >
+              Your browser does not support the video tag.
+            </video>
+          )}
+          {!videoError && post.videos.length > 1 && (
             <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-sm">
               +{post.videos.length - 1} more
             </div>
@@ -785,6 +830,48 @@ const Post = ({ post }) => {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && hasImages && post.images.length > 0 && (
+        <div className="fixed inset-0 z-[100] bg-black bg-opacity-95 flex flex-col items-center justify-center backdrop-blur-sm" onClick={closeLightbox}>
+          <button 
+            className="absolute top-4 right-4 text-white hover:text-gray-300 p-3 text-xl bg-black bg-opacity-50 rounded-full transition-colors z-50"
+            onClick={closeLightbox}
+          >
+            <FaTimes />
+          </button>
+          
+          {post.images.length > 1 && (
+            <>
+              <button 
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 p-3 text-2xl bg-black bg-opacity-50 rounded-full transition-colors z-50"
+                onClick={prevImage}
+              >
+                <FaChevronLeft />
+              </button>
+              <button 
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 p-3 text-2xl bg-black bg-opacity-50 rounded-full transition-colors z-50"
+                onClick={nextImage}
+              >
+                <FaChevronRight />
+              </button>
+            </>
+          )}
+
+          <div className="relative w-full h-full max-w-5xl max-h-screen flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={getMediaUrl(typeof post.images[selectedImageIndex] === 'string' ? post.images[selectedImageIndex] : post.images[selectedImageIndex].url)}
+              alt="Expanded view"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl select-none"
+            />
+            {post.images.length > 1 && (
+              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-60 text-white px-4 py-2 rounded-full text-sm font-medium">
+                {selectedImageIndex + 1} / {post.images.length}
+              </div>
+            )}
           </div>
         </div>
       )}

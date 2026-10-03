@@ -39,6 +39,32 @@ const matchSchema = new mongoose.Schema({
     enum: ['scheduled', 'live', 'completed', 'cancelled', 'postponed'],
     default: 'scheduled'
   },
+  sportType: {
+    type: String,
+    enum: ['standard', 'cricket', 'points'],
+    default: 'standard'
+  },
+  cricketData: {
+    innings: [{
+      team: { type: mongoose.Schema.Types.ObjectId, ref: 'Team' },
+      runs: { type: Number, default: 0 },
+      wickets: { type: Number, default: 0 },
+      overs: { type: Number, default: 0 },
+      balls: { type: Number, default: 0 }
+    }],
+    currentBatting: { type: mongoose.Schema.Types.ObjectId, ref: 'Team' },
+    striker: String,
+    nonStriker: String,
+    currentBowler: String,
+    recentBalls: [String]
+  },
+  setsData: {
+    sets: [{ 
+      homeScore: { type: Number, default: 0 }, 
+      awayScore: { type: Number, default: 0 } 
+    }],
+    currentSet: { type: Number, default: 1 }
+  },
   score: {
     home: { type: Number, default: 0 },
     away: { type: Number, default: 0 }

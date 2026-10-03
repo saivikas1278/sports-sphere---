@@ -131,3 +131,29 @@ export const sendMessage = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
+// @desc    Get messages for a specific room (team/tournament)
+// @route   GET /api/chat/:roomType/:roomId
+// @access  Protected
+export const getRoomMessages = async (req, res) => {
+  try {
+    const { roomType, roomId } = req.params;
+
+    if (!['team', 'tournament'].includes(roomType)) {
+      return res.status(400).json({ success: false, message: 'Invalid room type' });
+    }
+
+    const messages = await Message.find({ roomType, roomId })
+      .populate('sender', 'firstName lastName avatar')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.status(200).json({
+      success: true,
+      data: messages.reverse()
+    });
+  } catch (error) {
+    console.error('Error fetching room messages:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};

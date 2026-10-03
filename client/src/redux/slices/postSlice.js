@@ -332,24 +332,53 @@ const postSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Like post
+      // Like post (Optimistic Update)
+      .addCase(likePost.pending, (state, action) => {
+        const id = action.meta.arg; // The post ID being liked
+        
+        // Optimistically update in posts array
+        const post = state.posts.find(p => p._id === id);
+        if (post) {
+          post.isLikedByUser = !post.isLikedByUser;
+          post.likesCount += post.isLikedByUser ? 1 : -1;
+        }
+        
+        // Optimistically update current post
+        if (state.currentPost && state.currentPost._id === id) {
+          state.currentPost.isLikedByUser = !state.currentPost.isLikedByUser;
+          state.currentPost.likesCount += state.currentPost.isLikedByUser ? 1 : -1;
+        }
+      })
       .addCase(likePost.fulfilled, (state, action) => {
+        // The server confirms the true state. Overwrite optimistic with truth if needed.
         const { id, isLiked, likesCount } = action.payload;
         
-        // Update in posts array
         const post = state.posts.find(p => p._id === id);
         if (post) {
           post.isLikedByUser = isLiked;
           post.likesCount = likesCount;
         }
         
-        // Update current post
         if (state.currentPost && state.currentPost._id === id) {
           state.currentPost.isLikedByUser = isLiked;
           state.currentPost.likesCount = likesCount;
         }
       })
       .addCase(likePost.rejected, (state, action) => {
+        const id = action.meta.arg;
+        
+        // Revert the optimistic update if failed
+        const post = state.posts.find(p => p._id === id);
+        if (post) {
+          post.isLikedByUser = !post.isLikedByUser;
+          post.likesCount += post.isLikedByUser ? 1 : -1;
+        }
+        
+        if (state.currentPost && state.currentPost._id === id) {
+          state.currentPost.isLikedByUser = !state.currentPost.isLikedByUser;
+          state.currentPost.likesCount += state.currentPost.isLikedByUser ? 1 : -1;
+        }
+        
         state.error = action.payload;
       })
       // Add comment

@@ -372,6 +372,13 @@ export const likePost = async (req, res) => {
     const isLiked = post.like(req.user.id);
     await post.save();
 
+    // Persist the liked post to the user's activity tracker
+    if (isLiked) {
+      await User.findByIdAndUpdate(req.user.id, { $addToSet: { likedPosts: post._id } });
+    } else {
+      await User.findByIdAndUpdate(req.user.id, { $pull: { likedPosts: post._id } });
+    }
+
     // Create notification for post author (if not self)
     if (isLiked && post.author.toString() !== req.user.id) {
       const io = req.app.get('io');
@@ -424,6 +431,9 @@ export const addComment = async (req, res) => {
 
     const comment = post.addComment(req.user.id, content.trim());
     await post.save();
+
+    // Persist the commented post to the user's activity tracker
+    await User.findByIdAndUpdate(req.user.id, { $addToSet: { commentedPosts: post._id } });
 
     await post.populate('comments.user', 'firstName lastName avatar');
 

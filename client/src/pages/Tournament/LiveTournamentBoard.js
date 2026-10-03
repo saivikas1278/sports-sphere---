@@ -12,14 +12,27 @@ import socket from '../../services/socket';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import BracketComponent from '../../components/Tournament/BracketComponent';
 import StandingsTable from '../../components/Tournament/StandingsTable';
+import ChatRoom from '../../components/Chat/ChatRoom';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet default icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png')
+});
 
 const LiveTournamentBoard = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   
   const { currentTournament, schedule, bracket, standings, loading } = useSelector((state) => state.tournaments);
+  const { user } = useSelector((state) => state.auth);
   
-  const [activeTab, setActiveTab] = useState('board'); // 'board', 'matches'
+  const [activeTab, setActiveTab] = useState('live'); // 'live', 'bracket', 'standings', 'chat'
 
   useEffect(() => {
     // Initial fetches
@@ -29,8 +42,9 @@ const LiveTournamentBoard = () => {
     dispatch(fetchTournamentStandings(id));
 
     // Listen for socket updates
-    if (socket) {
-      socket.emit('join_tournament', id);
+    const socketInstance = socket.getSocket();
+    if (socketInstance) {
+      socketInstance.emit('join_tournament', id);
 
       const handleBracketUpdate = (updatedBracket) => {
         dispatch({ type: 'tournaments/fetchTournamentBracket/fulfilled', payload: { bracket: updatedBracket } });
@@ -43,13 +57,13 @@ const LiveTournamentBoard = () => {
         dispatch(fetchTournamentStandings(id));
       };
 
-      socket.on('tournament:bracket_updated', handleBracketUpdate);
-      socket.on('match:score_updated', handleScoreUpdate);
+      socketInstance.on('tournament:bracket_updated', handleBracketUpdate);
+      socketInstance.on('match-score-updated', handleScoreUpdate);
 
       return () => {
-        socket.emit('leave_tournament', id);
-        socket.off('tournament:bracket_updated', handleBracketUpdate);
-        socket.off('match:score_updated', handleScoreUpdate);
+        socketInstance.emit('leave_tournament', id);
+        socketInstance.off('tournament:bracket_updated', handleBracketUpdate);
+        socketInstance.off('match-score-updated', handleScoreUpdate);
       };
     }
   }, [dispatch, id]);
@@ -119,59 +133,146 @@ const LiveTournamentBoard = () => {
 
       {/* Main Content Area */}
       <div className="p-4 md:p-8 rounded-[40px] glass-panel bg-white/40 border border-white min-h-[400px]">
-        <div className="flex gap-4 mb-4 md:mb-8 border-b border-slate-200/50 pb-4">
+        <div className="flex flex-wrap gap-2 md:gap-4 mb-4 md:mb-8 border-b border-slate-200/50 pb-4">
           <button 
-            onClick={() => setActiveTab('board')}
-            className={`px-4 md:px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'board' ? 'bg-blue-500 text-white shadow-md' : 'bg-white/50 text-slate-600 hover:bg-white'}`}
+            onClick={() => setActiveTab('live')}
+            className={`px-4 md:px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'live' ? 'bg-blue-500 text-white shadow-md' : 'bg-white/50 text-slate-600 hover:bg-white'}`}
           >
-            Tournament Board
+            Live Matches & Map
           </button>
           <button 
-            onClick={() => setActiveTab('matches')}
-            className={`px-4 md:px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'matches' ? 'bg-blue-500 text-white shadow-md' : 'bg-white/50 text-slate-600 hover:bg-white'}`}
+            onClick={() => setActiveTab('bracket')}
+            className={`px-4 md:px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'bracket' ? 'bg-blue-500 text-white shadow-md' : 'bg-white/50 text-slate-600 hover:bg-white'}`}
           >
-            Match Schedule
+            Bracket Tree
+          </button>
+          <button 
+            onClick={() => setActiveTab('standings')}
+            className={`px-4 md:px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'standings' ? 'bg-blue-500 text-white shadow-md' : 'bg-white/50 text-slate-600 hover:bg-white'}`}
+          >
+            Standings Table
+          </button>
+          <button 
+            onClick={() => setActiveTab('chat')}
+            className={`px-4 md:px-6 py-2 rounded-full font-bold transition-all ${activeTab === 'chat' ? 'bg-blue-500 text-white shadow-md' : 'bg-white/50 text-slate-600 hover:bg-white'}`}
+          >
+            Discussions
           </button>
         </div>
 
-        {activeTab === 'board' && (
-          <div>
-            {currentTournament.format?.includes('elimination') ? (
-              <BracketComponent bracket={bracket} matches={allMatches} />
-            ) : (
-              <StandingsTable standings={standings} />
-            )}
+        {activeTab === 'chat' && (
+          <div className="h-[600px]">
+            <ChatRoom 
+              roomType="tournament" 
+              roomId={currentTournament._id} 
+              roomName={currentTournament.name}
+              isModerator={user?._id === currentTournament.organizer?._id || user?._id === currentTournament.organizer}
+            />
           </div>
         )}
 
-        {activeTab === 'matches' && (
-          <div className="space-y-4">
-            {allMatches.length === 0 ? (
-              <div className="text-center py-4 md:py-6 md:py-10 text-slate-500 font-medium">No matches scheduled yet.</div>
-            ) : (
-              allMatches.map((match) => (
-                <div key={match._id} className="p-4 bg-white/60 border border-white rounded-2xl flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">{match.round || 'Match'}</span>
-                    <div className="font-semibold text-slate-800 text-lg mt-1">
-                      {match.homeTeam?.name || 'TBD'} vs {match.awayTeam?.name || 'TBD'}
+        {activeTab === 'bracket' && (
+          <div>
+            <BracketComponent bracket={bracket} matches={allMatches} />
+          </div>
+        )}
+
+        {activeTab === 'standings' && (
+          <div>
+            <StandingsTable standings={standings} />
+          </div>
+        )}
+
+        {activeTab === 'live' && (
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h3 className="font-bold text-xl text-slate-700">Scheduled Matches</h3>
+              {allMatches.length === 0 ? (
+                <div className="text-center py-4 md:py-6 text-slate-500 font-medium">No matches scheduled yet.</div>
+              ) : (
+                allMatches.map((match) => (
+                  <div key={match._id} className="p-4 bg-white/60 border border-white rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm gap-4">
+                    <div className="flex-1">
+                      <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">{match.round || 'Match'}</span>
+                      <div className="font-semibold text-slate-800 text-lg mt-1 flex items-center gap-2">
+                        {match.homeTeam?.name || 'TBD'} vs {match.awayTeam?.name || 'TBD'}
+                        
+                        {/* Status Badge */}
+                        <span className={`ml-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          match.status === 'completed' ? 'bg-green-100 text-green-700' :
+                          match.status === 'in_progress' || match.status === 'live' ? 'bg-red-100 text-red-700 animate-pulse border border-red-300' :
+                          'bg-slate-200 text-slate-600'
+                        }`}>
+                          {match.status?.replace('_', ' ')}
+                        </span>
+                      </div>
+                      
+                      {/* Sport Specific Score Display */}
+                      {match.sportType === 'cricket' && match.cricketData?.innings && match.cricketData.innings[0] && (
+                        <div className="mt-2 p-2 bg-slate-100 rounded-lg flex flex-col md:flex-row gap-4 text-sm">
+                          <div className="font-bold text-slate-700">
+                            {match.homeTeam?.name}: <span className="text-blue-600">{match.cricketData.innings[0].runs}/{match.cricketData.innings[0].wickets}</span> ({match.cricketData.innings[0].overs}.{match.cricketData.innings[0].balls} ov)
+                          </div>
+                          {match.cricketData.innings[1] && (
+                            <div className="font-bold text-slate-700">
+                              {match.awayTeam?.name}: <span className="text-blue-600">{match.cricketData.innings[1].runs}/{match.cricketData.innings[1].wickets}</span> ({match.cricketData.innings[1].overs}.{match.cricketData.innings[1].balls} ov)
+                            </div>
+                          )}
+                          <div className="flex gap-1 items-center ml-auto">
+                            {match.cricketData.recentBalls?.slice(-6).map((b, i) => (
+                              <span key={i} className="w-6 h-6 flex items-center justify-center rounded-full bg-white border border-slate-200 text-xs font-bold">
+                                {b}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="text-sm text-slate-500 mt-2">
+                        {new Date(match.scheduledTime).toLocaleString()}
+                      </div>
                     </div>
-                    <div className="text-sm text-slate-500">
-                      {new Date(match.scheduledTime).toLocaleString()}
+                    
+                    <div>
+                      <Link 
+                        to={`/tournaments/${id}/matches/${match._id}/score`}
+                        className="px-4 py-2 bg-slate-800 text-white text-sm font-bold rounded-xl hover:bg-slate-700 transition-colors whitespace-nowrap"
+                      >
+                        Score Match
+                      </Link>
                     </div>
                   </div>
-                  <div>
-                    <span className={`px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                      match.status === 'completed' ? 'bg-green-100 text-green-700' :
-                      match.status === 'in_progress' ? 'bg-red-100 text-red-700 animate-pulse' :
-                      'bg-slate-200 text-slate-600'
-                    }`}>
-                      {match.status?.replace('_', ' ')}
-                    </span>
-                  </div>
+                ))
+              )}
+            </div>
+
+            <div>
+              <h3 className="font-bold text-xl text-slate-700 mb-4">Location Map</h3>
+              {currentTournament.venue?.coordinates ? (
+                <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
+                  <MapContainer 
+                    center={[currentTournament.venue.coordinates.lat || 0, currentTournament.venue.coordinates.lng || 0]} 
+                    zoom={13} 
+                    style={{ height: '100%', width: '100%' }}
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    <Marker position={[currentTournament.venue.coordinates.lat || 0, currentTournament.venue.coordinates.lng || 0]}>
+                      <Popup>
+                        <strong>{currentTournament.venue.name}</strong><br/>
+                        {currentTournament.venue.address}
+                      </Popup>
+                    </Marker>
+                  </MapContainer>
                 </div>
-              ))
-            )}
+              ) : (
+                <div className="text-center py-4 md:py-6 text-slate-500 font-medium bg-white/40 rounded-xl border border-white">
+                  Location coordinates not provided for this tournament.
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

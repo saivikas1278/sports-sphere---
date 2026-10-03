@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import { showToast } from '../../utils/toast';
-import matchService from '../../services/matchService';
+import tournamentService from '../../services/tournamentService';
 
 const TeamSelection = () => {
   const { sportId } = useParams();
@@ -117,34 +117,37 @@ const TeamSelection = () => {
     }
     
     try {
-      const matchData = {
+      // Wire Match Creation page to POST /api/tournaments
+      const tournamentData = {
+        name: `${team1.name} vs ${team2.name}`,
+        description: `Exhibition Match between ${team1.name} and ${team2.name}`,
         sport: sportId,
-        homeTeam: team1.id || null, // Ensure backend handles null if not real teams
-        awayTeam: team2.id || null,
-        homeTeamName: team1.name, // Pass custom name in case id is null
-        awayTeamName: team2.name,
-        homeTeamPlayers: team1.players.map(p => p.id),
-        awayTeamPlayers: team2.players.map(p => p.id),
-        status: 'live',
-        scheduledTime: new Date().toISOString(),
-        venue: { name: 'Local Venue', city: 'Local City' }
+        format: 'single-elimination',
+        maxTeams: 2,
+        dates: {
+          registrationStart: new Date().toISOString(),
+          registrationEnd: new Date().toISOString(),
+          tournamentStart: new Date().toISOString(),
+          tournamentEnd: new Date(new Date().getTime() + 2 * 60 * 60 * 1000).toISOString()
+        },
+        venue: {
+          name: 'Local Arena',
+          address: '123 Main St',
+          city: 'Local City'
+        }
       };
       
-      // We pass the full team data as custom data if backend supports it
-      const response = await matchService.createMatch(matchData);
+      const response = await tournamentService.createTournament(tournamentData);
       
-      const matchId = response.data?._id || response.data?.id;
+      const matchId = response.data?._id || response.data?.id; // In this context, treating tournament as the match container
       if (!matchId) {
-        throw new Error('Match ID not returned from server');
+        throw new Error('Tournament ID not returned from server');
       }
 
       showToast('Match created successfully!', 'success');
       
-      if (sportId === 'cricket') {
-        navigate(`/matches/score/cricket/${matchId}`);
-      } else {
-        navigate(`/matches/score/${sportId}/${matchId}`);
-      }
+      // Navigate to the tournament board where they can view the live match
+      navigate(`/tournaments/${matchId}/live`);
     } catch (error) {
       console.error('Error creating match:', error);
       showToast(error.response?.data?.message || 'Failed to create match', 'error');

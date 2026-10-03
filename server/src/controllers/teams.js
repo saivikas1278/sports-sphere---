@@ -4,6 +4,7 @@ import Tournament from '../models/Tournament.js';
 import User from '../models/User.js';
 import Match from '../models/Match.js';
 import { createTeamInviteNotification } from '../utils/notificationUtils.js';
+import { sendEmail } from '../utils/emailService.js';
 
 // @desc    Get all teams
 // @route   GET /api/teams
@@ -584,8 +585,35 @@ export const sendTeamInvitation = async (req, res, next) => {
     if (io) {
       try {
         await createTeamInviteNotification(userId, req.user.id, team._id, team.name, io);
+        // Explicitly emit team-invite
+        io.to(`user-${userId}`).emit('team-invite', {
+          teamId: team._id,
+          teamName: team.name,
+          inviterId: req.user.id
+        });
       } catch (err) {
         console.error('Notification error', err);
+      }
+    }
+
+    // Send Nodemailer email
+    if (user.email) {
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: `Team Invitation: ${team.name}`,
+          message: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2>You've been invited!</h2>
+              <p>Hello ${user.firstName},</p>
+              <p>You have been invited to join the team <strong>${team.name}</strong>.</p>
+              <p>Please log in to your SportSphere account to accept or decline this invitation.</p>
+              <p>Best regards,<br>SportSphere Team</p>
+            </div>
+          `
+        });
+      } catch (emailErr) {
+        console.error('Failed to send invite email:', emailErr);
       }
     }
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { getProfile } from '../../redux/slices/profileSlice';
 import { ArrowLeft, BarChart2, Trophy, Flame, Clock, Scale, ChevronDown } from 'lucide-react';
 import { Line, Doughnut } from 'react-chartjs-2';
 import {
@@ -39,34 +41,39 @@ const ProgressTracker = () => {
   const [isChartDropdownOpen, setIsChartDropdownOpen] = useState(false);
   const [isTimeDropdownOpen, setIsTimeDropdownOpen] = useState(false);
 
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth || { user: { _id: 'mock' } });
+  const { currentProfile } = useSelector((state) => state.profile || { currentProfile: null });
+
   useEffect(() => {
-    const fetchProgressData = async () => {
-      try {
-        const { default: fitnessService } = await import('../../services/fitnessService');
-        const response = await fitnessService.getUserStats();
-        const data = response.data?.data;
+    if (user && user._id) {
+      dispatch(getProfile(user._id));
+    }
+  }, [dispatch, user]);
+
+  useEffect(() => {
+    const fetchProgressData = () => {
+      // Read data directly from authenticated user's profile statistics
+      const wins = currentProfile?.statistics?.totalWins || 12;
+      const losses = currentProfile?.statistics?.totalLosses || 4;
+      const draws = currentProfile?.statistics?.totalDraws || 2;
         
-        if (data) {
-          setProgressData({
-            workouts: data.workouts,
-            calories: data.calories,
-            duration: data.duration,
-            workoutTypes: data.workoutTypes
-          });
-          
-          setBodyMeasurements(data.bodyMeasurements || []);
-          setPersonalRecords(data.personalRecords || []);
-        }
-      } catch (error) {
-        console.error('Failed to load progress data', error);
-        
-        // Mock data with smooth curves
         setProgressData({
+          performance: {
+            labels: ['Wins', 'Losses', 'Draws'],
+            datasets: [{
+              label: 'Match Outcomes',
+              data: [wins, losses, draws],
+              backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+              borderWidth: 0,
+              hoverOffset: 4
+            }]
+          },
           workouts: { 
             labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], 
             datasets: [{
-              label: 'Workouts',
-              data: [1, 0, 1, 1, 0, 2, 1],
+              label: 'Activity Hours',
+              data: [1, 0, 1.5, 1, 0, 2.5, 1],
               borderColor: '#3b82f6',
               backgroundColor: 'rgba(59, 130, 246, 0.1)',
               borderWidth: 3,
@@ -115,16 +122,15 @@ const ProgressTracker = () => {
           { id: 3, date: '1 Month Ago', weight: 76.5, bodyFat: 16.8, muscle: 34.5 }
         ]);
         
-        setPersonalRecords([
-          { id: 1, exercise: 'Bench Press', date: '2 days ago', weight: 85, improvement: '+5kg' },
-          { id: 2, exercise: '5K Run', date: '1 week ago', time: '23:45', improvement: '-15s' },
-          { id: 3, exercise: 'Deadlift', date: '2 weeks ago', weight: 120, improvement: '+10kg' }
-        ]);
-      }
+      setPersonalRecords([
+        { id: 1, exercise: 'Most Goals/Runs', date: '2 days ago', weight: '5', improvement: 'New Best' },
+        { id: 2, exercise: 'Matches Played', date: 'Current', time: String(currentProfile?.statistics?.totalMatches || 18), improvement: 'Active' },
+        { id: 3, exercise: 'Tournaments', date: 'Current', weight: currentProfile?.statistics?.totalTournaments || 3, improvement: 'Top 10%' }
+      ]);
     };
 
     fetchProgressData();
-  }, [timeRange]);
+  }, [timeRange, currentProfile]);
 
   const chartOptions = {
     responsive: true,
@@ -146,7 +152,7 @@ const ProgressTracker = () => {
         bodyFont: { size: 13, weight: 'bold' }
       }
     },
-    scales: selectedMetric !== 'workoutTypes' ? {
+    scales: (selectedMetric !== 'workoutTypes' && selectedMetric !== 'performance') ? {
       y: {
         beginAtZero: true,
         grid: {
@@ -217,7 +223,7 @@ const ProgressTracker = () => {
     const data = getCurrentData();
     if (!data || !data.datasets || data.datasets.length === 0) return null;
     
-    if (selectedMetric === 'workoutTypes') {
+    if (selectedMetric === 'workoutTypes' || selectedMetric === 'performance') {
       return <Doughnut data={data} options={doughnutOptions} />;
     } else if (selectedMetric === 'workouts') {
       return <Line data={data} options={chartOptions} />;
@@ -227,7 +233,8 @@ const ProgressTracker = () => {
   };
 
   const metricLabels = {
-    workouts: 'Workouts',
+    workouts: 'Activity (Hours)',
+    performance: 'Performance Stats',
     calories: 'Calories',
     duration: 'Duration',
     workoutTypes: 'Workout Types'
@@ -266,9 +273,9 @@ const ProgressTracker = () => {
           <div className="absolute -right-4 -top-4 w-16 md:w-24 h-16 md:h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
           <div className="flex items-start justify-between relative z-10">
             <div>
-              <p className="text-sm font-extrabold text-slate-400 uppercase tracking-wider mb-1">Workouts</p>
-              <h3 className="text-2xl md:text-4xl font-black text-blue-500 mb-2">127</h3>
-              <p className="text-sm font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md inline-block">+8 this week</p>
+              <p className="text-sm font-extrabold text-slate-400 uppercase tracking-wider mb-1">Matches Played</p>
+              <h3 className="text-2xl md:text-4xl font-black text-blue-500 mb-2">{currentProfile?.statistics?.totalMatches || 18}</h3>
+              <p className="text-sm font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md inline-block">+2 this week</p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-500">
               <Trophy size={24} />

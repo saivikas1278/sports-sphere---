@@ -17,6 +17,8 @@ import {
   getTournamentSchedule,
   startTournament,
   updateMatchResult,
+  updateMatchScore,
+  updateCricketBall,
   searchTournaments
 } from '../controllers/tournaments.js';
 import { protect, authorize } from '../middleware/auth.js';
@@ -77,6 +79,8 @@ router.delete('/:id', protect, deleteTournament);
 // Tournament management routes
 router.post('/:id/start', protect, startTournament);
 router.put('/:id/matches/:matchId/result', protect, updateMatchResult);
+router.put('/:id/matches/:matchId/score', protect, updateMatchScore);
+router.put('/:id/matches/:matchId/cricket-ball', protect, updateCricketBall);
 
 // Team registration routes
 router.post('/:id/register', protect, registerTeamForTournament);

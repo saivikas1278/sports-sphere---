@@ -8,6 +8,7 @@ import { uploadImage } from '../utils/uploadUtils.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { sendEmail } from '../utils/emailService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,6 +92,29 @@ export const register = async (req, res, next) => {
     });
     await profile.save();
     console.log('[REGISTER] Profile created for user:', user._id);
+
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(20).toString('hex');
+    user.verificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+    user.verificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    await user.save();
+
+    // Send verification email
+    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`;
+    const message = `
+      <div style="font-family: Arial, sans-serif; max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md border border-gray-100 text-center">
+        <h1 style="color: #3b82f6; font-size: 24px; font-weight: bold; margin-bottom: 16px;">Welcome to SportSphere, ${firstName}!</h1>
+        <p style="color: #4b5563; font-size: 16px; margin-bottom: 24px;">Thank you for registering. Please verify your email by clicking the button below to get full access to the platform:</p>
+        <a href="${verifyUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; font-weight: bold; text-decoration: none; border-radius: 8px; margin-bottom: 24px;">Verify Email</a>
+        <p style="color: #6b7280; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:<br/><br/> <a href="${verifyUrl}" style="color: #3b82f6; text-decoration: underline;">${verifyUrl}</a></p>
+      </div>
+    `;
+
+    await sendEmail({
+      email: user.email,
+      subject: 'Verify your SportSphere account',
+      message
+    });
 
     sendTokenResponse(user, 201, res);
   } catch (error) {
@@ -480,5 +504,41 @@ export const googleAuthCallback = async (req, res, next) => {
   } catch (error) {
     console.error('Google OAuth Error:', error);
     res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=server_error`);
+  }
+};
+
+// @desc    Verify user email
+// @route   GET /api/auth/verify-email/:token
+// @access  Public
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const verificationToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      verificationToken,
+      verificationExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or expired verification token'
+      });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationExpire = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully'
+    });
+  } catch (error) {
+    next(error);
   }
 };

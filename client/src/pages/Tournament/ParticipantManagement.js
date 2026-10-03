@@ -1,20 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchTournamentById, approveRegistration, rejectRegistration } from '../../redux/slices/tournamentSlice';
 import { Users, CheckCircle, XCircle, Search, Mail, ArrowLeft } from 'lucide-react';
 import FloatingElements from '../../components/UI/FloatingElements';
+import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import { showToast } from '../../utils/toast';
 
 const ParticipantManagement = () => {
   const { id } = useParams();
+  const dispatch = useDispatch();
+  const { currentTournament, loading } = useSelector((state) => state.tournaments);
   const [activeTab, setActiveTab] = useState('pending'); // pending, approved, rejected
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data
-  const applicants = [
-    { id: 1, teamName: 'Neon Strikers', captain: 'Alex Turner', playersCount: 5, appliedDate: '2023-10-10', status: 'pending' },
-    { id: 2, teamName: 'Urban Legends', captain: 'Sarah Connor', playersCount: 6, appliedDate: '2023-10-11', status: 'approved' },
-    { id: 3, teamName: 'The Rookies', captain: 'Mike Ross', playersCount: 4, appliedDate: '2023-10-09', status: 'rejected' },
-    { id: 4, teamName: 'Titanium FC', captain: 'David Clark', playersCount: 7, appliedDate: '2023-10-12', status: 'pending' },
-  ];
+  useEffect(() => {
+    dispatch(fetchTournamentById(id));
+  }, [dispatch, id]);
+
+  const handleApprove = async (teamId, teamName) => {
+    try {
+      await dispatch(approveRegistration({ tournamentId: id, teamId })).unwrap();
+      showToast(`Approved registration for ${teamName}`, 'success');
+      dispatch(fetchTournamentById(id));
+    } catch (error) {
+      showToast(error || 'Failed to approve registration', 'error');
+    }
+  };
+
+  const handleReject = async (teamId, teamName) => {
+    try {
+      await dispatch(rejectRegistration({ tournamentId: id, teamId })).unwrap();
+      showToast(`Rejected registration for ${teamName}`, 'info');
+      dispatch(fetchTournamentById(id));
+    } catch (error) {
+      showToast(error || 'Failed to reject registration', 'error');
+    }
+  };
+
+  if (loading || !currentTournament) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  const registeredTeams = currentTournament.registeredTeams || [];
+  const applicants = registeredTeams.map(rt => {
+    const teamObj = typeof rt.team === 'object' ? rt.team : {};
+    return {
+      id: teamObj._id || rt.team,
+      teamId: teamObj._id || rt.team,
+      teamName: teamObj.name || 'Unknown Team',
+      captain: teamObj.captain || 'Unknown',
+      playersCount: teamObj.players ? teamObj.players.length : 0,
+      appliedDate: new Date(rt.registeredAt || Date.now()).toLocaleDateString(),
+      status: rt.status || 'pending'
+    };
+  });
 
   const filteredApplicants = applicants.filter(
     app => app.status === activeTab && app.teamName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -82,21 +126,29 @@ const ParticipantManagement = () => {
                   </button>
                   {activeTab === 'pending' && (
                     <>
-                      <button className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center gap-2">
+                      <button 
+                        onClick={() => handleApprove(app.teamId, app.teamName)}
+                        className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center gap-2">
                         <CheckCircle size={18} /> Approve
                       </button>
-                      <button className="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
+                      <button 
+                        onClick={() => handleReject(app.teamId, app.teamName)}
+                        className="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
                         <XCircle size={18} /> Reject
                       </button>
                     </>
                   )}
                   {activeTab === 'approved' && (
-                    <button className="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
+                    <button 
+                      onClick={() => handleReject(app.teamId, app.teamName)}
+                      className="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
                       <XCircle size={18} /> Revoke
                     </button>
                   )}
                   {activeTab === 'rejected' && (
-                    <button className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center gap-2">
+                    <button 
+                      onClick={() => handleApprove(app.teamId, app.teamName)}
+                      className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center gap-2">
                       <CheckCircle size={18} /> Re-Approve
                     </button>
                   )}

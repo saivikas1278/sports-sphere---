@@ -3,8 +3,15 @@ import mongoose from 'mongoose';
 const messageSchema = new mongoose.Schema({
   conversation: {
     type: mongoose.Schema.ObjectId,
-    ref: 'Conversation',
-    required: true
+    ref: 'Conversation'
+  },
+  roomType: {
+    type: String,
+    enum: ['team', 'tournament', 'direct']
+  },
+  roomId: {
+    type: mongoose.Schema.Types.ObjectId,
+    index: true
   },
   sender: {
     type: mongoose.Schema.ObjectId,
@@ -32,9 +39,16 @@ const messageSchema = new mongoose.Schema({
   isDeleted: {
     type: Boolean,
     default: false
+  },
+  isAnnouncement: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
 });
+
+// Indexes for faster queries
+messageSchema.index({ roomType: 1, roomId: 1, createdAt: -1 });
 
 export default mongoose.model('Message', messageSchema);

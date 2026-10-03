@@ -211,6 +211,18 @@ export const updateTournament = createAsyncThunk(
   }
 );
 
+export const updateMatchScore = createAsyncThunk(
+  'tournaments/updateMatchScore',
+  async ({ tournamentId, matchId, scoreData }, { rejectWithValue }) => {
+    try {
+      const response = await tournamentService.updateMatchScore(tournamentId, matchId, scoreData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'Failed to update score');
+    }
+  }
+);
+
 export const deleteTournament = createAsyncThunk(
   'tournaments/deleteTournament',
   async (id, { rejectWithValue }) => {
@@ -454,6 +466,16 @@ const tournamentSlice = createSlice({
       })
       .addCase(updateTournament.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
+      })
+      // Update match score
+      .addCase(updateMatchScore.pending, (state) => {
+        // Handled silently
+      })
+      .addCase(updateMatchScore.fulfilled, (state, action) => {
+        // Triggered by socket event normally, but we can do optimistic update here if needed
+      })
+      .addCase(updateMatchScore.rejected, (state, action) => {
         state.error = action.payload;
       })
       // Delete tournament

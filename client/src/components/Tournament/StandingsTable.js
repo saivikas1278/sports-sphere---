@@ -27,12 +27,13 @@ const StandingsTable = ({ standings }) => {
           <tr className="bg-slate-100/50 text-slate-600 border-b border-slate-200/50">
             <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-16">Pos</th>
             <th className="p-4 font-bold text-sm tracking-wider uppercase">Team</th>
-            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-16">P</th>
-            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-16 text-green-600">W</th>
-            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-16 text-slate-400">D</th>
-            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-16 text-red-500">L</th>
-            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-16 md:w-24">GD</th>
-            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-12 md:w-20 text-blue-600">Pts</th>
+            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-12">P</th>
+            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-12 text-green-600">W</th>
+            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-12 text-slate-400">D</th>
+            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-12 text-red-500">L</th>
+            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-16 md:w-20">GD</th>
+            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-12 md:w-16 text-blue-600">Pts</th>
+            <th className="p-4 font-bold text-sm tracking-wider uppercase text-center w-24 md:w-32 hidden md:table-cell">Form</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200/40">
@@ -88,6 +89,23 @@ const StandingsTable = ({ standings }) => {
                   </span>
                 </td>
                 <td className="p-4 text-center font-black text-blue-600 text-lg">{points}</td>
+                <td className="p-4 text-center hidden md:table-cell">
+                  <div className="flex items-center justify-center gap-1">
+                    {/* Mock form if not provided by backend */}
+                    {(teamStats.form || ['W', 'D', 'L', 'W', 'W']).map((result, i) => (
+                      <span 
+                        key={i}
+                        className={`w-5 h-5 rounded-sm flex items-center justify-center text-[10px] font-bold text-white ${
+                          result === 'W' ? 'bg-green-500' :
+                          result === 'L' ? 'bg-red-500' :
+                          'bg-slate-400'
+                        }`}
+                      >
+                        {result}
+                      </span>
+                    ))}
+                  </div>
+                </td>
               </tr>
             );
           })}
