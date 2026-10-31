@@ -11,85 +11,83 @@ import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Layout/Navbar';
 import Footer from './components/Layout/Footer';
 import LoadingSpinner from './components/UI/LoadingSpinner';
+import { RouteLoadingFallback } from './components/UI/SkeletonLoader';
 import FloatingBottomNavigation from './components/UI/FloatingBottomNavigation';
+import ProtectedRoute from './components/Routing/ProtectedRoute';
+import { loadUser } from './redux/slices/authSlice';
+import { initializeSocket, disconnectSocket } from './services/socket';
 
-// Pages
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/Auth/LoginPage';
-import RegisterPage from './pages/Auth/RegisterPage';
-import VerifyEmail from './pages/Auth/VerifyEmail';
-import GoogleCallback from './pages/Auth/GoogleCallback';
-import Dashboard from './pages/Dashboard/Dashboard';
-import TournamentHub from './pages/Tournament/TournamentHub';
-import TournamentDetails from './pages/Tournament/TournamentDetails';
-import TournamentCreatePage from './pages/Tournament/TournamentCreatePage';
-import LiveTournamentBoard from './pages/Tournament/LiveTournamentBoard';
-import ScoringPage from './pages/Tournament/ScoringPage';
-import TournamentDashboard from './pages/Tournament/TournamentDashboard';
-import ParticipantManagement from './pages/Tournament/ParticipantManagement';
-import CommunicationCenter from './pages/Tournament/CommunicationCenter';
-import TournamentBracket from './pages/Tournament/TournamentBracket';
-import ScoreEntry from './pages/Tournament/ScoreEntry';
-import FinancialReports from './pages/Tournament/FinancialReports';
-import PostsHub from './pages/Posts/PostsHub';
-import PostDetails from './pages/Posts/PostDetails';
-import FitnessHub from './pages/Fitness/FitnessHub';
-import FitnessDetails from './pages/Fitness/FitnessDetails';
-import WorkoutBuilder from './pages/Fitness/WorkoutBuilder';
-import WorkoutTimer from './pages/Fitness/WorkoutTimer';
-import ProgressTracker from './pages/Fitness/ProgressTracker';
-import NutritionTracker from './pages/Fitness/NutritionTracker';
-import NutritionGuide from './pages/Fitness/NutritionGuide';
-import BrowseWorkout from './pages/Fitness/BrowseWorkout';
-import WorkoutDetails from './pages/Fitness/WorkoutDetails';
-import ProfilePage from './pages/Profile/ProfilePage';
-import SettingsPage from './pages/Settings/SettingsPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
-import HelpPage from './pages/HelpPage';
-import PrivacyPage from './pages/PrivacyPage';
-import TermsPage from './pages/TermsPage';
-import TeamsPage from './pages/Team/TeamsPage';
-import TeamCreatePage from './pages/Team/TeamCreatePage';
-import TeamDetails from './pages/Team/TeamDetails';
-import CricketHub from './pages/Cricket/CricketHub';
-import CricketCreateMatch from './pages/Cricket/CricketCreateMatch';
+// Pages (Lazy-loaded for optimal initial bundle performance)
+const LandingPage = React.lazy(() => import('./pages/LandingPage'));
+const LoginPage = React.lazy(() => import('./pages/Auth/LoginPage'));
+const RegisterPage = React.lazy(() => import('./pages/Auth/RegisterPage'));
+const VerifyEmail = React.lazy(() => import('./pages/Auth/VerifyEmail'));
+const GoogleCallback = React.lazy(() => import('./pages/Auth/GoogleCallback'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard'));
+const TournamentHub = React.lazy(() => import('./pages/Tournament/TournamentHub'));
+const TournamentDetails = React.lazy(() => import('./pages/Tournament/TournamentDetails'));
+const TournamentCreatePage = React.lazy(() => import('./pages/Tournament/TournamentCreatePage'));
+const LiveTournamentBoard = React.lazy(() => import('./pages/Tournament/LiveTournamentBoard'));
+const ScoringPage = React.lazy(() => import('./pages/Tournament/ScoringPage'));
+const TournamentDashboard = React.lazy(() => import('./pages/Tournament/TournamentDashboard'));
+const ParticipantManagement = React.lazy(() => import('./pages/Tournament/ParticipantManagement'));
+const CommunicationCenter = React.lazy(() => import('./pages/Tournament/CommunicationCenter'));
+const TournamentBracket = React.lazy(() => import('./pages/Tournament/TournamentBracket'));
+const ScoreEntry = React.lazy(() => import('./pages/Tournament/ScoreEntry'));
+const FinancialReports = React.lazy(() => import('./pages/Tournament/FinancialReports'));
+const PostsHub = React.lazy(() => import('./pages/Posts/PostsHub'));
+const PostDetails = React.lazy(() => import('./pages/Posts/PostDetails'));
+const FitnessHub = React.lazy(() => import('./pages/Fitness/FitnessHub'));
+const FitnessDetails = React.lazy(() => import('./pages/Fitness/FitnessDetails'));
+const WorkoutBuilder = React.lazy(() => import('./pages/Fitness/WorkoutBuilder'));
+const WorkoutTimer = React.lazy(() => import('./pages/Fitness/WorkoutTimer'));
+const ProgressTracker = React.lazy(() => import('./pages/Fitness/ProgressTracker'));
+const NutritionTracker = React.lazy(() => import('./pages/Fitness/NutritionTracker'));
+const NutritionGuide = React.lazy(() => import('./pages/Fitness/NutritionGuide'));
+const BrowseWorkout = React.lazy(() => import('./pages/Fitness/BrowseWorkout'));
+const WorkoutDetails = React.lazy(() => import('./pages/Fitness/WorkoutDetails'));
+const ProfilePage = React.lazy(() => import('./pages/Profile/ProfilePage'));
+const SettingsPage = React.lazy(() => import('./pages/Settings/SettingsPage'));
+const AboutPage = React.lazy(() => import('./pages/AboutPage'));
+const ContactPage = React.lazy(() => import('./pages/ContactPage'));
+const HelpPage = React.lazy(() => import('./pages/HelpPage'));
+const PrivacyPage = React.lazy(() => import('./pages/PrivacyPage'));
+const TermsPage = React.lazy(() => import('./pages/TermsPage'));
+const TeamsPage = React.lazy(() => import('./pages/Team/TeamsPage'));
+const TeamCreatePage = React.lazy(() => import('./pages/Team/TeamCreatePage'));
+const TeamDetails = React.lazy(() => import('./pages/Team/TeamDetails'));
+const CricketHub = React.lazy(() => import('./pages/Cricket/CricketHub'));
+const CricketCreateMatch = React.lazy(() => import('./pages/Cricket/CricketCreateMatch'));
 
 // Match pages
-import CreateMatch from './pages/Matches/CreateMatch';
-import TeamSelection from './pages/Matches/TeamSelection';
-import CricketScoring from './pages/Matches/Scoring/CricketScoring';
-import BadmintonScoring from './pages/Matches/Scoring/BadmintonScoring';
-import VolleyballScoring from './pages/Matches/Scoring/VolleyballScoring';
-import KabaddiScoring from './pages/Matches/Scoring/KabaddiScoring';
-import MatchesHub from './pages/Matches/MatchesHub';
-import MatchDetails from './pages/Matches/MatchDetails';
+const CreateMatch = React.lazy(() => import('./pages/Matches/CreateMatch'));
+const TeamSelection = React.lazy(() => import('./pages/Matches/TeamSelection'));
+const CricketScoring = React.lazy(() => import('./pages/Matches/Scoring/CricketScoring'));
+const BadmintonScoring = React.lazy(() => import('./pages/Matches/Scoring/BadmintonScoring'));
+const VolleyballScoring = React.lazy(() => import('./pages/Matches/Scoring/VolleyballScoring'));
+const KabaddiScoring = React.lazy(() => import('./pages/Matches/Scoring/KabaddiScoring'));
+const MatchesHub = React.lazy(() => import('./pages/Matches/MatchesHub'));
+const MatchDetails = React.lazy(() => import('./pages/Matches/MatchDetails'));
 
 // Dashboard Subpages
-import MyRegistrations from './pages/Dashboard/MyRegistrations';
+const MyRegistrations = React.lazy(() => import('./pages/Dashboard/MyRegistrations'));
 
 // Team Subpages
-import TeamChat from './pages/Team/TeamChat';
-import PlayerStats from './pages/Team/PlayerStats';
+const TeamChat = React.lazy(() => import('./pages/Team/TeamChat'));
+const PlayerStats = React.lazy(() => import('./pages/Team/PlayerStats'));
 
 // Messages
-import ChatHub from './pages/Chat/ChatHub';
-
-// Protected Route
-import ProtectedRoute from './components/Routing/ProtectedRoute';
+const ChatHub = React.lazy(() => import('./pages/Chat/ChatHub'));
 
 // Admin Pages
-import AdminDashboard from './pages/Admin/AdminDashboard';
-import UserManagement from './pages/Admin/UserManagement';
-import TournamentVerification from './pages/Admin/TournamentVerification';
-import ContentModeration from './pages/Admin/ContentModeration';
-import GlobalAnalytics from './pages/Admin/GlobalAnalytics';
-import PlatformSettings from './pages/Admin/PlatformSettings';
-// Redux Actions
-import { loadUser } from './redux/slices/authSlice';
+const AdminDashboard = React.lazy(() => import('./pages/Admin/AdminDashboard'));
+const UserManagement = React.lazy(() => import('./pages/Admin/UserManagement'));
+const TournamentVerification = React.lazy(() => import('./pages/Admin/TournamentVerification'));
+const ContentModeration = React.lazy(() => import('./pages/Admin/ContentModeration'));
+const GlobalAnalytics = React.lazy(() => import('./pages/Admin/GlobalAnalytics'));
+const PlatformSettings = React.lazy(() => import('./pages/Admin/PlatformSettings'));
 
-// Socket.io
-import { initializeSocket, disconnectSocket } from './services/socket';
+
 
 // Custom redirect component for dynamic paths
 const DynamicRedirect = ({ pattern, replacement }) => {
@@ -131,7 +129,8 @@ function App() {
       <div className="min-h-screen transition-colors duration-300 bg-transparent">
         <Navbar />
         <main className="flex-1 pb-24">
-          <Routes>
+          <React.Suspense fallback={<RouteLoadingFallback />}>
+            <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/about" element={<AboutPage />} />
@@ -233,6 +232,7 @@ function App() {
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
+          </React.Suspense>
         </main>
         {location.pathname !== '/login' && <Footer />}
         <FloatingBottomNavigation />

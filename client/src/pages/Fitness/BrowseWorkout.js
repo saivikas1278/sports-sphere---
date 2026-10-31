@@ -11,7 +11,7 @@ import {
   Target
 } from 'lucide-react';
 import fitnessService from '../../services/fitnessService';
-import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import { SkeletonWorkoutCard } from '../../components/UI/SkeletonLoader';
 
 const BrowseWorkout = () => {
   const navigate = useNavigate();
@@ -243,9 +243,10 @@ const BrowseWorkout = () => {
           </div>
           
           {isLoading ? (
-            <div className="p-12 rounded-[40px] glass-panel bg-white/40 border border-white text-center flex flex-col items-center justify-center min-h-[300px]">
-              <LoadingSpinner size="lg" color="primary" />
-              <p className="mt-4 text-slate-500 font-medium animate-pulse">Loading workouts...</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-3 md:gap-6">
+              {[...Array(4)].map((_, i) => (
+                <SkeletonWorkoutCard key={i} />
+              ))}
             </div>
           ) : filteredWorkouts.length === 0 ? (
             <div className="p-4 md:p-6 md:p-16 rounded-[40px] glass-panel bg-white/40 border border-white text-center flex flex-col items-center justify-center">

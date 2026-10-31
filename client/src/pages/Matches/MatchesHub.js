@@ -6,7 +6,7 @@ import {
   CalendarDays,
   ListFilter
 } from 'lucide-react';
-import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import { SkeletonMatchCard } from '../../components/UI/SkeletonLoader';
 import StandardMatchCard from '../../components/UI/StandardMatchCard';
 import CategoryFilterScroll from '../../components/UI/CategoryFilterScroll';
 import matchService from '../../services/matchService';
@@ -152,8 +152,16 @@ const MatchesHub = () => {
   
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <LoadingSpinner size="lg" />
+      <div className="min-h-screen py-4 md:py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <div className="h-9 w-44 bg-slate-200/80 rounded-2xl animate-pulse mb-3" />
+          <div className="h-5 w-64 bg-slate-200/60 rounded-xl animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <SkeletonMatchCard key={i} />
+          ))}
+        </div>
       </div>
     );
   }

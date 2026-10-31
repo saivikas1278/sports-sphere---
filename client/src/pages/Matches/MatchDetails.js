@@ -9,10 +9,12 @@ import {
   CircleDot, 
   ArrowLeft,
   Calendar,
-  MapPin
+  MapPin,
+  Sparkles
 } from 'lucide-react';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import matchService from '../../services/matchService';
+import MatchdayStoryCard from '../../components/Matches/MatchdayStoryCard';
 
 const StatusBadge = ({ status }) => {
   const colors = {
@@ -91,6 +93,7 @@ const GenericScorecard = ({ match }) => {
 const MatchDetails = () => {
   const { matchId } = useParams();
   const [loading, setLoading] = useState(true);
+  const [showStoryModal, setShowStoryModal] = useState(false);
   const [match, setMatch] = useState(null);
   
   useEffect(() => {
@@ -280,6 +283,14 @@ const MatchDetails = () => {
               </>
             )}
             <button
+              onClick={() => setShowStoryModal(true)}
+              className="px-3.5 py-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-500/20 hover:from-violet-700 hover:to-indigo-700 transition-all hover:scale-105"
+              title="Create Matchday Story Graphic"
+            >
+              <Sparkles size={14} className="animate-pulse" />
+              <span>Story Card</span>
+            </button>
+            <button
               onClick={handleShareMatch}
               className="w-10 h-10 rounded-full bg-white/60 border border-white flex items-center justify-center text-slate-600 hover:bg-white hover:text-blue-500 transition-all shadow-sm"
               title="Share"
@@ -355,7 +366,13 @@ const MatchDetails = () => {
       {match.status === 'completed' && (
         <GenericScorecard match={match} />
       )}
-      
+
+      {/* Matchday Social Story Modal */}
+      <MatchdayStoryCard
+        isOpen={showStoryModal}
+        onClose={() => setShowStoryModal(false)}
+        match={match}
+      />
     </div>
   );
 };
