@@ -13,6 +13,7 @@ import {
   sendTeamInvitation,
   respondToInvitation,
   updatePlayerRole,
+  getMyTeams,
   getMyInvitations
 } from '../controllers/teams.js';
 import { protect, authorize, optional } from '../middleware/auth.js';
@@ -26,9 +27,13 @@ const teamValidation = [
     .isLength({ min: 2, max: 100 })
     .withMessage('Team name must be between 2 and 100 characters'),
   body('tournament')
+    .optional({ nullable: true, checkFalsy: true })
     .isMongoId()
     .withMessage('Invalid tournament ID'),
   body('sport')
+    .trim()
+    .toLowerCase()
+    .customSanitizer(val => val === 'soccer' ? 'football' : (val === 'kabaddi' ? 'other' : val))
     .isIn(['football', 'basketball', 'cricket', 'tennis', 'badminton', 'volleyball', 'table-tennis', 'chess', 'other'])
     .withMessage('Invalid sport selection')
 ];
@@ -51,6 +56,7 @@ const roleValidation = [
 
 
 // Protected special routes (Must be before /:id)
+router.get('/my', protect, getMyTeams);
 router.get('/invitations', protect, getMyInvitations);
 
 // Public routes
@@ -67,10 +73,12 @@ router.delete('/:id', protect, deleteTeam);
 // Team management routes
 router.post('/:id/players', protect, playerValidation, addPlayerToTeam);
 router.delete('/:id/players/:userId', protect, removePlayerFromTeam);
+router.delete('/:id/members/:userId', protect, removePlayerFromTeam);
 router.put('/:id/players/:userId/role', protect, roleValidation, updatePlayerRole);
 
 // Invitations
 router.post('/:id/invitations', protect, inviteValidation, sendTeamInvitation);
+router.post('/:id/invite', protect, inviteValidation, sendTeamInvitation);
 router.put('/:id/invitations/:inviteId', protect, respondToInvitation);
 
 export default router;

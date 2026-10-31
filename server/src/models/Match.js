@@ -7,8 +7,40 @@ const matchSchema = new mongoose.Schema({
     required: true
   },
   round: {
+    type: mongoose.Schema.Types.Mixed, // integer round number (1, 2...) or string label
+    required: true
+  },
+  roundName: {
+    type: String
+  },
+  position: {
+    type: Number,
+    default: 0
+  },
+  nextMatchId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Match',
+    default: null
+  },
+  nextSlot: {
     type: String,
-    required: true // e.g., 'quarter-final', 'semi-final', 'final', 'group-1-round-1'
+    enum: ['teamA', 'teamB', null],
+    default: null
+  },
+  loserMatchId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Match',
+    default: null
+  },
+  loserSlot: {
+    type: String,
+    enum: ['teamA', 'teamB', null],
+    default: null
+  },
+  bracketType: {
+    type: String,
+    enum: ['winners', 'losers', 'finals', null],
+    default: null
   },
   matchNumber: {
     type: Number,
@@ -17,12 +49,14 @@ const matchSchema = new mongoose.Schema({
   homeTeam: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Team',
-    required: true
+    required: false,
+    default: null
   },
   awayTeam: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Team',
-    required: true
+    required: false,
+    default: null
   },
   scheduledTime: {
     type: Date,
@@ -38,6 +72,11 @@ const matchSchema = new mongoose.Schema({
     type: String,
     enum: ['scheduled', 'live', 'completed', 'cancelled', 'postponed'],
     default: 'scheduled'
+  },
+  sport: {
+    type: String,
+    lowercase: true,
+    trim: true
   },
   sportType: {
     type: String,
@@ -56,14 +95,31 @@ const matchSchema = new mongoose.Schema({
     striker: String,
     nonStriker: String,
     currentBowler: String,
-    recentBalls: [String]
+    recentBalls: [String],
+    currentInningIndex: { type: Number, default: 0 },
+    maxOvers: { type: Number, default: 20 },
+    maxWickets: { type: Number, default: 10 },
+    target: { type: Number, default: null },
+    resultText: { type: String, default: null },
+    ballHistory: [mongoose.Schema.Types.Mixed]
   },
   setsData: {
     sets: [{ 
+      setNumber: { type: Number, default: 1 },
       homeScore: { type: Number, default: 0 }, 
-      awayScore: { type: Number, default: 0 } 
+      awayScore: { type: Number, default: 0 },
+      isCompleted: { type: Boolean, default: false },
+      winner: { type: String, default: null }
     }],
-    currentSet: { type: Number, default: 1 }
+    currentSet: { type: Number, default: 1 },
+    homeSetsWon: { type: Number, default: 0 },
+    awaySetsWon: { type: Number, default: 0 },
+    sport: { type: String, default: 'badminton' },
+    config: mongoose.Schema.Types.Mixed,
+    isCompleted: { type: Boolean, default: false },
+    winner: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null },
+    resultText: { type: String, default: null },
+    pointHistory: [mongoose.Schema.Types.Mixed]
   },
   score: {
     home: { type: Number, default: 0 },
@@ -132,11 +188,16 @@ const matchSchema = new mongoose.Schema({
   result: {
     winner: { type: mongoose.Schema.Types.ObjectId, ref: 'Team' },
     winType: { type: String, enum: ['regular', 'overtime', 'penalty', 'walkover'] },
+    details: { type: String, default: null },
     isDraw: { type: Boolean, default: false }
   },
   referee: {
     main: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     assistants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  },
+  scorer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   weather: {
     condition: String,

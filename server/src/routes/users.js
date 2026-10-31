@@ -39,7 +39,11 @@ const updateUserValidation = [
   body('phoneNumber')
     .optional()
     .matches(/^\+?[\d\s-()]+$/)
-    .withMessage('Please enter a valid phone number')
+    .withMessage('Please enter a valid phone number'),
+  body('role')
+    .optional()
+    .isIn(['player', 'organizer', 'admin'])
+    .withMessage('Invalid role selection')
 ];
 
 // Public routes

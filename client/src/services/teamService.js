@@ -16,6 +16,14 @@ const teamService = {
 
   // Create team
   createTeam: async (teamData) => {
+    // If no binary File object is included, send as standard application/json
+    const hasFile = Object.values(teamData || {}).some(val => val instanceof File);
+
+    if (!hasFile) {
+      const response = await api.post('/teams', teamData);
+      return response;
+    }
+
     const formData = new FormData();
     
     // Append team data
@@ -24,7 +32,7 @@ const teamService = {
         formData.append(key, teamData[key]);
       } else if (Array.isArray(teamData[key])) {
         formData.append(key, JSON.stringify(teamData[key]));
-      } else {
+      } else if (teamData[key] !== undefined && teamData[key] !== null) {
         formData.append(key, teamData[key]);
       }
     });
@@ -100,6 +108,12 @@ const teamService = {
   // Get team members
   getMembers: async (teamId) => {
     const response = await api.get(`/teams/${teamId}/members`);
+    return response;
+  },
+
+  // Send team invitation
+  sendInvitation: async (teamId, userId, role = 'player') => {
+    const response = await api.post(`/teams/${teamId}/invite`, { userId, role });
     return response;
   },
 

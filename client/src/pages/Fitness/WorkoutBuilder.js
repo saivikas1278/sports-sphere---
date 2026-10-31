@@ -11,6 +11,7 @@ import {
   Layers
 } from 'lucide-react';
 import { showToast } from '../../utils/toast';
+import fitnessService from '../../services/fitnessService';
 
 const WorkoutBuilder = () => {
   const navigate = useNavigate();
@@ -112,10 +113,63 @@ const WorkoutBuilder = () => {
     }
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const categoryMap = {
+        'Strength Training': 'strength',
+        'Cardio': 'cardio',
+        'HIIT': 'cardio',
+        'Flexibility': 'flexibility',
+        'Sports': 'sports-specific'
+      };
+
+      const difficultyMap = {
+        'Beginner': 'beginner',
+        'Intermediate': 'intermediate',
+        'Advanced': 'advanced'
+      };
+
+      const payload = {
+        title: workoutData.name.trim(),
+        description: workoutData.description.trim() || `${workoutData.name.trim()} - Custom workout plan with ${workoutData.exercises.length} exercises.`,
+        category: categoryMap[workoutData.category] || 'strength',
+        type: 'workout-plan',
+        difficulty: difficultyMap[workoutData.difficulty] || 'beginner',
+        duration: parseInt(workoutData.estimatedDuration, 10) || 30,
+        exercises: workoutData.exercises.map(ex => ({
+          name: ex.name,
+          sets: Number(ex.sets) || 3,
+          reps: Number(ex.reps) || 10,
+          weight: Number(ex.weight) || 0,
+          duration: Number(ex.duration) || 30,
+          restTime: Number(ex.restTime) || 60,
+          notes: ex.notes || ''
+        })),
+        equipment: ['none'],
+        targetMuscles: ['full-body'],
+        goals: ['strength']
+      };
+
+      try {
+        await fitnessService.createFitnessContent(payload);
+      } catch (apiErr) {
+        console.warn('Backend fitness content save fallback:', apiErr);
+      }
+
+      // Always save to user local storage for offline and fast local retrieval
+      const existingWorkouts = JSON.parse(localStorage.getItem('sportsphere_custom_workouts') || '[]');
+      const savedWorkout = {
+        id: 'workout_' + Date.now(),
+        ...payload,
+        name: workoutData.name.trim(),
+        category: workoutData.category,
+        createdAt: new Date().toISOString()
+      };
+      existingWorkouts.unshift(savedWorkout);
+      localStorage.setItem('sportsphere_custom_workouts', JSON.stringify(existingWorkouts));
+
       showToast('Workout saved successfully!', 'success');
       navigate('/fitness');
     } catch (error) {
+      console.error('Save workout error:', error);
       showToast('Failed to save workout', 'error');
     }
   };

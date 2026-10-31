@@ -15,9 +15,9 @@ const notificationSchema = new mongoose.Schema({
     enum: [
       'like', 'comment', 'follow', 'unfollow',
       'team_join', 'team_leave', 'team_invite',
-      'tournament_join', 'tournament_start', 'tournament_end',
+      'tournament_join', 'tournament_registration', 'tournament_start', 'tournament_started', 'tournament_end',
       'match_start', 'match_end', 'match_score_update',
-      'achievement', 'post_mention', 'system'
+      'achievement', 'post_mention', 'system', 'tournament_broadcast', 'broadcast'
     ],
     required: true
   },

@@ -18,7 +18,8 @@ export const createNotification = async (notificationData, io) => {
     
     // Send real-time notification via socket
     if (io) {
-      io.to(`user_${notification.recipient._id}`).emit('notification', notification);
+      const { emitNotification } = await import('./socketHandlers.js');
+      emitNotification(io, notification.recipient._id, notification);
     }
 
     // Email notifications have been disabled

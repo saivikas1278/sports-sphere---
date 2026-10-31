@@ -68,6 +68,12 @@ const tournamentService = {
     return response;
   },
 
+  // Update points score (live set-based sports: badminton, volleyball, tennis)
+  updatePointsScore: async (tournamentId, matchId, pointData) => {
+    const response = await api.put(`/tournaments/${tournamentId}/matches/${matchId}/points-score`, pointData);
+    return response;
+  },
+
   // Update cricket ball (live)
   updateCricketBall: async (tournamentId, matchId, ballData) => {
     const response = await api.put(`/tournaments/${tournamentId}/matches/${matchId}/cricket-ball`, ballData);

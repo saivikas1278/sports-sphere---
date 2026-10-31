@@ -6,91 +6,36 @@ export const fetchTournaments = createAsyncThunk(
   'tournaments/fetchTournaments',
   async (params = {}, { rejectWithValue }) => {
     try {
-      // Try to get data from the service
-      try {
-        const response = await tournamentService.getTournaments(params);
-        console.log('[TournamentSlice] API Response:', response);
-        
-        // Handle backend response structure: { success: true, data: [...], count, total, pagination }
-        if (response.success && response.data) {
-          return {
-            tournaments: response.data,
-            pagination: response.pagination || {
-              page: 1,
-              pages: 1,
-              total: response.total || response.count || response.data.length,
-              limit: 10
-            }
-          };
-        }
-        
-        // Fallback for different response formats
+      const response = await tournamentService.getTournaments(params);
+      console.log('[TournamentSlice] API Response:', response);
+      
+      // Handle backend response structure: { success: true, data: [...], count, total, pagination }
+      if (response && response.success && response.data) {
         return {
-          tournaments: response.tournaments || response.data || response || [],
+          tournaments: response.data,
           pagination: response.pagination || {
             page: 1,
             pages: 1,
-            total: (response.tournaments || response.data || response || []).length,
-            limit: 10
-          }
-        };
-      } catch (serviceError) {
-        console.log('Service error, using mock data for tournaments:', serviceError);
-        // If service fails, return mock data
-        const mockTournaments = [
-          {
-            _id: '1',
-            name: 'Summer Basketball Championship',
-            sport: 'Basketball',
-            startDate: '2025-08-20',
-            endDate: '2025-08-25',
-            location: 'Central City Sports Complex',
-            venueName: 'Central City Sports Complex',
-            organizerName: 'City Sports Association',
-            status: 'active',
-            registrationOpen: true,
-            teamCount: 16
-          },
-          {
-            _id: '2',
-            name: 'Regional Soccer Tournament',
-            sport: 'Soccer',
-            startDate: '2025-09-05',
-            endDate: '2025-09-15',
-            location: 'Memorial Stadium',
-            venueName: 'Memorial Stadium',
-            organizerName: 'Regional Sports League',
-            status: 'active',
-            registrationOpen: true,
-            teamCount: 24
-          },
-          {
-            _id: '3',
-            name: 'Winter Basketball League',
-            sport: 'Basketball',
-            startDate: '2025-10-15',
-            endDate: '2025-12-20',
-            location: 'Downtown Indoor Arena',
-            venueName: 'Downtown Indoor Arena',
-            organizerName: 'Urban Sports Network',
-            status: 'coming_soon',
-            registrationOpen: false,
-            teamCount: 12
-          }
-        ];
-        
-        return {
-          tournaments: mockTournaments,
-          pagination: {
-            page: 1,
-            pages: 1,
-            total: mockTournaments.length,
-            limit: 10
+            total: response.total || response.count || response.data.length,
+            limit: response.data.length
           }
         };
       }
+      
+      // Fallback for different response formats
+      const list = response?.tournaments || response?.data || (Array.isArray(response) ? response : []);
+      return {
+        tournaments: list,
+        pagination: response?.pagination || {
+          page: 1,
+          pages: 1,
+          total: list.length,
+          limit: list.length
+        }
+      };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch tournaments');
+      console.error('[TournamentSlice] Error fetching tournaments:', error);
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to fetch tournaments');
     }
   }
 );
@@ -99,60 +44,28 @@ export const fetchTournamentById = createAsyncThunk(
   'tournaments/fetchTournamentById',
   async (id, { rejectWithValue }) => {
     try {
-      try {
-        const response = await tournamentService.getTournament(id);
-        console.log('[TournamentSlice] Tournament Details Response:', response);
-        
-        // Handle backend response structure: { success: true, data: tournament }
-        if (response.success && response.data) {
-          return {
-            tournament: response.data
-          };
-        }
-        
-        // Fallback for different response formats
+      const response = await tournamentService.getTournament(id);
+      console.log('[TournamentSlice] Tournament Details Response:', response);
+      
+      // Handle backend response structure: { success: true, data: tournament }
+      if (response && response.success && response.data) {
         return {
-          tournament: response.tournament || response.data || response
-        };
-      } catch (serviceError) {
-        console.log('Service error, using mock data for tournament details:', serviceError);
-        // If service fails, return mock data for the tournament
-        const mockTournament = {
-          _id: id,
-          name: 'Summer Basketball Championship',
-          sport: 'Basketball',
-          format: '5v5',
-          startDate: '2025-08-20',
-          endDate: '2025-08-25',
-          registrationStartDate: '2025-07-15',
-          registrationEndDate: '2025-08-10',
-          venueName: 'Central City Sports Complex',
-          venueAddress: '123 Sports Way, Central City',
-          organizerName: 'City Sports Association',
-          organizerEmail: 'contact@citysports.com',
-          organizerPhone: '555-123-4567',
-          status: 'active',
-          registrationOpen: true,
-          teamCount: 16,
-          prizes: 'First Place: $1000, Second Place: $500, Third Place: $250',
-          specialAwards: 'MVP, Best Defensive Player, Most Improved',
-          reportingTime: '1 hour before match',
-          eligibility: 'Open to all age groups',
-          equipment: 'Teams must bring their own jerseys and basketballs for warm-up',
-          minTeamSize: 5,
-          maxTeamSize: 12,
-          entryFee: 100,
-          paymentDetails: 'Payment can be made online or at the venue',
-          description: 'The biggest basketball tournament of the summer, featuring teams from across the region competing for glory and prizes.',
-          participants: []
-        };
-
-        return {
-          tournament: mockTournament
+          tournament: response.data
         };
       }
+      
+      if (response?.tournament || response?.data) {
+        return {
+          tournament: response.tournament || response.data
+        };
+      }
+
+      return {
+        tournament: response
+      };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch tournament');
+      console.error('[TournamentSlice] Error fetching tournament details:', error);
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to fetch tournament');
     }
   }
 );
@@ -324,6 +237,18 @@ export const rejectRegistration = createAsyncThunk(
       return { teamId, response };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to reject registration');
+    }
+  }
+);
+
+export const startTournament = createAsyncThunk(
+  'tournaments/startTournament',
+  async (tournamentId, { rejectWithValue }) => {
+    try {
+      const response = await tournamentService.startTournament(tournamentId);
+      return response.data || response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'Failed to start tournament');
     }
   }
 );
@@ -557,6 +482,24 @@ const tournamentSlice = createSlice({
       // Fetch Schedule
       .addCase(fetchTournamentSchedule.fulfilled, (state, action) => {
         state.schedule = action.payload.schedule || action.payload;
+      })
+      // Start Tournament
+      .addCase(startTournament.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(startTournament.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.currentTournament) {
+          state.currentTournament.status = 'ongoing';
+          if (action.payload?.brackets || action.payload?.data?.brackets) {
+            state.bracket = action.payload?.brackets || action.payload?.data?.brackets;
+          }
+        }
+      })
+      .addCase(startTournament.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
       // Fetch Bracket
       .addCase(fetchTournamentBracket.fulfilled, (state, action) => {

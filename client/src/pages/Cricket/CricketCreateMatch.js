@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trophy, MapPin, Plus, Minus, CheckCircle2, Swords } from 'lucide-react';
 import { showToast } from '../../utils/toast';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import api from '../../services/api';
+import tournamentService from '../../services/tournamentService';
 
 const CricketCreateMatch = () => {
   const navigate = useNavigate();
@@ -29,16 +31,26 @@ const CricketCreateMatch = () => {
     const fetchTeams = async () => {
       setIsLoading(true);
       try {
-        await new Promise(resolve => setTimeout(resolve, 800));
+        const res = await api.get('/teams?sport=cricket');
+        const dbTeams = res.data?.data || (Array.isArray(res.data) ? res.data : []);
+        if (dbTeams.length >= 2) {
+          setTeams(dbTeams.map(t => ({ id: t._id || t.id, name: t.name })));
+        } else {
+          setTeams([
+            { id: '1', name: 'Super Kings' },
+            { id: '2', name: 'Royal Challengers' },
+            { id: '3', name: 'Mumbai Indians' },
+            { id: '4', name: 'Delhi Capitals' }
+          ]);
+        }
+        setIsLoading(false);
+      } catch (error) {
         setTeams([
           { id: '1', name: 'Super Kings' },
           { id: '2', name: 'Royal Challengers' },
           { id: '3', name: 'Mumbai Indians' },
           { id: '4', name: 'Delhi Capitals' }
         ]);
-        setIsLoading(false);
-      } catch (error) {
-        showToast('Failed to load teams', 'error');
         setIsLoading(false);
       }
     };
@@ -106,11 +118,68 @@ const CricketCreateMatch = () => {
     
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      showToast('Match created successfully!', 'success');
-      navigate('/cricket');
+      const team1Name = formData.useCustomTeams 
+        ? formData.customTeam1Name 
+        : (teams.find(t => t.id === formData.team1)?.name || 'Team 1');
+      const team2Name = formData.useCustomTeams 
+        ? formData.customTeam2Name 
+        : (teams.find(t => t.id === formData.team2)?.name || 'Team 2');
+
+      const tournamentData = {
+        name: formData.matchTitle || `${team1Name} vs ${team2Name}`,
+        description: `Cricket Match (${formData.matchType}) at ${formData.venue}`,
+        sport: 'cricket',
+        format: 'single-elimination',
+        maxTeams: 2,
+        settings: {
+          requireApproval: false,
+          minPlayersPerTeam: 1,
+          maxPlayersPerTeam: 15
+        },
+        dates: {
+          registrationStart: new Date(Date.now() - 3600 * 1000).toISOString(),
+          registrationEnd: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+          tournamentStart: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
+          tournamentEnd: new Date(Date.now() + 24 * 3600 * 1000).toISOString()
+        },
+        venue: {
+          name: formData.venue || 'Cricket Ground',
+          address: 'Main Sports Complex',
+          city: 'Sports City'
+        }
+      };
+
+      const tourneyRes = await tournamentService.createTournament(tournamentData);
+      const tournId = tourneyRes.data?._id || tourneyRes.data?.id;
+
+      if (tournId) {
+        await tournamentService.registerTeam(tournId, {
+          name: team1Name,
+          shortName: team1Name.slice(0, 5).toUpperCase(),
+          sport: 'cricket'
+        });
+        await tournamentService.registerTeam(tournId, {
+          name: team2Name,
+          shortName: team2Name.slice(0, 5).toUpperCase(),
+          sport: 'cricket'
+        });
+
+        const startRes = await tournamentService.startTournament(tournId);
+        showToast('Cricket match created and ready for scoring!', 'success');
+        
+        const createdMatches = startRes.data?.matches || startRes.matches;
+        if (createdMatches && createdMatches.length > 0) {
+          const firstMatchId = createdMatches[0]._id || createdMatches[0].id;
+          navigate(`/tournaments/${tournId}/matches/${firstMatchId}/score`);
+        } else {
+          navigate(`/tournaments/${tournId}/live`);
+        }
+      } else {
+        navigate('/cricket');
+      }
     } catch (error) {
-      showToast('Failed to create match', 'error');
+      console.error('Error creating cricket match:', error);
+      showToast(error.response?.data?.error || error.response?.data?.message || 'Failed to create match', 'error');
       setIsSubmitting(false);
     }
   };

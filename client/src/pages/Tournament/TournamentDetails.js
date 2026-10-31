@@ -5,7 +5,7 @@ import { fetchTournamentById, registerForTournament } from '../../redux/slices/t
 import { loadUser } from '../../redux/slices/authSlice';
 import { 
   Trophy, Calendar, MapPin, Users, UserPlus, Clock, Info, Medal, 
-  X, Search, Trash2, CheckCircle2, Loader2, ArrowLeft, Settings
+  X, Search, Trash2, CheckCircle2, Loader2, ArrowLeft, Settings, Activity
 } from 'lucide-react';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import { showToast } from '../../utils/toast';
@@ -60,32 +60,42 @@ const TournamentDetails = () => {
       setUserTeam(null);
 
       if (currentTournament.registeredTeams && currentTournament.registeredTeams.length > 0) {
-        for (const teamId of currentTournament.registeredTeams) {
+        for (const teamEntry of currentTournament.registeredTeams) {
           try {
-            const teamIdString = String(teamId);
-            if (!teamIdString || !teamIdString.match(/^[0-9a-fA-F]{24}$/)) {
-              continue;
-            }
-            
-            const teamResponse = await teamService.getTeam(teamIdString);
-            if (teamResponse.success && teamResponse.data) {
-              const team = teamResponse.data;
-              
+            const team = teamEntry?.team && typeof teamEntry.team === 'object' && teamEntry.team._id ? teamEntry.team : null;
+            if (team) {
               const isUserInTeam = team.players?.some(player => {
                 const playerId = player.user?._id || player.user;
-                return playerId === user.id;
+                return String(playerId) === String(user.id);
               });
-              
-              const isUserCaptain = team.captain?._id === user.id || team.captain === user.id;
-              
+              const isUserCaptain = String(team.captain?._id || team.captain) === String(user.id);
               if (isUserInTeam || isUserCaptain) {
                 setUserRegistered(true);
                 setUserTeam(team);
                 return;
               }
+            } else {
+              const teamIdString = String(teamEntry?.team || teamEntry?._id || teamEntry);
+              if (!teamIdString || !teamIdString.match(/^[0-9a-fA-F]{24}$/)) {
+                continue;
+              }
+              const teamResponse = await teamService.getTeam(teamIdString);
+              if (teamResponse.success && teamResponse.data) {
+                const fetchedTeam = teamResponse.data;
+                const isUserInTeam = fetchedTeam.players?.some(player => {
+                  const playerId = player.user?._id || player.user;
+                  return String(playerId) === String(user.id);
+                });
+                const isUserCaptain = String(fetchedTeam.captain?._id || fetchedTeam.captain) === String(user.id);
+                if (isUserInTeam || isUserCaptain) {
+                  setUserRegistered(true);
+                  setUserTeam(fetchedTeam);
+                  return;
+                }
+              }
             }
           } catch (error) {
-            console.error(`Error checking team ${teamId}:`, error);
+            console.error(`Error checking team:`, error);
           }
         }
       }
@@ -253,11 +263,9 @@ const TournamentDetails = () => {
     );
   }
 
-  const isOrganizer = user && currentTournament && (
-    user._id === currentTournament.organizer || 
-    user.id === currentTournament.organizer || 
-    user._id === currentTournament.organizer?._id
-  );
+  const currentUserId = String(user?._id || user?.id || '');
+  const organizerId = String(currentTournament?.organizer?._id || currentTournament?.organizer || '');
+  const isOrganizer = !!currentUserId && !!organizerId && (currentUserId === organizerId || user?.role === 'admin');
 
   return (
     <TournamentDetailsContent 
@@ -365,13 +373,22 @@ const TournamentDetailsContent = ({
             </div>
           </div>
           
-          <div className="shrink-0 flex items-center lg:items-start pt-2">
+          <div className="shrink-0 flex flex-col sm:flex-row gap-3 items-center lg:items-start pt-2">
+            {((tournament.matches && tournament.matches.length > 0) || ['ongoing', 'completed', 'active'].includes(tournament.status)) && (
+              <Link
+                to={`/tournaments/${tournament._id || tournament.id}/live`}
+                className="inline-flex items-center justify-center px-4 md:px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-full shadow-[0_4px_14px_0_rgba(59,130,246,0.39)] hover:from-blue-700 hover:to-indigo-700 hover:-translate-y-0.5 transition-all text-sm"
+              >
+                <Activity className="mr-2" size={18} />
+                Live Board & Brackets
+              </Link>
+            )}
             {isOrganizer ? (
               <Link
                 to={`/tournaments/${tournament._id || tournament.id}/dashboard`}
-                className="inline-flex items-center justify-center px-4 md:px-8 py-4 bg-slate-800 text-white font-bold rounded-full shadow-[0_4px_14px_0_rgba(15,23,42,0.39)] hover:bg-slate-900 hover:-translate-y-0.5 transition-all"
+                className="inline-flex items-center justify-center px-4 md:px-8 py-3.5 bg-slate-800 text-white font-bold rounded-full shadow-[0_4px_14px_0_rgba(15,23,42,0.39)] hover:bg-slate-900 hover:-translate-y-0.5 transition-all text-sm"
               >
-                <Settings className="mr-2" size={20} />
+                <Settings className="mr-2" size={18} />
                 Manage Tournament
               </Link>
             ) : (

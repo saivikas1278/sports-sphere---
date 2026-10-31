@@ -1,6 +1,7 @@
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import Team from '../models/Team.js';
 import { emitChatMessage } from '../utils/socketHandlers.js';
 
 // @desc    Get all conversations for a user
@@ -140,7 +141,23 @@ export const getRoomMessages = async (req, res) => {
     const { roomType, roomId } = req.params;
 
     if (!['team', 'tournament'].includes(roomType)) {
-      return res.status(400).json({ success: false, message: 'Invalid room type' });
+      return res.status(400).json({ success: false, error: 'Invalid room type' });
+    }
+
+    if (roomType === 'team') {
+      const team = await Team.findById(roomId);
+      if (!team) {
+        return res.status(404).json({ success: false, error: 'Team not found' });
+      }
+
+      const userId = (req.user._id || req.user.id).toString();
+      const isCaptain = team.captain.toString() === userId;
+      const isPlayer = team.players && team.players.some(p => p.user && p.user.toString() === userId);
+      const isAdmin = req.user.role === 'admin';
+
+      if (!isCaptain && !isPlayer && !isAdmin) {
+        return res.status(403).json({ success: false, error: 'Not authorized to access this team chat' });
+      }
     }
 
     const messages = await Message.find({ roomType, roomId })
@@ -154,6 +171,64 @@ export const getRoomMessages = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching room messages:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+};
+
+// @desc    Send a message to a specific room (team/tournament)
+// @route   POST /api/chat/:roomType/:roomId
+// @access  Protected
+export const sendRoomMessage = async (req, res) => {
+  try {
+    const { roomType, roomId } = req.params;
+    const { text, media, isAnnouncement } = req.body;
+
+    if (!['team', 'tournament'].includes(roomType)) {
+      return res.status(400).json({ success: false, error: 'Invalid room type' });
+    }
+
+    if (!text && !media) {
+      return res.status(400).json({ success: false, error: 'Message text or media is required' });
+    }
+
+    if (roomType === 'team') {
+      const team = await Team.findById(roomId);
+      if (!team) {
+        return res.status(404).json({ success: false, error: 'Team not found' });
+      }
+
+      const userId = (req.user._id || req.user.id).toString();
+      const isCaptain = team.captain.toString() === userId;
+      const isPlayer = team.players && team.players.some(p => p.user && p.user.toString() === userId);
+      const isAdmin = req.user.role === 'admin';
+
+      if (!isCaptain && !isPlayer && !isAdmin) {
+        return res.status(403).json({ success: false, error: 'Not authorized to send messages to this team chat' });
+      }
+    }
+
+    const newMessage = await Message.create({
+      roomType,
+      roomId,
+      sender: req.user._id || req.user.id,
+      text,
+      media,
+      isAnnouncement: isAnnouncement || false
+    });
+
+    await newMessage.populate('sender', 'firstName lastName avatar');
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`${roomType}_${roomId}`).emit('new_message', newMessage);
+    }
+
+    res.status(201).json({
+      success: true,
+      data: newMessage
+    });
+  } catch (error) {
+    console.error('Error sending room message:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
   }
 };

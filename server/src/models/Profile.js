@@ -238,8 +238,6 @@ const profileSchema = new mongoose.Schema({
 });
 
 // Indexes
-profileSchema.index({ user: 1 });
-profileSchema.index({ 'address.coordinates': '2dsphere' });
 profileSchema.index({ 'statistics.totalPoints': -1 });
 profileSchema.index({ 'preferences.sports.sport': 1 });
 

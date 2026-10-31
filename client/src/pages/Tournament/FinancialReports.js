@@ -1,24 +1,97 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchTournamentById } from '../../redux/slices/tournamentSlice';
 import { DollarSign, TrendingUp, Download, ArrowLeft, CreditCard, Users, Trophy } from 'lucide-react';
 import FloatingElements from '../../components/UI/FloatingElements';
+import LoadingSpinner from '../../components/UI/LoadingSpinner';
 
 const FinancialReports = () => {
   const { id } = useParams();
+  const dispatch = useDispatch();
+  const { currentTournament, loading } = useSelector((state) => state.tournaments);
+
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchTournamentById(id));
+    }
+  }, [dispatch, id]);
+
+  const regFee = currentTournament?.registrationFee || 0;
+  const registeredTeams = currentTournament?.registeredTeams || [];
+  const approvedTeams = registeredTeams.filter(t => t.status === 'approved');
+  const totalCollected = approvedTeams.length * regFee;
+  const prizePoolTotal = currentTournament?.prizePool?.total || 0;
+  const sponsorsCount = currentTournament?.sponsors?.length || 0;
+  const sponsorRevenue = sponsorsCount * 500;
+  const totalRevenue = totalCollected + sponsorRevenue;
 
   const metrics = [
-    { label: 'Total Revenue', value: '$4,250', trend: '+12%', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { label: 'Entry Fees', value: '$3,200', desc: '32 teams @ $100', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { label: 'Sponsorships', value: '$1,050', desc: '3 Active Sponsors', icon: TrendingUp, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { label: 'Prize Pool', value: '$2,000', desc: '1st: $1k, 2nd: $500', icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50' }
+    { 
+      label: 'Total Revenue', 
+      value: `$${totalRevenue.toLocaleString()}`, 
+      trend: '+100%', 
+      icon: DollarSign, 
+      color: 'text-emerald-500', 
+      bg: 'bg-emerald-50' 
+    },
+    { 
+      label: 'Entry Fees', 
+      value: `$${totalCollected.toLocaleString()}`, 
+      desc: `${approvedTeams.length} approved teams @ $${regFee}`, 
+      icon: Users, 
+      color: 'text-blue-500', 
+      bg: 'bg-blue-50' 
+    },
+    { 
+      label: 'Sponsorships', 
+      value: `$${sponsorRevenue.toLocaleString()}`, 
+      desc: `${sponsorsCount} Active Sponsors`, 
+      icon: TrendingUp, 
+      color: 'text-purple-500', 
+      bg: 'bg-purple-50' 
+    },
+    { 
+      label: 'Prize Pool', 
+      value: `$${prizePoolTotal.toLocaleString()}`, 
+      desc: 'Committed prize awards', 
+      icon: Trophy, 
+      color: 'text-amber-500', 
+      bg: 'bg-amber-50' 
+    }
   ];
 
-  const transactions = [
-    { id: 'TXN-001', team: 'Neon Strikers', amount: 100, date: '2024-08-10', status: 'completed' },
-    { id: 'TXN-002', team: 'Thunderbolts', amount: 100, date: '2024-08-11', status: 'completed' },
-    { id: 'TXN-003', team: 'City FC', amount: 100, date: '2024-08-11', status: 'pending' },
-    { id: 'SPN-001', team: 'RedBull Sponsor', amount: 500, date: '2024-08-12', status: 'completed' },
-  ];
+  const transactions = registeredTeams.map((rt, idx) => {
+    const teamObj = typeof rt.team === 'object' ? rt.team : {};
+    return {
+      id: `TXN-${String(idx + 1).padStart(3, '0')}`,
+      team: teamObj.name || 'Team Registration',
+      date: new Date(rt.registeredAt || Date.now()).toLocaleDateString(),
+      status: rt.status === 'approved' ? 'completed' : rt.status || 'pending',
+      amount: regFee
+    };
+  });
+
+  const handleExportCSV = () => {
+    const headers = ['Transaction ID', 'Team', 'Date', 'Status', 'Amount'];
+    const rows = transactions.map(t => [t.id, `"${t.team}"`, t.date, t.status, t.amount]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `financial_report_${id}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (loading && !currentTournament) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative pt-4 md:pt-8 md:pt-16 md:pt-20 md:pt-24 pb-6 md:pb-12 overflow-hidden bg-slate-50/50">
@@ -40,7 +113,10 @@ const FinancialReports = () => {
             </div>
           </div>
           
-          <button className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 transition-colors flex items-center gap-2 shadow-sm">
+          <button 
+            onClick={handleExportCSV}
+            className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 transition-colors flex items-center gap-2 shadow-sm"
+          >
             <Download size={18} /> Export CSV
           </button>
         </div>

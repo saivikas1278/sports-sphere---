@@ -42,11 +42,14 @@ const teamSchema = new mongoose.Schema({
   tournament: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Tournament',
-    required: true
+    required: false,
+    default: null
   },
   sport: {
     type: String,
     required: true,
+    lowercase: true,
+    trim: true,
     enum: ['football', 'basketball', 'cricket', 'tennis', 'badminton', 'volleyball', 'table-tennis', 'chess', 'other']
   },
   homeVenue: {

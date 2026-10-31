@@ -4,6 +4,8 @@ import Team from '../models/Team.js';
 import Match from '../models/Match.js';
 import Tournament from '../models/Tournament.js';
 import FitnessContent from '../models/FitnessContent.js';
+import { canModify } from '../middleware/authorization.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -125,12 +127,42 @@ export const updateUser = async (req, res, next) => {
       });
     }
 
-    // Make sure user can only update their own profile
-    if (req.params.id !== req.user.id) {
-      return res.status(401).json({
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Check authorization: Owner or Admin
+    if (!canModify(targetUser, req.user)) {
+      return res.status(403).json({
         success: false,
         error: 'Not authorized to update this profile'
       });
+    }
+
+    // Role modification checks
+    if (req.body.role !== undefined && req.body.role !== targetUser.role) {
+      // Normal users cannot change roles
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          error: 'Only administrators can change user roles'
+        });
+      }
+
+      // Prevent an admin from demoting themselves if they are the last admin
+      if (targetUser.role === 'admin' && req.body.role !== 'admin') {
+        const adminCount = await User.countDocuments({ role: 'admin' });
+        if (adminCount <= 1) {
+          return res.status(400).json({
+            success: false,
+            error: 'Cannot demote the last remaining administrator'
+          });
+        }
+      }
     }
 
     const fieldsToUpdate = {};
@@ -139,6 +171,10 @@ export const updateUser = async (req, res, next) => {
       'dateOfBirth', 'phoneNumber', 'preferences', 'avatar'
     ];
 
+    if (req.user.role === 'admin') {
+      allowedFields.push('role', 'isVerified', 'isActive');
+    }
+
     // Only update allowed fields that are provided
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
@@ -146,7 +182,7 @@ export const updateUser = async (req, res, next) => {
       }
     });
 
-    const user = await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       fieldsToUpdate,
       {
@@ -155,9 +191,26 @@ export const updateUser = async (req, res, next) => {
       }
     ).select('-password -googleId');
 
+    // Log admin action to AuditLog
+    if (req.user.role === 'admin') {
+      const what = req.body.role && req.body.role !== targetUser.role
+        ? `Changed role for user ${targetUser.email || targetUser._id} to ${req.body.role}`
+        : `Updated user ${targetUser.email || targetUser._id}`;
+
+      await logAudit({
+        who: req.user._id || req.user.id,
+        what,
+        target: {
+          model: 'User',
+          id: targetUser._id
+        },
+        details: fieldsToUpdate
+      });
+    }
+
     res.status(200).json({
       success: true,
-      data: user
+      data: updatedUser
     });
   } catch (error) {
     next(error);
@@ -169,20 +222,42 @@ export const updateUser = async (req, res, next) => {
 // @access  Private
 export const deleteUser = async (req, res, next) => {
   try {
-    // Make sure user can only delete their own profile
-    if (req.params.id !== req.user.id) {
-      return res.status(401).json({
-        success: false,
-        error: 'Not authorized to delete this profile'
-      });
-    }
-
     const user = await User.findById(req.params.id);
 
     if (!user) {
       return res.status(404).json({
         success: false,
         error: 'User not found'
+      });
+    }
+
+    // Check authorization: Owner or Admin
+    if (!canModify(user, req.user)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Not authorized to delete this profile'
+      });
+    }
+
+    // Prevent deleting the last remaining admin
+    if (user.role === 'admin') {
+      const adminCount = await User.countDocuments({ role: 'admin' });
+      if (adminCount <= 1) {
+        return res.status(400).json({
+          success: false,
+          error: 'Cannot delete the last remaining administrator'
+        });
+      }
+    }
+
+    if (req.user.role === 'admin') {
+      await logAudit({
+        who: req.user._id || req.user.id,
+        what: `Deleted user ${user.email || user._id}`,
+        target: {
+          model: 'User',
+          id: user._id
+        }
       });
     }
 
@@ -388,7 +463,7 @@ export const getUserTournaments = async (req, res, next) => {
 
     // Find tournaments organized by user
     const organizedTournaments = await Tournament.find({ organizer: user._id })
-      .populate('registeredTeams', 'name logo')
+      .populate('registeredTeams.team', 'name logo')
       .sort({ createdAt: -1 });
 
     // Find tournaments user participated in
@@ -482,7 +557,7 @@ export const updateUserTeamStatus = async (req, res, next) => {
     }
 
     // Check if user can update team status (either their own profile or admin)
-    if (req.user.id !== req.params.id && req.user.role !== 'admin') {
+    if (!canModify(user, req.user)) {
       return res.status(403).json({
         success: false,
         error: 'Not authorized to update this user'

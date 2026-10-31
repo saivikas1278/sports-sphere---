@@ -89,7 +89,11 @@ const tournamentSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['draft', 'open', 'closed', 'ongoing', 'completed', 'cancelled'],
-    default: 'draft'
+    default: 'open'
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
   },
   visibility: {
     type: String,
@@ -157,6 +161,11 @@ const tournamentSchema = new mongoose.Schema({
     isEnabled: { type: Boolean, default: false },
     url: String,
     platform: String
+  },
+  champion: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Team',
+    default: null
   },
   settings: {
     allowLateRegistration: { type: Boolean, default: false },

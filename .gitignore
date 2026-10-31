@@ -16,6 +16,16 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+server/.env
+client/.env
+
+# Local Database & Storage
+data/
+mongodb_data/
+server/uploads/
+
+# Planning & Scratch
+.planning/
 
 # Debug
 npm-debug.log*

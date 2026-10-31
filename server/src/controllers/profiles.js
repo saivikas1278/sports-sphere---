@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Profile from '../models/Profile.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
@@ -8,13 +9,29 @@ import { createFollowNotification } from '../utils/notificationUtils.js';
 // @access  Public
 export const getProfile = async (req, res) => {
   try {
-    const profile = await Profile.findByUser(req.params.userId);
+    const rawId = req.params.userId;
+    const targetUserId = (rawId === 'me' && req.user) ? req.user.id : rawId;
 
-    if (!profile) {
+    if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
       return res.status(404).json({
         success: false,
-        message: 'Profile not found'
+        message: 'Invalid user ID'
       });
+    }
+
+    let profile = await Profile.findByUser(targetUserId);
+
+    if (!profile) {
+      const user = await User.findById(targetUserId);
+      if (user) {
+        await Profile.create({ user: user._id });
+        profile = await Profile.findByUser(user._id);
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile not found'
+        });
+      }
     }
 
     // Check if current user is following this profile
@@ -403,3 +420,30 @@ export const updateStatistics = async (req, res) => {
     });
   }
 };
+
+// @desc    Get user profile statistics
+// @route   GET /api/profiles/:userId/stats
+// @access  Public
+export const getProfileStats = async (req, res) => {
+  try {
+    const profile = await Profile.findByUser(req.params.userId);
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Profile not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: profile.statistics || {}
+    });
+  } catch (error) {
+    console.error('Get profile stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch profile stats'
+    });
+  }
+};
+

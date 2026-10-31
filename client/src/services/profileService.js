@@ -85,6 +85,12 @@ const profileService = {
   getSportStats: async (userId, sport) => {
     const response = await api.get(`/profiles/${userId}/stats/${sport}`);
     return response;
+  },
+
+  // Get user profile statistics
+  getProfileStats: async (userId) => {
+    const response = await api.get(`/profiles/${userId}/stats`);
+    return response;
   }
 };
 

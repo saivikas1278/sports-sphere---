@@ -10,6 +10,8 @@ import {
   Zap,
   Target
 } from 'lucide-react';
+import fitnessService from '../../services/fitnessService';
+import LoadingSpinner from '../../components/UI/LoadingSpinner';
 
 const BrowseWorkout = () => {
   const navigate = useNavigate();
@@ -18,7 +20,47 @@ const BrowseWorkout = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [hoveredVideo, setHoveredVideo] = useState(null);
   const [videoErrors, setVideoErrors] = useState({});
+  const [apiWorkouts, setApiWorkouts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const videoRefs = useRef({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchWorkouts = async () => {
+      try {
+        setIsLoading(true);
+        const params = {};
+        if (selectedSport !== 'all') params.sport = selectedSport;
+        if (selectedDifficulty !== 'all') params.difficulty = selectedDifficulty;
+        if (selectedCategory !== 'all') params.category = selectedCategory;
+
+        const response = await fitnessService.getFitnessContent(params);
+        if (isMounted && response?.data?.data && Array.isArray(response.data.data)) {
+          const normalized = response.data.data.map(item => ({
+            id: item._id,
+            name: item.title || item.name,
+            sport: item.sport || item.category || 'all',
+            difficulty: item.difficulty || 'beginner',
+            category: item.category || 'strength',
+            duration: item.duration || 30,
+            calories: item.caloriesBurned?.average || item.calories || 200,
+            exercises: item.exercises?.length || item.exerciseCount || 6,
+            description: item.description || '',
+            videoUrl: item.videoUrl || item.media?.videoUrl || '',
+            tags: item.tags || []
+          }));
+          setApiWorkouts(normalized);
+        }
+      } catch (err) {
+        console.warn('Could not fetch live workouts from backend, falling back to default catalog:', err.message);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    fetchWorkouts();
+    return () => { isMounted = false; };
+  }, [selectedSport, selectedDifficulty, selectedCategory]);
 
   useEffect(() => {
     const currentRefs = videoRefs.current;
@@ -82,10 +124,17 @@ const BrowseWorkout = () => {
   ];
 
   const getFilteredWorkouts = () => {
-    return allWorkouts.filter(workout => {
-      const sportMatch = selectedSport === 'all' || workout.sport === selectedSport;
-      const difficultyMatch = selectedDifficulty === 'all' || workout.difficulty === selectedDifficulty;
-      const categoryMatch = selectedCategory === 'all' || workout.category === selectedCategory;
+    const combined = [...apiWorkouts];
+    allWorkouts.forEach(defaultWorkout => {
+      if (!combined.some(w => (String(w.id) === String(defaultWorkout.id) || w.name.toLowerCase() === defaultWorkout.name.toLowerCase()))) {
+        combined.push(defaultWorkout);
+      }
+    });
+
+    return combined.filter(workout => {
+      const sportMatch = selectedSport === 'all' || (workout.sport && workout.sport.toLowerCase() === selectedSport.toLowerCase());
+      const difficultyMatch = selectedDifficulty === 'all' || (workout.difficulty && workout.difficulty.toLowerCase() === selectedDifficulty.toLowerCase());
+      const categoryMatch = selectedCategory === 'all' || (workout.category && workout.category.toLowerCase() === selectedCategory.toLowerCase());
       return sportMatch && difficultyMatch && categoryMatch;
     });
   };
@@ -193,7 +242,12 @@ const BrowseWorkout = () => {
             </div>
           </div>
           
-          {filteredWorkouts.length === 0 ? (
+          {isLoading ? (
+            <div className="p-12 rounded-[40px] glass-panel bg-white/40 border border-white text-center flex flex-col items-center justify-center min-h-[300px]">
+              <LoadingSpinner size="lg" color="primary" />
+              <p className="mt-4 text-slate-500 font-medium animate-pulse">Loading workouts...</p>
+            </div>
+          ) : filteredWorkouts.length === 0 ? (
             <div className="p-4 md:p-6 md:p-16 rounded-[40px] glass-panel bg-white/40 border border-white text-center flex flex-col items-center justify-center">
               <div className="w-16 md:w-24 h-16 md:h-24 bg-slate-100 text-slate-300 rounded-full flex items-center justify-center mb-4 md:mb-6">
                 <Dumbbell size={48} />

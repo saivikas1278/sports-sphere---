@@ -1,25 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
-  Filter, 
-  MoreVertical, 
   Shield, 
-  Ban, 
   CheckCircle,
-  User
+  User as UserIcon,
+  Loader2
 } from 'lucide-react';
 import FloatingElements from '../../components/UI/FloatingElements';
+import userService from '../../services/userService';
+import { showToast } from '../../utils/toast';
 
 const UserManagement = () => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Mock data
-  const users = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'player', status: 'active', date: '2023-01-15' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'organizer', status: 'verified', date: '2023-02-20' },
-    { id: 3, name: 'Mike Johnson', email: 'mike@example.com', role: 'player', status: 'blocked', date: '2023-03-10' },
-    { id: 4, name: 'Admin User', email: 'admin@sportsphere.com', role: 'admin', status: 'active', date: '2022-11-05' },
-  ];
+  const [roleFilter, setRoleFilter] = useState('all');
+
+  const fetchUsers = async (query = '') => {
+    try {
+      setLoading(true);
+      const res = query 
+        ? await userService.searchUsers(query)
+        : await userService.getUsers({ limit: 50 });
+      
+      const userList = res.data?.data || res.data || [];
+      setUsers(Array.isArray(userList) ? userList : []);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+      showToast('Failed to load users from server', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchUsers(searchTerm);
+    }, 400);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm]);
+
+  const handleRoleToggle = async (user) => {
+    const nextRoleMap = {
+      player: 'organizer',
+      organizer: 'admin',
+      admin: 'player'
+    };
+    const nextRole = nextRoleMap[user.role] || 'player';
+
+    try {
+      await userService.updateUserRole(user._id || user.id, nextRole);
+      showToast(`Updated role for ${user.firstName || user.name} to ${nextRole}`, 'success');
+      setUsers(prev => prev.map(u => (u._id === user._id ? { ...u, role: nextRole } : u)));
+    } catch (err) {
+      showToast('Failed to update role', 'error');
+    }
+  };
+
+  const filteredUsers = users.filter(u => {
+    if (roleFilter === 'all') return true;
+    return u.role === roleFilter;
+  });
 
   return (
     <div className="min-h-screen relative pt-4 md:pt-8 md:pt-16 md:pt-20 md:pt-24 pb-6 md:pb-12 overflow-hidden">
@@ -39,83 +81,104 @@ const UserManagement = () => {
               </div>
               <input 
                 type="text" 
-                placeholder="Search users..." 
+                placeholder="Search by name or email..." 
                 className="pl-10 pr-4 py-2 bg-white/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-full sm:w-64"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button className="p-2 bg-white/70 border border-slate-200 rounded-xl text-slate-600 hover:bg-white hover:text-blue-600 transition-colors">
-              <Filter size={20} />
-            </button>
+            
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-3 py-2 bg-white/70 border border-slate-200 rounded-xl text-slate-700 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Roles</option>
+              <option value="player">Players</option>
+              <option value="organizer">Organizers</option>
+              <option value="admin">Admins</option>
+            </select>
           </div>
         </div>
 
         {/* Users Table */}
         <div className="glass-panel rounded-2xl md:rounded-3xl overflow-hidden border border-white/60">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-200/60">
-                  <th className="px-4 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
-                  <th className="px-4 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Role</th>
-                  <th className="px-4 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Joined</th>
-                  <th className="px-4 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200/60">
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-white/40 transition-colors">
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                          <User size={20} />
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-slate-800">{user.name}</div>
-                          <div className="text-sm text-slate-500">{user.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                        ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                          user.role === 'organizer' ? 'bg-amber-100 text-amber-800' : 
-                          'bg-blue-100 text-blue-800'}`}
-                      >
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                        ${user.status === 'verified' ? 'bg-emerald-100 text-emerald-800' : 
-                          user.status === 'blocked' ? 'bg-red-100 text-red-800' : 
-                          'bg-slate-100 text-slate-800'}`}
-                      >
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                      {user.date}
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        <button className="p-1 text-slate-400 hover:text-emerald-600 transition-colors" title="Verify User">
-                          <CheckCircle size={18} />
-                        </button>
-                        <button className="p-1 text-slate-400 hover:text-red-600 transition-colors" title="Block User">
-                          <Ban size={18} />
-                        </button>
-                        <button className="p-1 text-slate-400 hover:text-blue-600 transition-colors" title="Change Role">
-                          <Shield size={18} />
-                        </button>
-                      </div>
-                    </td>
+            {loading ? (
+              <div className="p-12 flex justify-center items-center">
+                <Loader2 className="animate-spin text-blue-500" size={32} />
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 font-medium">
+                No users found.
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-200/60">
+                    <th className="px-4 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
+                    <th className="px-4 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Role</th>
+                    <th className="px-4 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Verification</th>
+                    <th className="px-4 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Joined Date</th>
+                    <th className="px-4 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-200/60">
+                  {filteredUsers.map((user) => {
+                    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || 'User';
+                    const joinedDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Active';
+                    return (
+                      <tr key={user._id || user.id} className="hover:bg-white/40 transition-colors">
+                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {user.avatar ? (
+                              <img src={user.avatar} alt={fullName} className="h-10 w-10 rounded-full object-cover mr-3" />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                                <UserIcon size={20} />
+                              </div>
+                            )}
+                            <div>
+                              <div className="text-sm font-bold text-slate-800">{fullName}</div>
+                              <div className="text-sm text-slate-500">{user.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                            ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
+                              user.role === 'organizer' ? 'bg-amber-100 text-amber-800' : 
+                              'bg-blue-100 text-blue-800'}`}
+                          >
+                            {user.role || 'player'}
+                          </span>
+                        </td>
+                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium
+                            ${user.isVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}
+                          >
+                            {user.isVerified ? <CheckCircle size={12} /> : null}
+                            {user.isVerified ? 'Verified' : 'Standard'}
+                          </span>
+                        </td>
+                        <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                          {joinedDate}
+                        </td>
+                        <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button 
+                            onClick={() => handleRoleToggle(user)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-300 transition-all shadow-sm"
+                            title="Cycle Role: Player -> Organizer -> Admin"
+                          >
+                            <Shield size={14} className="text-blue-500" /> Cycle Role
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>

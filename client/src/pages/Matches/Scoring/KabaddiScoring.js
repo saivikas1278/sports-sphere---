@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaUndo, FaFlag } from 'react-icons/fa';
 import { GiWhistle } from 'react-icons/gi';
 import matchService from '../../../services/matchService';
+import { getSocket, joinMatchRoom, leaveMatchRoom } from '../../../services/socket';
 import { showToast } from '../../../utils/toast';
 
 const KabaddiScoring = () => {
@@ -45,6 +46,15 @@ const KabaddiScoring = () => {
   });
 
   // Load match data
+  useEffect(() => {
+    if (matchId) {
+      joinMatchRoom(matchId);
+    }
+    return () => {
+      if (matchId) leaveMatchRoom(matchId);
+    };
+  }, [matchId]);
+
   useEffect(() => {
     const fetchMatch = async () => {
       try {
@@ -350,6 +360,19 @@ const KabaddiScoring = () => {
       winner
     }));
     
+    const socketInstance = getSocket();
+    if (socketInstance) {
+      socketInstance.emit('score-updated', {
+        matchId,
+        score: {
+          home: team1Score,
+          away: team2Score
+        },
+        status: 'completed',
+        winner
+      });
+    }
+
     const endMatchAsync = async () => {
       try {
         await matchService.updateMatch(matchId, {

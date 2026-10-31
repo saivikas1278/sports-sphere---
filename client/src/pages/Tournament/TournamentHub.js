@@ -15,7 +15,6 @@ import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import StandardMatchCard from '../../components/UI/StandardMatchCard';
 import CategoryFilterScroll from '../../components/UI/CategoryFilterScroll';
 import MapDiscovery from './MapDiscovery';
-import { showToast } from '../../utils/toast';
 
 const SPORTS = [
   { id: '', label: 'All Sports' },
@@ -63,16 +62,49 @@ const TournamentHub = () => {
     dispatch(fetchTournaments());
   }, [dispatch, locationObj.search]);
 
+  const getPrizePoolTotal = (prizePool) => {
+    if (!prizePool) return 0;
+    if (typeof prizePool === 'number') return prizePool;
+    if (typeof prizePool.total === 'number') return prizePool.total;
+    if (typeof prizePool === 'string') {
+      const parsed = parseFloat(prizePool.replace(/[^0-9.]/g, ''));
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  };
+
+  const getEntryFee = (fee) => {
+    if (typeof fee === 'number') return fee;
+    if (typeof fee === 'string') {
+      const parsed = parseFloat(fee.replace(/[^0-9.]/g, ''));
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'TBA';
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
+  const currentUserId = String(user?._id || user?.id || '');
+
   const filteredTournaments = tournaments ? tournaments.filter(tournament => {
+    const organizerId = String(tournament.organizer?._id || tournament.organizer || '');
+    const isOwner = !!currentUserId && !!organizerId && currentUserId === organizerId;
+    const isAdmin = user?.role === 'admin';
+
+    // 0. Privacy & Draft protection:
+    // Draft or private tournaments are strictly visible only to their organizer or platform admin
+    if ((tournament.status === 'draft' || tournament.visibility === 'private') && !isOwner && !isAdmin) {
+      return false;
+    }
+
     const name = tournament.name || tournament.tournamentName || '';
-    const location = tournament.location || tournament.venue?.city || tournament.venueName || '';
-    const organizer = tournament.organizerName || '';
+    const location = tournament.location || tournament.venue?.name || tournament.venue?.city || tournament.venueName || '';
+    const organizer = tournament.organizerName || 
+      (tournament.organizer ? `${tournament.organizer.firstName || ''} ${tournament.organizer.lastName || ''}`.trim() : '');
     
     // 1. Keyword Search
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -94,17 +126,19 @@ const TournamentHub = () => {
     }
 
     // 5. Entry Fee Filter (PRD) - Less than or equal to max fee
-    const fee = tournament.registrationFee || 0;
+    const fee = getEntryFee(tournament.registrationFee);
     const matchesFee = fee <= feeFilter;
 
     // 6. Prize Pool Filter (PRD) - Greater than or equal to min prize
-    const prize = tournament.prizePool?.total || tournament.prizePool || 0;
+    const prize = getPrizePoolTotal(tournament.prizePool);
     const matchesPrize = prize >= prizeFilter;
 
     // 7. Status Filter
     let matchesStatus = true;
     if (statusFilter !== 'all') {
-      if (statusFilter === 'open') {
+      if (statusFilter === 'my') {
+        matchesStatus = isOwner;
+      } else if (statusFilter === 'open') {
         matchesStatus = tournament.status === 'open' || tournament.registrationStatus === 'open' || tournament.registrationOpen;
       } else if (statusFilter === 'active') {
         matchesStatus = tournament.status === 'ongoing';
@@ -289,6 +323,7 @@ const TournamentHub = () => {
             <div className="flex gap-6 border-b-2 border-slate-200/50 mb-6 px-2 overflow-x-auto no-scrollbar">
               {[
                 { id: 'all', label: 'All Tournaments' },
+                ...(user ? [{ id: 'my', label: 'My Tournaments' }] : []),
                 { id: 'open', label: 'Open for Registration' },
                 { id: 'active', label: 'Active / Ongoing' },
                 { id: 'completed', label: 'Completed' }
@@ -315,7 +350,7 @@ const TournamentHub = () => {
                     setSearchTerm('');
                     setLocationFilter('');
                     setDateFilter('');
-                    setFeeFilter(1000);
+                    setFeeFilter(10000);
                     setPrizeFilter(0);
                     setStatusFilter('all');
                   }}
@@ -331,8 +366,16 @@ const TournamentHub = () => {
               const title = tournament.name || tournament.tournamentName;
               const startDate = tournament.dates?.tournamentStart || tournament.startDate;
               const endDate = tournament.dates?.tournamentEnd || tournament.endDate;
-              const prize = tournament.prizePool?.total || tournament.prizePool || 0;
-              const fee = tournament.registrationFee || 0;
+              const prize = getPrizePoolTotal(tournament.prizePool);
+              const fee = getEntryFee(tournament.registrationFee);
+              const isOwner = !!currentUserId && String(tournament.organizer?._id || tournament.organizer) === currentUserId;
+              
+              let actionText = 'View Details';
+              if (isOwner) {
+                actionText = 'Manage Tournament';
+              } else if (isActive) {
+                actionText = 'Register Here';
+              }
               
               return (
                 <div key={tournament._id || tournament.id} className="relative">
@@ -340,20 +383,31 @@ const TournamentHub = () => {
                     image={getSportImage(tournament.sport)}
                     sport={tournament.sport?.toUpperCase()}
                     title={title}
-                    location={tournament.location || tournament.venue?.city || tournament.venueName || 'Local Venue'}
+                    location={tournament.location || tournament.venue?.name || tournament.venue?.city || tournament.venueName || 'Local Venue'}
                     time={`${formatDate(startDate)} - ${formatDate(endDate)}`}
-                    actionText={isActive ? 'Register Here' : 'View Details'}
+                    actionText={actionText}
                     onBook={() => {
-                      navigate(`/tournaments/${tournament._id || tournament.id}`);
+                      if (isOwner) {
+                        navigate(`/tournaments/${tournament._id || tournament.id}/dashboard`);
+                      } else {
+                        navigate(`/tournaments/${tournament._id || tournament.id}`);
+                      }
                     }}
                   />
                   {/* Status Badge */}
                   <div className={`absolute top-7 right-7 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md border shadow-sm ${
+                    tournament.status === 'draft' ? 'bg-amber-500/90 text-white border-amber-400' :
                     isActive ? 'bg-green-500/90 text-white border-green-400' :
                     'bg-slate-700/90 text-white border-slate-600'
                   }`}>
-                    {isActive ? 'Registration Open' : tournament.status || 'Closed'}
+                    {tournament.status === 'draft' ? 'Draft' : (isActive ? 'Registration Open' : tournament.status || 'Closed')}
                   </div>
+                  {/* My Tournament Badge */}
+                  {isOwner && (
+                    <div className="absolute top-7 left-7 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md bg-blue-600/90 border border-blue-400 text-white shadow-sm">
+                      Your Event
+                    </div>
+                  )}
                   {/* Prize Badge if has prize */}
                   {prize > 0 && (
                     <div className="absolute top-7 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md bg-yellow-400/90 border border-yellow-300 text-yellow-900 shadow-sm hidden sm:flex items-center gap-1">

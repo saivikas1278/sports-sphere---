@@ -33,6 +33,16 @@ export const getMatches = async (req, res, next) => {
       query.status = req.query.status;
     }
 
+    if (req.query.sport) {
+      const sportLower = req.query.sport.toLowerCase();
+      const tournamentsWithSport = await Tournament.find({ sport: sportLower }).select('_id');
+      const tournamentIds = tournamentsWithSport.map(t => t._id);
+      query.$or = [
+        { sport: sportLower },
+        { tournament: { $in: tournamentIds } }
+      ];
+    }
+
     if (req.query.date) {
       const startDate = new Date(req.query.date);
       const endDate = new Date(startDate);
@@ -719,6 +729,17 @@ export const updateMatchResult = async (req, res, next) => {
     match.status = 'completed';
     match.actualEndTime = new Date();
     await match.save();
+
+    // Automated tournament winner progression into subsequent bracket rounds
+    if (winner && match.tournament) {
+      try {
+        const io = req.app.get('io');
+        const { advanceTournamentWinner } = await import('./tournaments.js');
+        await advanceTournamentWinner(match.tournament, match, winner, io);
+      } catch (advErr) {
+        console.warn('Failed to auto-advance tournament winner:', advErr.message);
+      }
+    }
 
     // Update scorecard
     let scorecard = await Scorecard.findOne({ match: match._id });

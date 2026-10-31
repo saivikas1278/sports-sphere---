@@ -18,6 +18,10 @@ let socket = null;
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
 
 export const initializeSocket = () => {
+  if (socket && socket.connected) {
+    return socket;
+  }
+
   const token = localStorage.getItem('token');
   
   console.log(`[Socket] Initializing socket connection to ${SOCKET_URL}`, { hasToken: !!token });
@@ -25,13 +29,13 @@ export const initializeSocket = () => {
   try {
     socket = io(SOCKET_URL, {
       auth: {
-        token: token
+        token: token || ''
       },
       transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 15,
       reconnectionDelay: 1000,
       timeout: 10000,
-      forceNew: true
+      autoConnect: true
     });
 
     // Connection events
@@ -68,27 +72,49 @@ export const initializeSocket = () => {
       }
     });
 
-    // Match events
-    socket.on('match:score_updated', (data) => {
-      store.dispatch(updateLiveScore({
-        matchId: data.matchId,
-        score: data.score
-      }));
-    });
+    // Match events (unified listeners for colon and hyphen syntax)
+    const handleScoreUpdatedEvent = (data) => {
+      if (!data) return;
+      const scoreObj = data.score || (data.homeScore !== undefined ? { home: data.homeScore, away: data.awayScore } : null);
+      if (scoreObj) {
+        store.dispatch(updateLiveScore({
+          matchId: data.matchId,
+          score: scoreObj
+        }));
+      }
+      if (data.status) {
+        store.dispatch(updateMatchStatusLive({
+          matchId: data.matchId,
+          status: data.status
+        }));
+      }
+    };
 
-    socket.on('match:event_added', (data) => {
+    socket.on('match:score_updated', handleScoreUpdatedEvent);
+    socket.on('score-updated', handleScoreUpdatedEvent);
+    socket.on('match-score-updated', handleScoreUpdatedEvent);
+
+    const handleEventAddedEvent = (data) => {
+      if (!data) return;
       store.dispatch(addLiveEvent({
         matchId: data.matchId,
         event: data.event
       }));
-    });
+    };
 
-    socket.on('match:status_changed', (data) => {
+    socket.on('match:event_added', handleEventAddedEvent);
+    socket.on('match-event-added', handleEventAddedEvent);
+
+    const handleStatusChangedEvent = (data) => {
+      if (!data) return;
       store.dispatch(updateMatchStatusLive({
         matchId: data.matchId,
         status: data.status
       }));
-    });
+    };
+
+    socket.on('match:status_changed', handleStatusChangedEvent);
+    socket.on('match-status-changed', handleStatusChangedEvent);
 
     socket.on('match:started', (data) => {
       store.dispatch(updateMatchStatusLive({
@@ -223,30 +249,47 @@ export const disconnectSocket = () => {
   }
 };
 
-export const getSocket = () => socket;
+export const getSocket = () => {
+  if (!socket) {
+    return initializeSocket();
+  }
+  return socket;
+};
 
 // Match-specific socket functions
 export const joinMatchRoom = (matchId) => {
-  if (socket) {
-    socket.emit('join_match', { matchId });
+  const s = getSocket();
+  if (s) {
+    s.emit('join-match', matchId);
+    s.emit('join_match', matchId);
+    s.emit('join-match', { matchId });
   }
 };
 
 export const leaveMatchRoom = (matchId) => {
-  if (socket) {
-    socket.emit('leave_match', { matchId });
+  const s = getSocket();
+  if (s) {
+    s.emit('leave-match', matchId);
+    s.emit('leave_match', matchId);
+    s.emit('leave-match', { matchId });
   }
 };
 
 export const joinTournamentRoom = (tournamentId) => {
-  if (socket) {
-    socket.emit('join_tournament', { tournamentId });
+  const s = getSocket();
+  if (s) {
+    s.emit('join-tournament', tournamentId);
+    s.emit('join_tournament', tournamentId);
+    s.emit('join-tournament', { tournamentId });
   }
 };
 
 export const leaveTournamentRoom = (tournamentId) => {
-  if (socket) {
-    socket.emit('leave_tournament', { tournamentId });
+  const s = getSocket();
+  if (s) {
+    s.emit('leave-tournament', tournamentId);
+    s.emit('leave_tournament', tournamentId);
+    s.emit('leave-tournament', { tournamentId });
   }
 };
 
@@ -318,6 +361,19 @@ const socketService = {
   initializeSocket,
   disconnectSocket,
   getSocket,
+  connect: () => initializeSocket(),
+  emit: (event, ...args) => {
+    const s = getSocket();
+    if (s) return s.emit(event, ...args);
+  },
+  on: (event, handler) => {
+    const s = getSocket();
+    if (s) return s.on(event, handler);
+  },
+  off: (event, handler) => {
+    const s = getSocket();
+    if (s) return s.off(event, handler);
+  },
   joinMatchRoom,
   leaveMatchRoom,
   joinTournamentRoom,

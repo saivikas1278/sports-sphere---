@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trophy, Calendar, BarChart2, Users, Plus, Activity, CheckCircle2 } from 'lucide-react';
 import { showToast } from '../../utils/toast';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
+import api from '../../services/api';
 
 const CricketHub = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -15,60 +16,67 @@ const CricketHub = () => {
     const fetchCricketData = async () => {
       setIsLoading(true);
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const [matchesRes, teamsRes] = await Promise.all([
+          api.get('/matches?sport=cricket&limit=30').catch(() => ({ data: [] })),
+          api.get('/teams?sport=cricket&limit=10').catch(() => ({ data: [] }))
+        ]);
         
-        setLiveMatches([
-          {
-            id: '1', matchTitle: 'Super Kings vs Royal Challengers',
-            teams: { team1Name: 'Super Kings', team2Name: 'Royal Challengers' },
-            innings: [{ teamName: 'Super Kings', totalRuns: 186, wickets: 4, overs: 18, balls: 3 }],
-            venue: 'Central Stadium', matchType: 'T20'
-          },
-          {
-            id: '2', matchTitle: 'Mumbai Indians vs Delhi Capitals',
-            teams: { team1Name: 'Mumbai Indians', team2Name: 'Delhi Capitals' },
-            innings: [
-              { teamName: 'Mumbai Indians', totalRuns: 212, wickets: 6, overs: 20, balls: 0 },
-              { teamName: 'Delhi Capitals', totalRuns: 95, wickets: 3, overs: 9, balls: 2 }
-            ],
-            venue: 'Metro Ground', matchType: 'T20'
+        const rawMatches = matchesRes.data?.data || matchesRes.data?.matches || (Array.isArray(matchesRes.data) ? matchesRes.data : []);
+        const rawTeams = teamsRes.data?.data || (Array.isArray(teamsRes.data) ? teamsRes.data : []);
+
+        const live = [];
+        const upcoming = [];
+        const recent = [];
+
+        rawMatches.forEach(m => {
+          const matchTitle = (m.homeTeam?.name && m.awayTeam?.name)
+            ? `${m.homeTeam.name} vs ${m.awayTeam.name}`
+            : (m.name || 'Cricket Match');
+          const venue = m.venue?.name || m.venue || 'Stadium Ground';
+          const matchType = m.matchType || (m.tournament?.name ? m.tournament.name : 'T20 Match');
+          const id = m._id || m.id;
+
+          if (m.status === 'live') {
+            const innings = m.cricketData?.innings?.map(inn => ({
+              teamName: (inn.team?.name || inn.team || 'Team'),
+              totalRuns: inn.runs || 0,
+              wickets: inn.wickets || 0,
+              overs: inn.overs || 0,
+              balls: inn.balls || 0
+            })) || [
+              { teamName: m.homeTeam?.name || 'Home', totalRuns: 0, wickets: 0, overs: 0, balls: 0 }
+            ];
+            live.push({ id, matchTitle, venue, matchType, innings, rawMatch: m });
+          } else if (m.status === 'scheduled') {
+            upcoming.push({ id, matchTitle, venue, matchType, date: m.scheduledTime || m.date || new Date().toISOString() });
+          } else if (m.status === 'completed') {
+            recent.push({
+              id,
+              matchTitle,
+              venue,
+              matchType,
+              date: m.updatedAt || m.scheduledTime || new Date().toISOString(),
+              result: {
+                winnerName: m.result?.winnerName || 'Winner Decided',
+                description: m.result?.details || m.result?.description || 'Match completed'
+              }
+            });
           }
-        ]);
-        
-        setUpcomingMatches([
-          {
-            id: '3', matchTitle: 'Kolkata Knight Riders vs Lucknow Giants',
-            teams: { team1Name: 'Kolkata Knight Riders', team2Name: 'Lucknow Giants' },
-            date: '2025-08-15T14:30:00', venue: 'Eden Gardens', matchType: 'T20'
-          },
-          {
-            id: '4', matchTitle: 'Sunrisers vs Gujarat Titans',
-            teams: { team1Name: 'Sunrisers', team2Name: 'Gujarat Titans' },
-            date: '2025-08-16T18:00:00', venue: 'Hyderabad Stadium', matchType: 'T20'
-          }
-        ]);
-        
-        setRecentMatches([
-          {
-            id: '6', matchTitle: 'Super Kings vs Mumbai Indians',
-            teams: { team1Name: 'Super Kings', team2Name: 'Mumbai Indians' },
-            result: { winnerName: 'Super Kings', description: 'Super Kings won by 24 runs' },
-            date: '2025-08-10', venue: 'Chennai Stadium', matchType: 'T20'
-          },
-          {
-            id: '7', matchTitle: 'Delhi Capitals vs Kolkata Knight Riders',
-            teams: { team1Name: 'Delhi Capitals', team2Name: 'Kolkata Knight Riders' },
-            result: { winnerName: 'Kolkata Knight Riders', description: 'Kolkata Knight Riders won by 6 wickets' },
-            date: '2025-08-09', venue: 'Delhi Stadium', matchType: 'T20'
-          }
-        ]);
-        
-        setPopularTeams([
-          { id: '1', name: 'Super Kings', wins: 24, losses: 9, draws: 2 },
-          { id: '2', name: 'Mumbai Indians', wins: 22, losses: 10, draws: 3 },
-          { id: '3', name: 'Royal Challengers', wins: 18, losses: 12, draws: 5 }
-        ]);
-        
+        });
+
+        setLiveMatches(live);
+        setUpcomingMatches(upcoming);
+        setRecentMatches(recent);
+
+        const popular = rawTeams.map(t => ({
+          id: t._id || t.id,
+          name: t.name,
+          wins: t.stats?.wins || t.wins || 0,
+          losses: t.stats?.losses || t.losses || 0,
+          draws: t.stats?.draws || t.draws || 0
+        }));
+        setPopularTeams(popular);
+
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching cricket data:', error);
@@ -137,48 +145,54 @@ const CricketHub = () => {
             
             {liveMatches.length > 0 ? (
               <div className="space-y-4">
-                {liveMatches.map(match => (
-                  <Link key={match.id} to={`/cricket/${match.id}`} className="block">
-                    <div className="p-4 md:p-6 rounded-2xl bg-white/60 border border-white shadow-sm hover:shadow-md hover:border-blue-100 transition-all group">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="font-extrabold text-slate-800 group-hover:text-blue-600 transition-colors">{match.matchTitle}</h3>
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                            {match.venue} • {match.matchType}
-                          </p>
-                        </div>
-                        <span className="px-3 py-1 text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-600 rounded-full">
-                          Live
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-3 bg-white/50 rounded-xl p-4 border border-white">
-                        {match.innings.map((inning, idx) => (
-                          <div key={idx} className="flex justify-between items-center">
-                            <span className="font-bold text-slate-700">{inning.teamName}</span>
-                            <div className="text-right">
-                              <span className="font-black text-xl text-slate-800 tracking-tight">
-                                {inning.totalRuns}<span className="text-slate-400 text-lg">/{inning.wickets}</span>
-                              </span>
-                              <span className="text-xs font-bold text-slate-400 ml-2">
-                                ({inning.overs}.{inning.balls} ov)
-                              </span>
-                            </div>
+                {liveMatches.map(match => {
+                  const tournId = match.rawMatch?.tournament?._id || (typeof match.rawMatch?.tournament === 'string' ? match.rawMatch.tournament : null);
+                  const detailsUrl = tournId ? `/tournaments/${tournId}/matches/${match.id}` : `/matches/${match.id}`;
+                  const scoreUrl = tournId ? `/tournaments/${tournId}/matches/${match.id}/score` : `/matches/score/cricket/${match.id}`;
+                  
+                  return (
+                    <Link key={match.id} to={detailsUrl} className="block">
+                      <div className="p-4 md:p-6 rounded-2xl bg-white/60 border border-white shadow-sm hover:shadow-md hover:border-blue-100 transition-all group">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="font-extrabold text-slate-800 group-hover:text-blue-600 transition-colors">{match.matchTitle}</h3>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+                              {match.venue} • {match.matchType}
+                            </p>
                           </div>
-                        ))}
+                          <span className="px-3 py-1 text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-600 rounded-full">
+                            Live
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-3 bg-white/50 rounded-xl p-4 border border-white">
+                          {match.innings.map((inning, idx) => (
+                            <div key={idx} className="flex justify-between items-center">
+                              <span className="font-bold text-slate-700">{inning.teamName}</span>
+                              <div className="text-right">
+                                <span className="font-black text-xl text-slate-800 tracking-tight">
+                                  {inning.totalRuns}<span className="text-slate-400 text-lg">/{inning.wickets}</span>
+                                </span>
+                                <span className="text-xs font-bold text-slate-400 ml-2">
+                                  ({inning.overs}.{inning.balls} ov)
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="mt-4 flex justify-end">
+                          <Link 
+                            to={scoreUrl}
+                            className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-600 font-bold rounded-xl hover:bg-blue-100 transition-colors"
+                          >
+                            <Activity size={16} className="mr-2" /> Score Match
+                          </Link>
+                        </div>
                       </div>
-                      
-                      <div className="mt-4 flex justify-end">
-                        <Link 
-                          to={`/cricket/${match.id}/score`}
-                          className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-600 font-bold rounded-xl hover:bg-blue-100 transition-colors"
-                        >
-                          <Activity size={16} className="mr-2" /> Score Match
-                        </Link>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-4 md:py-6 md:py-12">

@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import {
   getTournaments,
   getTournament,
+  getMyTournaments,
   createTournament,
   updateTournament,
   deleteTournament,
@@ -19,9 +20,13 @@ import {
   updateMatchResult,
   updateMatchScore,
   updateCricketBall,
-  searchTournaments
+  updatePointsScore,
+  searchTournaments,
+  broadcastTournamentMessage,
+  getTournamentBroadcasts
 } from '../controllers/tournaments.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { protect, authorize, optionalAuth } from '../middleware/auth.js';
+import { tournamentBroadcastLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -62,14 +67,15 @@ const tournamentValidation = [
     .withMessage('Invalid tournament end date')
 ];
 
-// Public routes
-router.get('/', getTournaments);
-router.get('/search', searchTournaments);
-router.get('/:id', getTournament);
-router.get('/:id/bracket', getTournamentBracket);
-router.get('/:id/standings', getTournamentStandings);
-router.get('/:id/matches', getTournamentMatches);
-router.get('/:id/schedule', getTournamentSchedule);
+// Public routes (with optional auth to identify logged in organizer/user)
+router.get('/', optionalAuth, getTournaments);
+router.get('/search', optionalAuth, searchTournaments);
+router.get('/my', protect, getMyTournaments);
+router.get('/:id', optionalAuth, getTournament);
+router.get('/:id/bracket', optionalAuth, getTournamentBracket);
+router.get('/:id/standings', optionalAuth, getTournamentStandings);
+router.get('/:id/matches', optionalAuth, getTournamentMatches);
+router.get('/:id/schedule', optionalAuth, getTournamentSchedule);
 
 // Protected routes
 router.post('/', protect, tournamentValidation, createTournament);
@@ -81,6 +87,7 @@ router.post('/:id/start', protect, startTournament);
 router.put('/:id/matches/:matchId/result', protect, updateMatchResult);
 router.put('/:id/matches/:matchId/score', protect, updateMatchScore);
 router.put('/:id/matches/:matchId/cricket-ball', protect, updateCricketBall);
+router.put('/:id/matches/:matchId/points-score', protect, updatePointsScore);
 
 // Team registration routes
 router.post('/:id/register', protect, registerTeamForTournament);
@@ -90,5 +97,10 @@ router.delete('/:id/unregister', protect, unregisterTeamFromTournament);
 router.put('/:id/registrations/:teamId/approve', protect, approveTournamentRegistration);
 router.put('/:id/registrations/:teamId/reject', protect, rejectTournamentRegistration);
 router.put('/:id/bracket', protect, updateTournamentBracket);
+
+// Tournament communication & broadcast routes
+router.post('/:id/broadcast', protect, tournamentBroadcastLimiter, broadcastTournamentMessage);
+router.get('/:id/broadcasts', protect, getTournamentBroadcasts);
+router.get('/:id/broadcast', protect, getTournamentBroadcasts);
 
 export default router;

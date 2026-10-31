@@ -1,8 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Resolve uploads directory dynamically relative to project root
-const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Standardize uploads directory relative to the server package root (server/uploads)
+const uploadsDir = path.resolve(__dirname, '../../uploads');
 
 // Ensure directory exists
 if (!fs.existsSync(uploadsDir)) {
@@ -58,22 +62,29 @@ export const uploadVideo = async (filePath, options = {}) => {
   return uploadToCloudinary(filePath, { ...options, resource_type: 'video' });
 };
 
-export const deleteFromCloudinary = async (publicId, resourceType = 'image') => {
+/**
+ * Delete file locally
+ * @param {string} publicId - Local filename or URL
+ * @returns {Promise<object>} Result
+ */
+export const deleteFromCloudinary = async (publicId) => {
   try {
-    const filePath = path.join(uploadsDir, publicId);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      console.log(`[uploadUtils] File deleted locally: ${filePath}`);
+    const filename = path.basename(publicId);
+    const targetFile = path.join(uploadsDir, filename);
+    if (fs.existsSync(targetFile)) {
+      fs.unlinkSync(targetFile);
+      console.log(`[uploadUtils] File removed locally: ${targetFile}`);
     }
     return { result: 'ok' };
   } catch (error) {
-    console.error('[uploadUtils] Deletion failed:', error);
-    throw new Error(`Deletion failed: ${error.message}`);
+    console.error('[uploadUtils] Local deletion failed:', error);
+    return { result: 'error', error: error.message };
   }
 };
 
-export const generateVideoThumbnail = (videoUrl) => {
-  // Return a generic fallback image or just return the video URL itself
-  // Without FFMPEG locally, we cannot easily generate true thumbnails.
-  return 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=800';
+export default {
+  uploadToCloudinary,
+  uploadImage,
+  uploadVideo,
+  deleteFromCloudinary
 };

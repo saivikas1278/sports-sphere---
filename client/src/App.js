@@ -18,6 +18,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import VerifyEmail from './pages/Auth/VerifyEmail';
+import GoogleCallback from './pages/Auth/GoogleCallback';
 import Dashboard from './pages/Dashboard/Dashboard';
 import TournamentHub from './pages/Tournament/TournamentHub';
 import TournamentDetails from './pages/Tournament/TournamentDetails';
@@ -109,20 +110,13 @@ function App() {
   }, [dispatch]);
 
   useEffect(() => {
-    // Initialize socket connection only when authenticated
-    if (isAuthenticated && !loading) {
-      console.log('[App] User is authenticated, initializing socket connection');
-      initializeSocket();
-    } else if (!isAuthenticated && !loading) {
-      console.log('[App] User not authenticated, disconnecting socket');
-      disconnectSocket();
-    }
+    // Initialize socket connection (authenticates with token if present, or connects as public spectator)
+    initializeSocket();
 
-    // Cleanup socket on unmount
     return () => {
       disconnectSocket();
     };
-  }, [isAuthenticated, loading]);
+  }, [isAuthenticated]);
 
   if (loading) {
     return (
@@ -156,6 +150,7 @@ function App() {
               element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" />} 
             />
             <Route path="/verify-email/:token" element={<VerifyEmail />} />
+            <Route path="/auth/google/callback" element={<GoogleCallback />} />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -171,7 +166,7 @@ function App() {
             
             {/* Tournament Routes */}
             <Route path="/tournaments" element={<TournamentHub />} />
-            <Route path="/tournaments/create" element={<TournamentCreatePage />} />
+            <Route path="/tournaments/create" element={<ProtectedRoute><TournamentCreatePage /></ProtectedRoute>} />
             <Route path="/tournaments/:id" element={<TournamentDetails />} />
             <Route path="/tournaments/:id/dashboard" element={<TournamentDashboard />} />
             <Route path="/tournaments/:id/participants" element={<ProtectedRoute><ParticipantManagement /></ProtectedRoute>} />
@@ -231,8 +226,8 @@ function App() {
             <Route path="/cricket" element={<CricketHub />} />
             <Route path="/cricket/create" element={<CricketCreateMatch />} />
             <Route path="/cricket/create-match" element={<CricketCreateMatch />} />
-            <Route path="/cricket/:id" element={<CricketHub />} />
-            <Route path="/cricket/:id/score" element={<CricketHub />} />
+            <Route path="/cricket/:matchId" element={<MatchDetails />} />
+            <Route path="/cricket/:matchId/score" element={<CricketScoring />} />
             <Route path="/cricket/:id/edit" element={<CricketCreateMatch />} />
             
             {/* Catch all route */}

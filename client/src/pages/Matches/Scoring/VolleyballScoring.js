@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaUndo, FaPlus, FaMinus, FaFlag, FaCheck, FaExchangeAlt } from 'react-icons/fa';
 import LoadingSpinner from '../../../components/UI/LoadingSpinner';
-import { showToast } from '../../../utils/toast';
 import matchService from '../../../services/matchService';
+import { getSocket, joinMatchRoom, leaveMatchRoom } from '../../../services/socket';
 
 const VolleyballScoring = () => {
   const { matchId } = useParams();
@@ -55,6 +55,15 @@ const VolleyballScoring = () => {
     }
   });
   
+  useEffect(() => {
+    if (matchId) {
+      joinMatchRoom(matchId);
+    }
+    return () => {
+      if (matchId) leaveMatchRoom(matchId);
+    };
+  }, [matchId]);
+
   useEffect(() => {
     const fetchMatchData = async () => {
       try {
@@ -136,6 +145,19 @@ const VolleyballScoring = () => {
         lastUpdated: new Date().toISOString(),
         volleyball: score
       };
+
+      const socketInstance = getSocket();
+      if (socketInstance) {
+        socketInstance.emit('score-updated', {
+          matchId,
+          score: {
+            home: score.team1[`set${score.currentSet}`] || 0,
+            away: score.team2[`set${score.currentSet}`] || 0
+          },
+          volleyballScore: score,
+          status: score.gameOver ? 'completed' : 'live'
+        });
+      }
 
       const saveToApi = async () => {
         try {

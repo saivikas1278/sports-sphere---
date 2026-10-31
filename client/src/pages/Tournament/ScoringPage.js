@@ -6,6 +6,7 @@ import { fetchTournamentSchedule, fetchTournamentById } from '../../redux/slices
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import CricketScoringConsole from '../../components/Scoring/CricketScoringConsole';
 import PointsScoringConsole from '../../components/Scoring/PointsScoringConsole';
+import StandardScoringConsole from '../../components/Scoring/StandardScoringConsole';
 import socket from '../../services/socket';
 
 const ScoringPage = () => {
@@ -35,13 +36,21 @@ const ScoringPage = () => {
     }
   }, [dispatch, id]);
 
-  // Find the specific match
+  // Find the specific match across all potential schedule structures
   let activeMatch = null;
-  if (schedule && schedule.schedule) {
-    Object.values(schedule.schedule).forEach(roundList => {
-      const found = roundList.find(m => m._id === matchId);
-      if (found) activeMatch = found;
-    });
+  if (schedule) {
+    if (Array.isArray(schedule)) {
+      activeMatch = schedule.find(m => m._id === matchId);
+    } else if (schedule.schedule && typeof schedule.schedule === 'object') {
+      Object.values(schedule.schedule).forEach(roundList => {
+        if (Array.isArray(roundList)) {
+          const found = roundList.find(m => m._id === matchId);
+          if (found) activeMatch = found;
+        }
+      });
+    } else if (Array.isArray(schedule.matches)) {
+      activeMatch = schedule.matches.find(m => m._id === matchId);
+    }
   }
 
   if (loading && !activeMatch) {
@@ -80,9 +89,7 @@ const ScoringPage = () => {
       ) : activeMatch.sportType === 'points' || ['badminton', 'tennis', 'table-tennis', 'volleyball'].includes(currentTournament?.sport) ? (
         <PointsScoringConsole match={activeMatch} tournamentId={id} />
       ) : (
-        <div className="bg-white/70 backdrop-blur-md p-8 rounded-3xl text-center shadow-xl">
-          <p className="text-slate-500 font-medium">Generic scoring not yet implemented for this sport type.</p>
-        </div>
+        <StandardScoringConsole match={activeMatch} tournamentId={id} />
       )}
     </div>
   );

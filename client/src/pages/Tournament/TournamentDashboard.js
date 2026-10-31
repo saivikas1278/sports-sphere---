@@ -5,7 +5,7 @@ import {
   fetchTournamentById, 
   approveRegistration, 
   rejectRegistration,
-  updateTournamentStatus
+  startTournament
 } from '../../redux/slices/tournamentSlice';
 import { 
   Trophy, 
@@ -61,10 +61,14 @@ const TournamentDashboard = () => {
     }
   };
 
-  const handleStartTournament = () => {
-    // In a real app, this would hit the startTournament endpoint
-    dispatch(updateTournamentStatus({ tournamentId: id, status: 'ongoing' }));
-    showToast('Tournament has been officially started!', 'success');
+  const handleStartTournament = async () => {
+    try {
+      await dispatch(startTournament(id)).unwrap();
+      showToast('Tournament started and bracket generated successfully!', 'success');
+      dispatch(fetchTournamentById(id));
+    } catch (error) {
+      showToast(error || 'Failed to start tournament', 'error');
+    }
   };
 
   if (loading || !currentTournament) {
@@ -76,9 +80,7 @@ const TournamentDashboard = () => {
   }
 
   const isOrganizer = user && (
-    user._id === currentTournament.organizer || 
-    user.id === currentTournament.organizer || 
-    user._id === currentTournament.organizer?._id
+    String(user._id || user.id) === String(currentTournament.organizer?._id || currentTournament.organizer)
   );
 
   const registeredTeams = currentTournament.registeredTeams || [];

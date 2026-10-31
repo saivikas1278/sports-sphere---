@@ -50,7 +50,26 @@ const FitnessHub = () => {
           setTodayWorkout(null);
         }
 
+        // Load custom workouts saved by user
+        let customWorkouts = [];
+        try {
+          const custom = JSON.parse(localStorage.getItem('sportsphere_custom_workouts') || '[]');
+          customWorkouts = custom.map(w => ({
+            id: w.id,
+            name: w.name || w.title,
+            date: 'Custom Plan',
+            type: w.category || 'Workout Plan',
+            duration: w.duration || 30,
+            calories: (w.duration || 30) * 8,
+            completed: false,
+            thumbnail: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&q=80'
+          }));
+        } catch (e) {
+          console.error('Error loading custom workouts:', e);
+        }
+
         setRecentWorkouts([
+          ...customWorkouts,
           {
             id: '1',
             name: 'Morning HIIT',

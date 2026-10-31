@@ -122,6 +122,18 @@ export const fetchMyTeams = createAsyncThunk(
   }
 );
 
+export const invitePlayer = createAsyncThunk(
+  'teams/invitePlayer',
+  async ({ teamId, userId, role = 'player' }, { rejectWithValue }) => {
+    try {
+      const response = await teamService.sendInvitation(teamId, userId, role);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to send invite');
+    }
+  }
+);
+
 const initialState = {
   teams: [],
   currentTeam: null,

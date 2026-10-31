@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Network, Trophy, Settings, RefreshCcw, ArrowLeft, Download, Loader2 } from 'lucide-react';
+import { Network, Trophy, ArrowLeft, Download, Loader2 } from 'lucide-react';
 import FloatingElements from '../../components/UI/FloatingElements';
 import tournamentService from '../../services/tournamentService';
+import socketService from '../../services/socket';
 import { toast } from 'react-toastify';
 
 const TournamentBracket = () => {
@@ -32,13 +33,17 @@ const TournamentBracket = () => {
         // Group matches by round
         const groupedRounds = {};
         fetchedMatches.forEach(match => {
-          const roundName = match.round || 'unknown';
+          const roundName = match.round || 'Round 1';
           if (!groupedRounds[roundName]) {
             groupedRounds[roundName] = [];
           }
           groupedRounds[roundName].push(match);
         });
         setRounds(groupedRounds);
+      } else {
+        setBracketExists(false);
+        setMatches([]);
+        setRounds({});
       }
     } catch (error) {
       console.error('Error fetching bracket:', error);
@@ -51,6 +56,33 @@ const TournamentBracket = () => {
   useEffect(() => {
     fetchTournamentAndMatches();
   }, [fetchTournamentAndMatches]);
+
+  // Real-time socket sync
+  useEffect(() => {
+    const socketInstance = socketService.getSocket();
+    socketService.joinTournamentRoom(id);
+
+    const handleUpdate = () => {
+      fetchTournamentAndMatches();
+    };
+
+    if (socketInstance) {
+      socketInstance.on('bracket-updated', handleUpdate);
+      socketInstance.on('tournament:bracket_updated', handleUpdate);
+      socketInstance.on('score-updated', handleUpdate);
+      socketInstance.on('match-score-updated', handleUpdate);
+    }
+
+    return () => {
+      socketService.leaveTournamentRoom(id);
+      if (socketInstance) {
+        socketInstance.off('bracket-updated', handleUpdate);
+        socketInstance.off('tournament:bracket_updated', handleUpdate);
+        socketInstance.off('score-updated', handleUpdate);
+        socketInstance.off('match-score-updated', handleUpdate);
+      }
+    };
+  }, [id, fetchTournamentAndMatches]);
 
   const generateBracket = async () => {
     try {
@@ -65,14 +97,57 @@ const TournamentBracket = () => {
     }
   };
 
+  const exportBracket = () => {
+    try {
+      const csvRows = [
+        [`Tournament Bracket: ${tournament?.name || 'Tournament'}`],
+        [`Format: ${tournament?.format || 'Single Elimination'}`],
+        [`Exported: ${new Date().toLocaleString()}`],
+        [''],
+        ['Match #', 'Round', 'Home Team', 'Away Team', 'Home Score', 'Away Score', 'Status', 'Winner']
+      ];
+
+      matches.forEach((m, idx) => {
+        const homeName = getTeamName(m.homeTeam);
+        const awayName = getTeamName(m.awayTeam);
+        const homeScore = m.result?.homeScore ?? m.score?.home ?? '-';
+        const awayScore = m.result?.awayScore ?? m.score?.away ?? '-';
+        const winner = m.result?.winner ? (m.result.winner === 'home' || m.result.winner?.toString() === m.homeTeam?._id?.toString() ? homeName : awayName) : 'TBD';
+
+        csvRows.push([
+          m.matchNumber || idx + 1,
+          m.round || 'Round 1',
+          homeName,
+          awayName,
+          homeScore,
+          awayScore,
+          m.status || 'scheduled',
+          winner
+        ]);
+      });
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.map(r => r.join(',')).join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `${(tournament?.name || 'tournament').replace(/\s+/g, '_')}_bracket.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Bracket exported to CSV successfully!');
+    } catch (e) {
+      toast.error('Failed to export bracket');
+    }
+  };
+
   const getTeamName = (teamObj) => {
     if (!teamObj) return 'TBD';
     return typeof teamObj === 'object' ? teamObj.name : 'Unknown';
   };
 
   const MatchNode = ({ match }) => {
-    const homeScore = match.result?.homeScore ?? match.score1 ?? null;
-    const awayScore = match.result?.awayScore ?? match.score2 ?? null;
+    const homeScore = match.result?.homeScore ?? match.score?.home ?? match.score1 ?? null;
+    const awayScore = match.result?.awayScore ?? match.score?.away ?? match.score2 ?? null;
     
     return (
       <div className={`p-3 w-48 rounded-2xl border-2 ${match.status === 'ongoing' || match.status === 'live' ? 'bg-blue-50 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : match.status === 'completed' ? 'bg-white border-emerald-200' : 'bg-slate-50 border-slate-200'} transition-all`}>
@@ -104,8 +179,25 @@ const TournamentBracket = () => {
     );
   }
 
-  // Determine round order (simple heuristic: more matches = earlier round)
-  const sortedRoundNames = Object.keys(rounds).sort((a, b) => rounds[b].length - rounds[a].length);
+  // Determine round order using logical bracket precedence
+  const getRoundPriority = (name) => {
+    const lower = (name || '').toLowerCase();
+    if (lower.includes('grand final')) return 900;
+    if (lower.includes('final') && !lower.includes('semi') && !lower.includes('quarter')) return 800;
+    if (lower.includes('semi')) return 700;
+    if (lower.includes('quarter')) return 600;
+    if (lower.includes('loser') || lower.includes('lb')) return 500;
+    const match = lower.match(/\d+/);
+    if (match) return parseInt(match[0], 10);
+    return 100;
+  };
+
+  const sortedRoundNames = Object.keys(rounds).sort((a, b) => {
+    const prioA = getRoundPriority(a);
+    const prioB = getRoundPriority(b);
+    if (prioA !== prioB) return prioA - prioB;
+    return (rounds[b]?.length || 0) - (rounds[a]?.length || 0);
+  });
 
   return (
     <div className="min-h-screen relative pt-4 md:pt-8 md:pt-16 md:pt-20 md:pt-24 pb-6 md:pb-12 overflow-hidden bg-slate-50/50">
@@ -127,13 +219,17 @@ const TournamentBracket = () => {
           </div>
           
           <div className="flex gap-3">
-            <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 transition-colors flex items-center gap-2">
-              <Download size={18} /> Export
+            <button 
+              onClick={exportBracket}
+              disabled={!bracketExists}
+              className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+            >
+              <Download size={18} /> Export CSV
             </button>
             <button 
               onClick={generateBracket}
               disabled={isGenerating || (bracketExists && tournament?.status !== 'draft')}
-              className={`px-4 py-2 text-white rounded-xl font-bold transition-colors flex items-center gap-2 ${bracketExists && tournament?.status !== 'draft' ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'}`}
+              className={`px-4 py-2 text-white rounded-xl font-bold transition-colors flex items-center gap-2 ${bracketExists && tournament?.status !== 'draft' ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 shadow-sm'}`}
             >
               {isGenerating ? (
                 <><Loader2 size={18} className="animate-spin" /> Generating...</>
@@ -193,21 +289,19 @@ const TournamentBracket = () => {
         ) : (
           <div className="text-center py-4 md:py-6 md:py-10 md:py-20 glass-panel rounded-2xl md:rounded-3xl border border-white/60">
             <Network size={48} className="mx-auto text-slate-300 mb-4" />
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">No Bracket Generated</h2>
-            <p className="text-slate-500 mb-4 md:mb-6">
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">No Bracket Generated Yet</h2>
+            <p className="text-slate-500 mb-4 md:mb-6 max-w-md mx-auto">
               {tournament?.status === 'draft' || tournament?.status === 'open' 
-                ? 'When registration closes, the organizer can generate the bracket.'
+                ? 'Approved teams will be automatically paired into elimination brackets when generated.'
                 : 'No matches found for this tournament.'}
             </p>
-            {(tournament?.organizer === undefined /* logic will be refined later */) && (
-              <button 
-                onClick={generateBracket}
-                disabled={isGenerating}
-                className="px-4 md:px-8 py-3 bg-blue-500 text-white rounded-full font-bold shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:bg-blue-600 transition-all hover:-translate-y-1"
-              >
-                {isGenerating ? 'Generating...' : 'Generate Bracket Now'}
-              </button>
-            )}
+            <button 
+              onClick={generateBracket}
+              disabled={isGenerating}
+              className="px-6 py-3 bg-blue-500 text-white rounded-xl font-bold shadow-md hover:bg-blue-600 transition-all hover:-translate-y-0.5 flex items-center gap-2 mx-auto disabled:opacity-50"
+            >
+              {isGenerating ? <><Loader2 size={18} className="animate-spin" /> Generating Bracket...</> : 'Generate Bracket Now'}
+            </button>
           </div>
         )}
       </div>

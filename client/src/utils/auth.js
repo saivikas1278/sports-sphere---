@@ -1,5 +1,3 @@
-import api from '../services/api';
-
 // Set auth token for all requests
 export const setAuthToken = (token) => {
   // No longer need to set on axios.defaults as api.js interceptor handles this

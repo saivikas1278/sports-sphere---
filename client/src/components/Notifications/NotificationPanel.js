@@ -5,13 +5,11 @@ import {
   Bell, 
   Check, 
   CheckCircle2, 
-  X, 
   Heart, 
   MessageCircle, 
   UserPlus, 
   Trophy, 
-  Calendar,
-  AlertCircle
+  Calendar
 } from 'lucide-react';
 import moment from 'moment';
 import { 

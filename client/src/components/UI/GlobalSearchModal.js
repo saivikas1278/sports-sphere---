@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, Loader2, Trophy, User } from 'lucide-react';
+import { Search, X, Loader2, Trophy } from 'lucide-react';
 import api from '../../services/api';
 
 const GlobalSearchModal = ({ isOpen, onClose }) => {

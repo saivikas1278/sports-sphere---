@@ -14,13 +14,14 @@ import {
 } from '../controllers/posts.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 import fileUpload from 'express-fileupload';
+import os from 'os';
 
 const router = express.Router();
 
 // Configure file upload middleware
 const fileUploadConfig = fileUpload({
   useTempFiles: true,
-  tempFileDir: '/tmp/',
+  tempFileDir: os.tmpdir(),
   limits: {
     fileSize: 50 * 1024 * 1024 // 50MB
   },

@@ -1,0 +1,965 @@
+================================================================================
+SPORT-SPHERE (VEDICVISION 2K25) - MASTER PROJECT AUDIT & SYSTEM ARCHITECTURE
+================================================================================
+DOCUMENT NAME: PROJECT_MASTER_DOCUMENT.txt
+WORKSPACE PATH: D:\my_PROJECTS\Vhack
+DATE GENERATED: October 26, 2026
+STATUS: Comprehensive Architectural Audit & Completion Blueprint
+LEAD ROLES: Principal Software Engineer, Solutions Architect, Product Manager, QA Lead
+================================================================================
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1.  PROJECT OVERVIEW
+2.  PROJECT PURPOSE AND PROBLEM STATEMENT
+3.  HOW THE COMPLETE SYSTEM WORKS (END-TO-END WORKFLOW)
+4.  TARGET USERS AND USE CASES
+5.  CURRENT TECHNOLOGY STACK
+6.  EXISTING FOLDER AND FILE STRUCTURE
+7.  COMPLETED FEATURES (VERIFIED)
+8.  PARTIALLY COMPLETED FEATURES
+9.  MISSING FEATURES
+10. BROKEN AND UNVERIFIED FEATURES
+11. COMPLETE PRODUCT REQUIREMENTS DOCUMENT (PRD - 32 SECTIONS)
+12. EXISTING SYSTEM ARCHITECTURE
+13. PROPOSED FINAL ARCHITECTURE
+14. DATABASE MODELS AND API DOCUMENTATION
+15. UI/UX AND PAGE-BY-PAGE SPECIFICATIONS
+16. FEATURE-BY-FEATURE GAP ANALYSIS
+17. KNOWN BUGS AND TECHNICAL DEBT
+18. SECURITY, PRIVACY AND PERFORMANCE FINDINGS
+19. ENVIRONMENT CONFIGURATION AND SETUP REQUIREMENTS
+20. TESTING AND QUALITY ASSURANCE AUDIT
+21. DEPLOYMENT AND INFRASTRUCTURE REQUIREMENTS
+22. PRIORITIZED DEVELOPMENT ROADMAP (PHASES 1-8)
+23. FIRST FIVE RECOMMENDED IMMEDIATE TASKS
+24. RISKS, BLOCKERS, AND DEPENDENCIES
+25. DEFINITION OF DONE (DOD)
+26. FINAL COMPLETION CHECKLIST
+27. ASSUMPTIONS AND UNRESOLVED QUESTIONS
+28. FUTURE SCOPE AND STRATEGIC RECOMMENDATIONS
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+* Project Identifier / Names:
+  - Official Package & Environment Name: SportSphere ("sportsphere-client", "sportsphere-server")
+  - Hackathon / Origin Codebase Alias: VedicVision 2K25 (referenced in git history and earlier documentation)
+* Project Type: Full-Stack MERN (MongoDB, Express.js, React, Node.js) with real-time Socket.io, Leaflet spatial mapping, Cloudinary media processing, and transactional email.
+* Primary Purpose: An end-to-end grassroots and amateur sports management and social engagement ecosystem. It merges tournament lifecycle orchestration (creation, team registration, automated bracket generation, and live ball-by-ball/point-by-point scorekeeping) with athletic social networking (rich posts, image/video sharing, likes, nested comments, profile achievements, and real-time room chats).
+* Repository Origin & Commit State:
+  - Recent Git Commits indicate rapid iterative prototyping, including Google OAuth setup attempts, tournament scoring consoles, and real-time chat room experiments.
+  - Current Workspace is running and functional on Node.js v20+ with two main directories: `client/` (React 18 SPA) and `server/` (Express.js ESM backend), backed by MongoDB Atlas.
+
+================================================================================
+2. PROJECT PURPOSE AND PROBLEM STATEMENT
+================================================================================
+2.1 The Real-World Problem
+Amateur, collegiate, and regional sports organizers face fragmented, manual tools:
+1. Tournament logistics (draws, brackets, team registrations, fee collection, approvals) are typically tracked across WhatsApp groups and Google Sheets.
+2. Live scoring is disconnected from fan viewing: local tournaments lack automated live scoreboards, ball-by-ball tracking, or interactive visual bracket trees.
+3. Athletes have no persistent digital portfolio: player accomplishments, match statistics, videos, reels, and tournament titles vanish after the event finishes.
+4. Social engagement around amateur athletics is either dispersed across general social networks (Instagram, Facebook) without sports context or buried in niche forums.
+
+2.2 Proposed Solution (SportSphere)
+SportSphere solves this by delivering a unified digital arena:
+- Organizers create multi-sport tournaments with customizable formats (single-elimination knockout, league, round-robin), automated bracket scheduling, and participant management.
+- Captains create teams, manage player rosters, and register for regional tournaments.
+- Scorers operate interactive, sport-specific consoles (cricket ball-by-ball, badminton/volleyball/tennis points, football goals) that broadcast real-time score updates to fans via WebSockets.
+- Athletes & Fans share multimedia highlight reels, follow players/teams, join dedicated tournament and team live chat rooms, and build a verified sports resume.
+
+================================================================================
+3. HOW THE COMPLETE SYSTEM WORKS (END-TO-END WORKFLOW)
+================================================================================
+Step 1: Onboarding & Authentication
+A user registers via email/password or Google OAuth. They select an identity role: 'player', 'organizer', or 'fan'. Upon registration, a User record and corresponding Profile document with social preferences and statistics are provisioned. A welcome email is triggered asynchronously.
+
+Step 2: Tournament Creation & Publishing
+An Organizer navigates to `/tournaments/create` and inputs tournament parameters: Sport type (Cricket, Football, Badminton, Volleyball, Kabaddi, etc.), format (Single-elimination knockout, League, etc.), team constraints (min/max teams), venues with geographic coordinates, registration dates, fees, and rules. Once saved, the tournament appears in the public `/tournaments` directory and interactive Leaflet map `/tournaments#map`.
+
+Step 3: Team Formation & Tournament Registration
+A Team Captain builds a team under `/teams/create`, selects a sport, uploads a team crest, and invites athletes by user search or email. The Captain browses tournaments, selects an open tournament, and registers their squad. The organizer reviews pending registrations in `/tournaments/:id/participants` and approves or rejects entries.
+
+Step 4: Automated Bracket Draw & Scheduling
+When registrations close, the Organizer launches the tournament via `/tournaments/:id/brackets`. The backend validates the team count, generates tournament matchups (Round of 16, Quarter-Finals, Semi-Finals, Final), creates persistent `Match` records in MongoDB, and constructs the bracket tree.
+
+Step 5: Live Match Operations & Real-Time Scoring
+During match day, officials open `/tournaments/:id/matches/:matchId/score` (or `/tournaments/:id/scoring`). Scorer actions (cricket ball updates with runs/wickets/extras, or badminton/volleyball set points) trigger REST updates that persist to MongoDB and broadcast WebSocket payloads (`match-score-updated`, `bracket-updated`) to all viewers connected to `/tournaments/:id/live`.
+
+Step 6: Fan Experience & Community Engagement
+Spectators watch live scores, examine the bracket progression, view standings, and interact in the real-time tournament chat room. Players capture photos and videos and publish them to the community feed at `/posts`. Users like, comment, follow other athletes, and earn gamified profile badges.
+
+================================================================================
+4. TARGET USERS AND USE CASES
+================================================================================
+1. Tournament Organizers:
+   - Primary Goals: Setup tournaments in minutes, manage registration fees, approve rosters, auto-generate fair bracket fixtures, and broadcast match results without administrative overhead.
+   - Key Screens: `/tournaments/create`, `/tournaments/:id/dashboard`, `/tournaments/:id/participants`, `/tournaments/:id/brackets`, `/tournaments/:id/scoring`, `/tournaments/:id/communication`.
+
+2. Team Captains & Managers:
+   - Primary Goals: Register squads, invite players, manage team lineups, submit team registration payments, and communicate via team chat rooms.
+   - Key Screens: `/teams`, `/teams/create`, `/teams/:id`, `/teams/:id/chat`, `/dashboard/registrations`.
+
+3. Individual Athletes & Players:
+   - Primary Goals: Discover local open tournaments, join teams, track personal performance metrics (matches won, goals/runs, win rate), post training reels/videos, and showcase verified achievements.
+   - Key Screens: `/profile`, `/fitness`, `/posts`, `/teams`, `/chat`.
+
+4. Sports Fans & Parents:
+   - Primary Goals: Follow live local matches with instantaneous ball-by-ball commentary, view bracket updates, track favorite teams, and cheer in tournament live chat.
+   - Key Screens: `/tournaments/:id/live`, `/posts`, `/matches/:id`.
+
+5. System Administrators:
+   - Primary Goals: Platform governance, user verification, tournament verification, content moderation (deleting reported posts), global metrics monitoring, and system configuration.
+   - Key Screens: `/admin`, `/admin/users`, `/admin/verification`, `/admin/moderation`, `/admin/analytics`, `/admin/settings`.
+
+================================================================================
+5. CURRENT TECHNOLOGY STACK
+================================================================================
+5.1 Frontend (client/)
+- Framework: React 18.2.0 (SPA bootstrapped via Create React App / react-scripts 5.0.1)
+- State Management: Redux Toolkit 1.9.7 (store with 11 slices: auth, tournaments, matches, videos, fitness, teams, ui, posts, notifications, profile, chat)
+- Routing: React Router DOM 6.17.0 (with ProtectedRoute and DynamicRedirect)
+- Styling: Tailwind CSS 3.3.5, Autoprefixer 10.4.16, PostCSS 8.4.31
+- Animation & Visuals: Framer Motion 13.2.0, Lucide React 1.41.0, React Icons 4.11.0
+- Real-Time: Socket.io Client 4.7.2
+- Mapping & Geolocation: Leaflet 1.9.4, React-Leaflet 4.2.1
+- Form Management & Validation: React Hook Form 7.47.0, Yup 1.3.3, Hookform Resolvers 3.3.2
+- Data Visualization: Chart.js 4.5.0, React-Chartjs-2 5.3.0, Recharts 3.10.1
+- Multimedia & Notifications: React Player 2.13.0, React Dropzone 14.2.3, React Toastify 9.1.3, Moment.js 2.29.4
+- HTTP Client: Axios 1.5.1 with central interceptors in `client/src/services/api.js`
+
+5.2 Backend (server/)
+- Runtime: Node.js (ES Modules `"type": "module"`)
+- Web Framework: Express.js 4.18.2
+- Database & ORM: MongoDB Atlas with Mongoose 8.0.0
+- Real-Time Server: Socket.io 4.7.2 (integrated with HTTP server)
+- Authentication: JSON Web Tokens (jsonwebtoken 9.0.2), Passport 0.6.0, Passport-Google-OAuth20 2.0.0, Passport-JWT 4.0.1, bcryptjs 2.4.3
+- File Upload & Cloud Storage: Cloudinary SDK 1.41.0, express-fileupload 1.5.2, multer 1.4.5-lts.1
+- Security & Rate Limiting: Helmet 7.1.0, express-rate-limit 7.1.5, cors 2.8.5, express-validator 7.0.1
+- Email & Transports: Nodemailer 10.0.10 (Gmail SMTP transport)
+- Testing & Dev Tools: Jest 29.7.0, Supertest 6.3.3, Nodemon 3.1.10
+
+5.3 Testing Workspace (tests/)
+- End-to-End Headless Browser: Puppeteer 25.12.0, Zod validation scripts
+
+================================================================================
+6. EXISTING FOLDER AND FILE STRUCTURE
+================================================================================
+D:\my_PROJECTS\Vhack\
+├── .git\                                  [Active Git repository]
+├── .github\                               [GitHub workflows / config]
+├── .vscode\                               [IDE workspace configuration]
+├── tests\                                 [Automated tests & scripts]
+│   ├── check_form.cjs                     [Puppeteer script verifying tournament creation form]
+│   ├── debug_validation.cjs               [Debug script for validation rules]
+│   ├── e2e.js                             [Puppeteer end-to-end browser test script]
+│   ├── package.json                       [Tests runner dependencies: puppeteer]
+│   ├── test_tournament_flow.mjs           [Automated tournament lifecycle test script]
+│   └── verify.js                          [Puppeteer UI verification and screenshot script]
+├── client\                                [Frontend React SPA]
+│   ├── public\                            [index.html, manifest.json, static assets]
+│   ├── build\                             [Compiled production build]
+│   ├── src\
+│   │   ├── components\
+│   │   │   ├── Auth\                      [Auth forms, modals]
+│   │   │   ├── Chat\                      [ChatRoom, ChatWindow components]
+│   │   │   ├── Cricket\                   [CricketDashboard, CricketScorer (mock components)]
+│   │   │   ├── Debug\                     [API test and debugging components]
+│   │   │   ├── Layout\                    [Navbar.js, Navbar2.js (dead), Footer.js, NavbarSwitcher.js]
+│   │   │   ├── Match\                     [MatchDashboard.js]
+│   │   │   ├── Matches\                   [BadmintonScoring.js]
+│   │   │   ├── Notifications\             [NotificationBell, NotificationPanel]
+│   │   │   ├── Photo\                     [Photo gallery components]
+│   │   │   ├── Posts\                     [Post.js, PostUploadForm.js]
+│   │   │   ├── Profile\                   [ProfileHeader, ProfileStats, ActivityFeed]
+│   │   │   ├── Routing\                   [ProtectedRoute.js]
+│   │   │   ├── Scorecard\                 [CricketScorecard, FootballScorecard, BadmintonScorecard, etc.]
+│   │   │   ├── Scoring\                   [CricketScoringConsole.jsx, PointsScoringConsole.jsx]
+│   │   │   ├── SEO\                       [Meta tags / helmet wrappers]
+│   │   │   ├── Team\                      [MyTeams.js]
+│   │   │   ├── Teams\                     [TeamInvitations.js]
+│   │   │   ├── Tournament\                [BracketComponent, StandingsTable, UpcomingTournaments]
+│   │   │   ├── UI\                        [Button, Card, Modal, FloatingElements, ThemeToggle, etc.]
+│   │   │   └── Video\                     [Video player and upload components]
+│   │   ├── context\                       [ThemeContext.js (actively imported)]
+│   │   ├── contexts\                      [ThemeContext.js (duplicate / dead code)]
+│   │   ├── mock\                          [Historical mock data fixtures]
+│   │   ├── pages\
+│   │   │   ├── Admin\                     [AdminDashboard, UserManagement, TournamentVerification, etc.]
+│   │   │   ├── Auth\                      [LoginPage, RegisterPage, VerifyEmail, GoogleCallback (unrouted)]
+│   │   │   ├── Chat\                      [ChatHub.js, ConversationList.js, ChatWindow.js]
+│   │   │   ├── Cricket\                   [CricketHub.js, CricketCreateMatch.js (isolated mock module)]
+│   │   │   ├── Dashboard\                 [Dashboard.js, MyRegistrations.js]
+│   │   │   ├── Fitness\                   [FitnessHub, BrowseWorkout, WorkoutBuilder, WorkoutTimer, etc.]
+│   │   │   ├── Matches\                   [MatchesHub, MatchDetails, CreateMatch, TeamSelection, Scoring\]
+│   │   │   ├── Messages\                  [DirectMessages.js (unrouted orphaned file)]
+│   │   │   ├── Posts\                     [PostsHub.js, PostDetails.js]
+│   │   │   ├── Profile\                   [ProfilePage.js, ProfilePage_fixed.js (dead code)]
+│   │   │   ├── Settings\                  [SettingsPage.js]
+│   │   │   ├── Team\                      [TeamsPage, TeamCreatePage, TeamDetails, TeamChat, PlayerStats]
+│   │   │   ├── Tournament\                [TournamentHub, TournamentCreatePage, LiveTournamentBoard, etc.]
+│   │   │   └── [AboutPage, ContactPage, HelpPage, LandingPage, PrivacyPage, TermsPage]
+│   │   ├── redux\
+│   │   │   ├── store.js                   [Redux Toolkit configureStore]
+│   │   │   └── slices\                    [auth, chat, fitness, match, notification, post, profile, team, tournament, ui, video]
+│   │   ├── services\                      [api.js, authService, tournamentService, postService, socket.js, etc.]
+│   │   ├── utils\                         [auth.js, toast.js, formatters.js]
+│   │   ├── App.js                         [Primary React Router router definition]
+│   │   └── index.js                       [React DOM root entrypoint]
+│   ├── .env                               [Client environment variables]
+│   ├── package.json                       [Client dependencies and scripts]
+│   └── tailwind.config.js                 [Tailwind CSS tokens and animations]
+└── server\                                [Backend Express API]
+    ├── src\
+    │   ├── config\                        [database.js, passport.js, cloudinary.js, postgres.js (unused)]
+    │   ├── controllers\                   [auth, chat, fitness, matches, notifications, posts, profiles, teams, tournaments, users, videos]
+    │   ├── middleware\                    [auth.js (protect, authorize, optionalAuth), errorHandler.js]
+    │   ├── models\                        [Conversation, Cricket, FitnessContent, Match, Message, Notification, Post, Profile, Scorecard, Team, Tournament, User, VideoPost]
+    │   ├── routes\                        [auth, chat, contact, fitness, matches, notifications, posts, profiles, search, teams, test, tournaments, users, videos]
+    │   ├── scripts\                       [seed.js, seedWestGodavariTournaments.js, checkEnv.js, etc.]
+    │   ├── seeds\                         [Empty seed files: quickSeed.js, seedUsers.js]
+    │   ├── utils\                         [emailService.js, notificationUtils.js, socketHandlers.js, jwt.js, uploadUtils.js]
+    │   └── server.js                      [Server startup, HTTP + Socket.io, middleware chain]
+    ├── uploads\                           [Local file upload fallback directory]
+    ├── .env                               [Server environment variables]
+    ├── package.json                       [Server dependencies and scripts]
+    ├── check-users.js                     [Utility script to inspect DB users]
+    ├── e2e_workflow.mjs                   [Comprehensive 17-point automated API test suite]
+    ├── seedReels.js                       [Seed script for video reels]
+    ├── seed_wg.js                         [Seed script for regional tournaments]
+    ├── test-login.js                      [Direct DB credential test script]
+    └── test_tournament_flow.mjs           [Standalone tournament API workflow verification]
+
+================================================================================
+7. COMPLETED FEATURES (VERIFIED VIA CODE & TEST EXECUTION)
+================================================================================
+The following features have been inspected in the code, verified against runtime logs, and validated through direct test executions:
+
+1. User Registration & Password Authentication:
+   - Status: COMPLETE
+   - Evidence: Verified via `e2e_workflow.mjs` (AUTH-01, AUTH-02, AUTH-04 passing). User passwords hashed with bcrypt, JWT issued with 7-day expiration. Role assignment ('player', 'organizer', 'fan') working properly.
+
+2. Session Independence & Role Protection:
+   - Status: COMPLETE
+   - Evidence: Verified via `e2e_workflow.mjs` (AUTH-03). Independent user sessions maintain isolated tokens and distinct permissions. `protect` and `authorize` middlewares enforce role guards.
+
+3. Tournament Creation & Validation:
+   - Status: COMPLETE
+   - Evidence: Verified via `e2e_workflow.mjs` (VAL-01, TOURN-01, TOURN-02). Input validation requires sport, dates, format, team limits. Persists to MongoDB with organizer binding.
+
+4. Public Tournament Discovery & Geolocation:
+   - Status: COMPLETE
+   - Evidence: Verified via `GET /api/tournaments` (34 active records in DB). Frontend `TournamentHub.js` and Leaflet `MapDiscovery.js` successfully render markers from geographic coordinates.
+
+5. Team Registration for Tournaments:
+   - Status: COMPLETE
+   - Evidence: Verified via `e2e_workflow.mjs` (REG-01, REG-02). Player/captain can register a team to an open tournament; persists in `tournament.registeredTeams`.
+
+6. Business Rules & Security Permissions on Tournaments:
+   - Status: COMPLETE
+   - Evidence: Verified via `e2e_workflow.mjs` (RULE-01, SEC-01, SEC-02). Duplicate registrations are rejected. Non-organizers are blocked with HTTP 401 from modifying or deleting tournaments.
+
+7. Organizer Participant Approval Workflow:
+   - Status: COMPLETE
+   - Evidence: Verified via `e2e_workflow.mjs` (ORG-01, ORG-02). Organizers can approve pending team registrations (`PUT /api/tournaments/:id/registrations/:teamId/approve`), updating team status to 'approved'.
+
+8. Automated Bracket Generation & Fixture Scheduling:
+   - Status: COMPLETE
+   - Evidence: Inspected `server/src/controllers/tournaments.js` (`startTournament`). Generates single-elimination fixtures, binds Match records, and builds the visual bracket tree structure.
+
+9. Real-Time Bracket & Score WebSockets:
+   - Status: COMPLETE
+   - Evidence: `server/src/utils/socketHandlers.js` implements `join_tournament`, `leave_tournament`, `update_score`, `bracket-updated`, and `match-score-updated`. `LiveTournamentBoard.js` and `TournamentBracket.js` receive real-time updates.
+
+10. Social Media Posts & Feed:
+    - Status: COMPLETE
+    - Evidence: Verified via `GET /api/posts` (returns active posts). `server/src/controllers/posts.js` handles multipart image/video uploads to Cloudinary, likes, nested comments, and tags.
+
+11. Real-Time Chat Engine:
+    - Status: COMPLETE
+    - Evidence: Verified in `server/src/controllers/chat.js` and `client/src/pages/Chat/ChatHub.js`. Direct messaging and room-based messaging (`join-chat`, `new-message`) persist to MongoDB (`Conversation` and `Message` models).
+
+12. Notification Dispatch System:
+    - Status: COMPLETE
+    - Evidence: `Notification.js` model and `notificationUtils.js` create in-app notifications for likes, comments, follows, and tournament updates with unread count management (`GET /api/notifications`).
+
+================================================================================
+8. PARTIALLY COMPLETED FEATURES
+================================================================================
+1. Google OAuth Authentication:
+   - Status: PARTIALLY COMPLETE (BLOCKED BY CREDENTIALS)
+   - Related Files: `server/src/config/passport.js`, `server/src/controllers/auth.js`, `client/src/pages/Auth/GoogleCallback.js`, `client/src/services/googleAuthService.js`.
+   - Implementation: Passport strategy and auth controller callback exist, but `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are missing from `server/.env` (defaulting to `'mock_client_id'`), and `GoogleCallback.js` is NOT registered in `App.js` routes.
+
+2. Tournament Live Scoring Consoles:
+   - Status: PARTIALLY COMPLETE
+   - Related Files: `CricketScoringConsole.jsx`, `PointsScoringConsole.jsx`, `CricketScoring.js`, `BadmintonScoring.js`, `VolleyballScoring.js`, `KabaddiScoring.js`.
+   - Implementation: The tournament-integrated console (`ScoringPage.js` -> `CricketScoringConsole.jsx`) works for cricket innings 1, but multi-innings transitions, bowler selection, and extras tracking are simplified. Meanwhile, the standalone `pages/Matches/Scoring/*` components are not integrated with tournament brackets.
+
+3. Team Chat Rooms:
+   - Status: PARTIALLY COMPLETE
+   - Related Files: `client/src/pages/Team/TeamChat.js`, `server/src/controllers/chat.js`.
+   - Implementation: Backend supports `GET /api/chat/team/:roomId`, but `TeamChat.js` still has hardcoded local state mock messages (`Alex Turner`, `Sarah Connor`) and does not fetch or emit room messages.
+
+4. Fitness & Workout Module:
+   - Status: PARTIALLY COMPLETE
+   - Related Files: `client/src/pages/Fitness/*`, `server/src/controllers/fitness.js`, `server/src/models/FitnessContent.js`.
+   - Implementation: Backend has `FitnessContent` model and endpoints, but `client/src/pages/Fitness/NutritionTracker.js` and `WorkoutBuilder.js` save exclusively to browser `localStorage`. Furthermore, regular players cannot create workouts on the backend because `POST /api/fitness` requires role `'organizer'`.
+
+5. Admin Management Portal:
+   - Status: PARTIALLY COMPLETE
+   - Related Files: `client/src/pages/Admin/*`, `server/src/controllers/users.js`, `server/src/controllers/tournaments.js`.
+   - Implementation: Admin dashboard displays calculated KPIs and lists users and tournaments. However, role toggling fails (backend forbids updating another user's role), tournament verification fails (backend allows only the original organizer to edit), and platform settings has no backend endpoint.
+
+6. Profile Statistics & Gamification:
+   - Status: PARTIALLY COMPLETE
+   - Related Files: `server/src/models/Profile.js`, `client/src/pages/Profile/ProfilePage.js`.
+   - Implementation: Profile schema has achievements, points, and sport stats. Achievements can be added via API, but automatic achievement triggers (e.g., winning a match, creating 5 posts) are not connected to match completion handlers.
+
+================================================================================
+9. MISSING FEATURES
+================================================================================
+1. Payment Gateway Integration:
+   - Registration fees (`registrationFee`) and prize pools are defined in models, but no payment gateway (Razorpay, Stripe, or PayPal) is implemented. All payments are simulated status flags (`pending`, `paid`).
+
+2. Standalone Match Creation & Match Directory:
+   - The `/matches` and `/matches/create` pages exist, but `GET /api/matches` currently has 0 matches. Standalone friendly/scrimmage matches outside of tournaments cannot be scheduled or completed through a validated end-to-end flow.
+
+3. Automated Tournament Match Progression (Winner Advancement):
+   - When a match score is entered in `ScoreEntry.js`, the winner is recorded, but the system does not automatically advance the winning team into the subsequent round match slot in the tournament bracket.
+
+4. Email Password Reset Delivery:
+   - In `server/src/controllers/auth.js` (`forgotPassword`), the `sendEmail` call is commented out. The server returns the raw token in the response JSON instead of emailing a secure reset link.
+
+5. Content Reporting & Flagging Queue:
+   - Users can report posts via `POST /api/posts/:id/report`, but the Admin Content Moderation page (`ContentModeration.js`) loads all posts indiscriminately rather than filtering for reported items (`reports.length > 0`).
+
+================================================================================
+10. BROKEN AND UNVERIFIED FEATURES
+================================================================================
+1. Fitness Stats Route Shadowing Bug (BROKEN - CONFIRMED):
+   - File: `server/src/routes/fitness.js`
+   - Failure: In Express route definitions, `router.get('/:id', optional, getFitnessContentById)` is placed at line 92, BEFORE `router.get('/stats', protect, getUserStats)` at line 108.
+   - Evidence: Verified via `Invoke-RestMethod` to `http://localhost:5000/api/fitness/stats`. Mongoose throws a `CastError: Cast to ObjectId failed for value "stats"` resulting in HTTP 404/500.
+
+2. Server Jest Test Suite (BROKEN - CONFIRMED):
+   - File: `server/package.json`, `server/src/routes/test.js`
+   - Failure: Running `npm test` in `server/` fails with `SyntaxError: Cannot use import statement outside a module`. Jest runs in CommonJS mode without `--experimental-vm-modules` and mistakes `src/routes/test.js` for a test file.
+
+3. Client Unit Tests (BROKEN - CONFIRMED):
+   - File: `client/package.json`
+   - Failure: Running `npm test` in `client/` exits with code 1: `No tests found, exiting with code 1`. Zero test files exist matching `*.test.js` or `*.spec.js`.
+
+4. Admin User Role Toggle (BROKEN - CONFIRMED):
+   - Files: `client/src/pages/Admin/UserManagement.js`, `server/src/controllers/users.js`
+   - Failure: Admin clicking "Update Role" triggers `PUT /api/users/:id` with `{ role: nextRole }`. The controller explicitly blocks this: `if (req.params.id !== req.user.id) return 401`, and `role` is omitted from `allowedFields`.
+
+5. Admin Tournament Verification (BROKEN - CONFIRMED):
+   - Files: `client/src/pages/Admin/TournamentVerification.js`, `server/src/controllers/tournaments.js`
+   - Failure: Admin approving a tournament triggers `PUT /api/tournaments/:id` with `{ isVerified: true, status: 'open' }`. The controller checks `if (tournament.organizer.toString() !== req.user.id) return 401`, rejecting admin overrides. Furthermore, `isVerified` is absent from `Tournament.js` schema.
+
+6. Dedicated Cricket Hub & Create Match Pages (BROKEN / FAKE - CONFIRMED):
+   - Files: `client/src/pages/Cricket/CricketHub.js`, `client/src/pages/Cricket/CricketCreateMatch.js`
+   - Failure: `CricketHub.js` renders hardcoded IPL matches with `setTimeout`. `CricketCreateMatch.js` executes `setTimeout(1500)` and redirects without making any HTTP request. `server/src/models/Cricket.js` is completely unimported in the backend.
+
+7. Tournament Communication Center Form (BROKEN / FAKE - CONFIRMED):
+   - File: `client/src/pages/Tournament/CommunicationCenter.js`
+   - Failure: Submitting the broadcast form executes `alert('Message sent!')` on line 45 with hardcoded select options (`Neon Strikers`, `Urban Legends`). No backend notification or message is dispatched.
+
+8. Duplicate & Orphaned Files (TECHNICAL DEBT):
+   - `client/src/contexts/ThemeContext.js` is an unused duplicate of `client/src/context/ThemeContext.js`.
+   - `client/src/pages/Profile/ProfilePage_fixed.js` is an abandoned duplicate of `ProfilePage.js`.
+   - `client/src/pages/Messages/DirectMessages.js` is unrouted (superseded by `client/src/pages/Chat/ChatHub.js`).
+   - `client/src/components/Layout/Navbar2.js` and `NavbarSwitcher.js` are unreferenced dead code.
+   - `server/src/config/postgres.js` contains unused Sequelize / PostgreSQL connection logic.
+
+================================================================================
+11. COMPLETE PRODUCT REQUIREMENTS DOCUMENT (PRD - 32 SECTIONS)
+================================================================================
+
+11.1 Executive Summary
+SportSphere is a web-based, multi-sport tournament management and social engagement platform. It bridges the gap between grassroots athletic competition and modern social networking by giving amateur leagues professional-grade bracket automation, live real-time scorekeeping, team management, and athlete portfolios.
+
+11.2 Product Vision and Mission
+- Vision: To become the premier digital operating system for amateur and community sports worldwide.
+- Mission: Empower local sports organizers with effortless event management, provide athletes with persistent recognition, and give fans an interactive, real-time window into local sporting events.
+
+11.3 Problem Statement
+Community sports tournaments suffer from manual scheduling, fragmented communication, lack of transparent live scoring, and absent digital records for players. Organizers struggle with logistics, while athletes have no unified platform to showcase their progress and highlights.
+
+11.4 Project Purpose and Objectives
+1. Reduce tournament setup and bracket creation time from hours to under 2 minutes.
+2. Deliver sub-second real-time score updates to spectators via WebSockets.
+3. Foster athlete engagement through multimedia sharing, follow networks, and automated skill stats.
+4. Provide tournament organizers with clear participant approval, communication, and scheduling tools.
+
+11.5 Target Audience and User Personas
+- Persona 1: Rajesh, 34, Regional Cricket League Organizer. Needs to register 16 local teams, generate a knockout draw, assign venues across Bhimavaram, and provide live ball-by-ball updates to families at home.
+- Persona 2: Priya, 22, College Badminton Captain. Needs to manage team rosters, register for regional university tournaments, coordinate practice times via team chat, and track match records.
+- Persona 3: Marcus, 27, Fitness Enthusiast & Football Player. Uses the platform to share match highlights, discover nearby weekend tournaments on an interactive map, and track workouts.
+
+11.6 User Problems and Proposed Solutions
+- Problem: Brackets drawn on paper or static graphics require manual recreation whenever teams change.
+  Solution: Dynamic single-elimination / round-robin bracket generator with automated database-backed match fixtures.
+- Problem: Spectators cannot attend every local game and have no way to track scores live.
+  Solution: WebSocket-powered live match board broadcasting instant ball-by-ball and point-by-point updates.
+- Problem: Athletes lose track of their personal achievements and game statistics.
+  Solution: Dedicated Profile model with auto-calculated win rates, career stats, and earned achievement badges.
+
+11.7 Product Scope
+The scope encompasses multi-sport tournament creation, team administration, automated fixture generation, live scoring consoles, real-time messaging/chat, user social feeds (posts, likes, comments), athlete profiles, and administrative oversight.
+
+11.8 In-Scope and Out-of-Scope Features
+- In-Scope:
+  * Multi-sport tournament creation and editing (cricket, football, badminton, volleyball, kabaddi, basketball, tennis).
+  * Geolocation-based tournament discovery with Leaflet maps.
+  * Team formation, player invitations, and roster management.
+  * Single-elimination knockout bracket generation and standings tracking.
+  * Real-time WebSocket scoring consoles for cricket and points-based sports.
+  * Social feed with image and video upload via Cloudinary.
+  * Real-time direct and tournament chat rooms.
+  * Admin dashboard for user and content governance.
+- Out-of-Scope (MVP):
+  * Hardware-integrated biometric IoT trackers.
+  * Native iOS / Android mobile applications (PWA/Responsive Web only).
+  * Real money sports betting or gambling integrations.
+
+11.9 Functional Requirements
+- FR-01: System must allow users to register and authenticate via JWT with roles: player, organizer, fan, admin.
+- FR-02: Organizers must be able to create tournaments specifying sport, format, team caps, dates, and venue coordinates.
+- FR-03: System must validate that tournament registration start < registration end <= tournament start < tournament end.
+- FR-04: Captains must be able to create teams and register them to open tournaments.
+- FR-05: Organizers must approve or reject pending team registrations.
+- FR-06: System must generate single-elimination tournament match fixtures when the organizer initiates tournament start.
+- FR-07: Match scores updated by authorized scorers must broadcast instantly to connected clients via Socket.io.
+- FR-08: Users must be able to upload posts with images or videos up to 50MB.
+- FR-09: Users must be able to like, comment on, and share posts with instant notifications sent to the post author.
+- FR-10: Users must be able to initiate direct chats and participate in tournament chat rooms.
+
+11.10 Non-Functional Requirements
+- NFR-01 (Performance): Live score updates must propagate to connected clients in under 500ms under standard network conditions.
+- NFR-02 (Availability): API endpoints must maintain 99.5% uptime during tournament execution windows.
+- NFR-03 (Security): All passwords must be hashed using bcrypt (cost factor 10). JWT secrets must never be exposed.
+- NFR-04 (Usability): UI must be fully responsive across mobile (375px+), tablet, and desktop viewports.
+- NFR-05 (Scalability): Server must support fallback port binding and rate-limiting (100 requests per 15 minutes per IP on `/api/`).
+
+11.11 User Stories with Acceptance Criteria
+- US-01: As an Organizer, I want to approve team registrations so that only qualified teams enter the tournament.
+  * Acceptance Criteria: Clicking 'Approve' sends `PUT /api/tournaments/:id/registrations/:teamId/approve`, updates status in MongoDB to 'approved', sends an in-app notification to the team captain, and updates UI status without page reload.
+- US-02: As a Scorer, I want to record cricket balls (runs, wickets, extras) with one tap so that the live scoreboard stays up to date.
+  * Acceptance Criteria: Clicking '+1 Run' dispatches `updateCricketBall`, increments innings runs, records recent ball notation, recalculates run rate, and emits `match-score-updated` socket event.
+- US-03: As a Player, I want to search for upcoming tournaments near my city so that my team can compete.
+  * Acceptance Criteria: Entering a city or moving the map marker updates the tournament list within 300ms, filtering for matching venues.
+
+11.12 User Roles and Permissions
+| Role | Capabilities | Restrictions |
+|---|---|---|
+| Fan | View tournaments, matches, brackets, posts; like/comment; join public chats | Cannot create tournaments, teams, or submit scores |
+| Player | All Fan capabilities + create teams, invite teammates, register for tournaments, post media | Cannot generate brackets or approve registrations |
+| Organizer | All Player capabilities + create/manage tournaments, approve teams, start brackets, record match scores | Cannot perform global admin moderation |
+| Admin | Full platform access: role modifications, content moderation, tournament verification, global analytics | Must not bypass data integrity validation rules |
+
+11.13 Complete Feature and Module Breakdown
+1. Authentication Module: Registration, Login, OAuth, Password Reset, Profile Initialization.
+2. Tournament Lifecycle Module: Wizard Creation, Directory Hub, Details, Approval Dashboard, Geolocation Map.
+3. Brackets & Scheduling Module: Knockout Draw Generator, Bracket Tree Viewer, Match Fixture Scheduler.
+4. Match & Scoring Module: Cricket Console, Points Console, Event Logger, Scorecards.
+5. Team Administration Module: Team Profile, Player Roster, Role Assignment, Invitation System.
+6. Social & Media Module: Post Feed, Cloudinary Uploads, Comments, Likes, Sharing, Bookmarks.
+7. Real-Time Chat Module: Direct Conversations, Team Rooms, Tournament Broadcasts.
+8. Athlete Profile Module: Career Records, Sports Experience, Activity Feed, Achievements.
+9. Fitness & Nutrition Module: Exercise Browser, Custom Workout Builder, Interval Timer, Nutrition Log.
+10. Administration Module: User Directory, Tournament Approval, Flagged Content Moderation, Analytics.
+
+11.14 Page-by-Page UI/UX Requirements
+- `/` (Landing Page): Hero showcase with interactive value props, platform stats ticker, featured tournaments carousel, CTA buttons ("Explore Tournaments", "Join Platform").
+- `/login` & `/register`: Clean glassmorphic card layout, tabbed role selector, password visibility toggle, Google Sign-In button, inline validation errors.
+- `/tournaments`: Multi-sport tab filters, search bar, status filter (Open, Ongoing, Completed), view toggle (Grid Cards vs Interactive Leaflet Map).
+- `/tournaments/:id`: Banner header with organizer badge, countdown timer, tournament meta (dates, entry fee, prize pool), registered team roster, bracket preview.
+- `/tournaments/:id/live`: Split-pane live arena: Active match scoreboard with animated point updates, full tournament bracket tree, real-time commentary feed, and tournament chat.
+- `/posts`: Infinite/paginated social stream, media lightbox for full-screen images/videos, embedded comment drawer with reply threading.
+- `/profile`: Athlete resume card, verified badges, win-loss donut chart, sports skill tags, timeline activity stream.
+- `/admin`: KPI metrics grid, tabbed sub-views for User Management (search, filter, role actions) and Content Moderation.
+
+11.15 User Flows and Navigation
+- Primary Navigation: Top Navbar with SportSphere logo, quick links (`Tournaments`, `Matches`, `Teams`, `Feed`, `Fitness`), search icon, notification bell with unread badge counter, user avatar dropdown with Theme Toggle (Light/Dark mode) and Logout.
+- Mobile Navigation: Persistent bottom floating dock providing one-touch access to Home, Tournaments, Feed, Chat, and Profile.
+
+11.16 System Architecture
+Client-server decoupled architecture. Client operates as a React SPA communicating via REST API (JSON payloads) and bidirectional WebSockets (Socket.io). Server runs an Express middleware pipeline interfacing with MongoDB Atlas clusters and Cloudinary CDN storage.
+
+11.17 Frontend Architecture
+Structured according to feature-oriented domain slices:
+`src/pages` (routed screen views), `src/components` (reusable UI atoms and domain widgets), `src/redux/slices` (predictable state containers and async thunks), `src/services` (encapsulated Axios API calls and Socket connection managers), `src/context` (ThemeContext).
+
+11.18 Backend Architecture
+Layered MVC (Model-View-Controller) architecture:
+`src/routes` (URL routing, middleware attachments, express-validator schemas) -> `src/middleware` (JWT extraction, role validation, error handling) -> `src/controllers` (business logic, DB queries, socket broadcasts) -> `src/models` (Mongoose schema definitions and validation hooks).
+
+11.19 Database Design and Entity Relationships
+- `User` (1) <---> (1) `Profile` (One-to-one account to extended profile link).
+- `User` (1) <---> (Many) `Tournament` (Organizer creates tournaments).
+- `Tournament` (1) <---> (Many) `Team` (Teams register for tournaments).
+- `Tournament` (1) <---> (Many) `Match` (Tournament contains scheduled matches).
+- `Team` (1) <---> (Many) `User` (Team captain and players).
+- `Match` (1) <---> (2) `Team` (Home team vs Away team).
+- `User` (1) <---> (Many) `Post` (User authors social posts).
+- `Post` (1) <---> (Many) `User` (Likes and comments).
+- `User` (Many) <---> (Many) `User` (Followers and following).
+- `Conversation` (1) <---> (Many) `Message` (Chat threads).
+
+11.20 API Requirements and Endpoint Inventory
+- Complete inventory detailed in Section 14.
+
+11.21 Authentication and Authorization Requirements
+- Stateless JWT-based authentication passed via `Authorization: Bearer <token>` header.
+- Dual-layer protection: `protect` verifies token authenticity and expiration; `authorize(...roles)` checks user role against required permission levels.
+
+11.22 Third-Party Integrations
+1. Cloudinary: Media storage, automatic format optimization, video transcoding, thumbnail generation.
+2. Google Cloud OAuth 2.0: Single sign-on for players and fans.
+3. Nodemailer / Gmail SMTP: System notifications, welcome emails, password reset tokens.
+4. Leaflet / OpenStreetMap: Geolocation map tiles and venue pins.
+
+11.23 Error Handling and Validation
+- Server: Centralized `errorHandler.js` intercepts Mongoose validation errors (400), CastErrors (404), duplicate key errors (400), and JWT errors (401). Stack traces must be suppressed in production (`process.env.NODE_ENV === 'production'`).
+- Client: Axios response interceptor intercepts network failures and 401 token expirations, routing unauthenticated users to `/login`.
+
+11.24 Security and Privacy Requirements
+- Passwords hashed with bcrypt.
+- Express rate-limiting active on `/api/` (100 req/15min).
+- Helmet security headers active with cross-origin resource policy.
+- CORS restricted to whitelisted frontend origins.
+- Sensitive environment variables stored strictly in server-side `.env`.
+
+11.25 Performance and Scalability Requirements
+- Database indexes on frequently filtered fields (`tournament.sport`, `tournament.status`, `match.scheduledTime`, `post.author`, `notification.recipient`).
+- Lazy loading and code splitting for heavy client bundles (Leaflet maps, Chart.js, video players).
+
+11.26 Accessibility and Responsive Design
+- Semantic HTML tags (`<main>`, `<nav>`, `<header>`, `<footer>`, `<button>`).
+- Minimum touch target size of 44x44px on mobile devices.
+- High-contrast text compliance across Light and Dark themes.
+
+11.27 Testing Strategy
+- Unit & integration tests for controllers and utility services.
+- Automated API workflow suites (`e2e_workflow.mjs`).
+- Headless Puppeteer browser testing for critical UI journeys (registration, tournament creation, live scoreboards).
+
+11.28 Deployment and Infrastructure Requirements
+- Frontend: Static web host (e.g., Vercel, Netlify, AWS S3/CloudFront) with client-side SPA route rewrites to `index.html`.
+- Backend: Containerized or PaaS Node.js instance (e.g., Render, Railway, AWS ECS, DigitalOcean App Platform).
+- Database: MongoDB Atlas (M0/M10 cluster) with automated daily backups.
+
+11.29 Logging, Monitoring, and Maintenance
+- Structured request logging with Winston or Morgan.
+- Health check monitoring via `GET /health`.
+- Graceful shutdown handling on SIGINT/SIGTERM to close active DB connections.
+
+11.30 Risks, Assumptions, and Dependencies
+- Assumption: Organizers have internet connectivity at match venues to operate live scoring consoles.
+- Dependency: Cloudinary availability for media viewing; Gmail SMTP availability for email delivery.
+
+11.31 Success Metrics and KPIs
+- Tournament Completion Rate: Percentage of created tournaments that finish all scheduled matches.
+- Live View Engagement: Average time fans spend watching `/tournaments/:id/live`.
+- Platform Retention: Weekly active users participating in teams, chats, or social posts.
+
+11.32 Future Enhancements
+- Dedicated mobile native apps (React Native).
+- Automated AI video highlight clipping.
+- Integrated payment escrow for prize money and jersey merchandise store.
+
+================================================================================
+12. EXISTING SYSTEM ARCHITECTURE
+================================================================================
+The current system architecture consists of:
+1. Client Layer: Single-page React application served on port 3000 (or fallback 3001). Centralized Redux store connects 11 state slices to UI views. Axios makes HTTP requests to backend port 5000; Socket.io client maintains persistent WebSocket connection to port 5000.
+2. Server Layer: Node.js Express server listening on port 5000 (with automated fallback sequence 5000-5004). HTTP server encapsulates Socket.io server instance. Express routes parse JSON and multipart form data via `express-fileupload` and `multer`.
+3. Persistence Layer: MongoDB Atlas cluster accessed through Mongoose schemas with pre-save hooks and virtual getters.
+4. External Services: Cloudinary for image/video assets; Gmail SMTP for email notifications; Leaflet OpenStreetMap CDN for map rendering.
+
+================================================================================
+13. PROPOSED FINAL ARCHITECTURE
+================================================================================
+To stabilize and scale the project into production:
+1. Unified Clean Routes:
+   - Deprecate isolated prototype routes (`/cricket`, `/videos`, `/photos`) and route all sporting activity through unified tournament and match pipelines.
+   - Fix all route shadowing bugs (`server/src/routes/fitness.js`).
+2. Robust Authorization Layer:
+   - Expand `updateUser` and `updateTournament` to allow administrative role overrides (`req.user.role === 'admin'`).
+   - Add proper `isVerified` and `moderationStatus` fields to database models.
+3. Automated Bracket Engine & Winner Advancement:
+   - Add automated match progression logic so that concluding Match N automatically seeds the winner into Match N+1 in the next round of the bracket.
+4. Consolidated Scoring Console:
+   - Merge standalone match scoring components into a single, modular scoring engine that handles Cricket, Badminton, Football, Volleyball, and Kabaddi seamlessly.
+5. Production Media & Security Hardening:
+   - Complete Google OAuth redirect URI registration.
+   - Activate email password reset delivery.
+   - Configure code-splitting in React to reduce the 583kB gzip bundle size.
+
+================================================================================
+14. DATABASE MODELS AND API DOCUMENTATION
+================================================================================
+
+14.1 Database Models Summary
+1. User (`server/src/models/User.js`):
+   - Fields: firstName, lastName, email (unique), password (hashed), googleId, avatar, role ('player'|'organizer'|'fan'|'admin'), bio, sports, location, dateOfBirth, phoneNumber, isVerified, verificationToken, preferences, stats.
+2. Profile (`server/src/models/Profile.js`):
+   - Fields: user (ref User), bio, dateOfBirth, phone, address, socialLinks, preferences (sports, notifications, privacy, theme), achievements (title, category, points, icon), statistics (matches, wins, losses, tournaments, posts), following, followers, isVerified.
+3. Tournament (`server/src/models/Tournament.js`):
+   - Fields: name, description, sport, organizer (ref User), format ('single-elimination'|'double-elimination'|'round-robin'|'swiss'|'league'), maxTeams, registrationFee, prizePool, venue (name, address, city, state, coordinates), dates (registrationStart, registrationEnd, tournamentStart, tournamentEnd), status ('draft'|'open'|'closed'|'ongoing'|'completed'|'cancelled'), visibility, rules, registeredTeams [{ team, status, registeredAt }], matches [{ ref Match }], brackets, standings, sponsors.
+4. Team (`server/src/models/Team.js`):
+   - Fields: name, shortName, contactPhone, logo, captain (ref User), players [{ user, role, jerseyNumber, position }], invitations [{ user, role, status }], tournament (ref Tournament), sport, homeVenue, stats, registrationDetails.
+5. Match (`server/src/models/Match.js`):
+   - Fields: tournament (ref Tournament), round, matchNumber, homeTeam (ref Team), awayTeam (ref Team), scheduledTime, venue, status ('scheduled'|'live'|'completed'|'cancelled'), sportType, cricketData (innings, striker, nonStriker, bowler, recentBalls), setsData, score (home, away), detailedScore, events.
+6. Post (`server/src/models/Post.js`):
+   - Fields: title, content, type ('text'|'image'|'video'|'achievement'|'workout'), author (ref User), images [{ url, publicId }], videos [{ url, publicId, thumbnail, duration }], tags, sport, likes [{ user }], comments [{ user, content, likes, replies }], views, shares, reports [{ user, reason }].
+7. Notification (`server/src/models/Notification.js`):
+   - Fields: recipient (ref User), sender (ref User), type, title, message, data (postId, teamId, tournamentId, matchId, url), isRead, isClicked, priority.
+8. Conversation (`server/src/models/Conversation.js`):
+   - Fields: participants [{ ref User }], isGroup, groupName, groupAdmin, lastMessage (ref Message).
+9. Message (`server/src/models/Message.js`):
+   - Fields: conversation (ref Conversation), roomType ('team'|'tournament'|'direct'), roomId, sender (ref User), text, media, readBy, isAnnouncement.
+10. FitnessContent (`server/src/models/FitnessContent.js`):
+    - Fields: title, description, instructor (ref User), category, subCategory, type, difficulty, duration, equipment, targetMuscles, videoUrl, thumbnailUrl.
+11. Scorecard (`server/src/models/Scorecard.js`):
+    - Fields: match (ref Match), sportsCategory, cricket, football, volleyball, kabaddi, badminton specific stat breakdown.
+12. Cricket (`server/src/models/Cricket.js`):
+    - Standalone cricket match schema (currently unimported/abandoned; should be merged or cleaned).
+13. VideoPost (`server/src/models/VideoPost.js`):
+    - Legacy video model (superseded by `Post.js`).
+
+14.2 API Endpoint Inventory
+- Auth (`/api/auth`):
+  * POST `/register` - Create user account and profile.
+  * POST `/login` - Authenticate credentials and return JWT.
+  * POST `/logout` - Log out user session.
+  * GET `/me` - Get current authenticated user details.
+  * PUT `/profile` - Update profile information.
+  * POST `/avatar` - Upload profile avatar image to Cloudinary.
+  * PUT `/change-password` - Update current account password.
+  * POST `/forgot-password` - Request password reset token.
+  * PUT `/reset-password/:token` - Reset password using valid token.
+  * GET `/google` & `/google/callback` - OAuth single sign-on flows.
+- Tournaments (`/api/tournaments`):
+  * GET `/` - List tournaments with filters (sport, status, search, pagination).
+  * GET `/search` - Search tournaments by title, location, sport.
+  * GET `/my` - List tournaments organized by or participated in by current user.
+  * GET `/:id` - Get tournament details.
+  * POST `/` - Create new tournament (organizer).
+  * PUT `/:id` - Update tournament parameters.
+  * DELETE `/:id` - Delete tournament.
+  * POST `/:id/register` - Register a team for tournament.
+  * DELETE `/:id/unregister` - Withdraw team registration.
+  * PUT `/:id/registrations/:teamId/approve` - Approve team entry.
+  * PUT `/:id/registrations/:teamId/reject` - Reject team entry.
+  * POST `/:id/start` - Generate fixtures and start tournament.
+  * GET `/:id/bracket` - Fetch bracket tree data.
+  * PUT `/:id/bracket` - Manually update bracket layout.
+  * GET `/:id/standings` - Fetch league/group standings table.
+  * GET `/:id/matches` - Fetch tournament match schedule.
+  * PUT `/:id/matches/:matchId/score` - Update match score.
+  * PUT `/:id/matches/:matchId/cricket-ball` - Record ball-by-ball cricket event.
+- Teams (`/api/teams`):
+  * GET `/` - List all teams.
+  * GET `/:id` - Get team details, roster, and match history.
+  * POST `/` - Create new team.
+  * PUT `/:id` - Update team info.
+  * DELETE `/:id` - Delete team.
+  * POST `/:id/players` - Add player to team roster.
+  * DELETE `/:id/players/:userId` - Remove player from team.
+  * POST `/:id/invitations` - Send invitation to player.
+  * PUT `/:id/invitations/:inviteId` - Accept/decline team invite.
+  * GET `/invitations` - Get current user's team invitations.
+- Posts & Social Feed (`/api/posts`):
+  * GET `/` - Retrieve paginated feed with sport/tag/media filters.
+  * GET `/:id` - Get specific post with comments.
+  * POST `/` - Create post with multipart image/video uploads.
+  * PUT `/:id` - Update post caption/content.
+  * DELETE `/:id` - Delete post (author or admin).
+  * POST `/:id/like` - Toggle like on post.
+  * POST `/:id/comments` - Add comment to post.
+  * POST `/:id/share` - Share post.
+  * POST `/:id/report` - Report post for moderation.
+- Real-Time Chat (`/api/chat`):
+  * GET `/conversations` - List active direct conversations.
+  * POST `/conversations` - Create or retrieve 1-on-1 chat.
+  * GET `/messages/:conversationId` - Fetch chat message history.
+  * POST `/messages/:conversationId` - Send message.
+  * GET `/:roomType/:roomId` - Fetch room messages (team / tournament room).
+- Notifications (`/api/notifications`):
+  * GET `/` - List notifications for current user.
+  * GET `/unread-count` - Get unread notification counter.
+  * PUT `/:id/read` - Mark single notification as read.
+  * PUT `/read-all` - Mark all notifications as read.
+  * DELETE `/:id` - Dismiss notification.
+- Fitness & Health (`/api/fitness`):
+  * GET `/` - Browse workout routines and fitness content.
+  * GET `/featured` - Get featured workouts.
+  * GET `/category/:category` - Filter workouts by category.
+  * GET `/stats` - Get user fitness progress statistics (needs route fix).
+  * GET `/:id` - Get workout details.
+  * POST `/` - Create workout content (organizer).
+  * POST `/:id/rate` - Rate workout content.
+  * POST `/:id/progress` - Log completed workout progress.
+- Users & Admin (`/api/users`):
+  * GET `/` - List users with role and search query filters.
+  * GET `/search` - Search users by name or email.
+  * GET `/dashboard/stats` - Fetch dashboard KPI counters for logged-in user.
+  * GET `/dashboard/activities` - Fetch recent match and tournament activities.
+  * GET `/:id` - Get public profile for specific user.
+  * PUT `/:id` - Update user account details.
+  * DELETE `/:id` - Delete user account (admin).
+
+================================================================================
+15. UI/UX AND PAGE-BY-PAGE SPECIFICATIONS
+================================================================================
+1. Responsive Design Breakdown:
+   - Desktop (>= 1024px): 3-column layouts on feed and dashboards; sidebars for tournament brackets, chat drawers, and quick navigation.
+   - Tablet (768px - 1023px): Collapsible secondary drawers; 2-column card grids.
+   - Mobile (< 768px): Single-column fluid view; persistent floating dock navigation; swipeable tab bars (`CategoryFilterScroll`).
+2. Theme System:
+   - Managed via `client/src/context/ThemeContext.js`.
+   - Supports 'light', 'dark', and 'system' themes, applying Tailwind `dark` class dynamically to the root document.
+3. Visual Styling:
+   - Consistent modern glassmorphism (`glass-panel` class with backdrop-blur, subtle borders, floating ambient glow particles via `FloatingElements.js`).
+   - Clean sport badge accents (emerald for active/open, amber for pending, blue for verified, purple for tournaments).
+
+================================================================================
+16. FEATURE-BY-FEATURE GAP ANALYSIS
+================================================================================
+| Feature Area | Current State | Target State | Gap / Action Required |
+|---|---|---|---|
+| User Auth | Email/pass working; Google OAuth backend ready | Seamless dual auth (Google + Email) | Add Google credentials to `.env`; register `GoogleCallback` route in `App.js` |
+| Password Reset | Token returned in JSON response | Token emailed via secure SMTP link | Uncomment email dispatch in `auth.js`; remove raw token from response JSON |
+| Tournaments | Creation, listing, map, and approval working | Full lifecycle with winner advancement | Implement automated bracket winner advancement upon match completion |
+| Live Scoring | Cricket ball logger working for inning 1 | Comprehensive multi-sport console | Support inning 2 target chase; wire points console to tournament brackets |
+| Team Chat | Hardcoded mock messages | Live room chat via WebSockets | Connect `TeamChat.js` to `GET /api/chat/team/:roomId` and socket room emitters |
+| Admin Portal | Views exist; role edit & tournament edit fail | Fully functional admin management | Grant admin role authorization bypass in `users.js` and `tournaments.js` |
+| Fitness | Content browsing works; stats endpoint broken | Robust fitness tracking | Fix route order in `fitness.js`; allow players to create personal routines |
+| Communications | Fake form with `alert()` | Real tournament announcements | Connect `CommunicationCenter.js` to `Notification` and `Message` broadcast API |
+| Registrations | Mock data in `MyRegistrations.js` | Live registered tournaments list | Wire `MyRegistrations.js` to `GET /api/tournaments/my` and user teams |
+
+================================================================================
+17. KNOWN BUGS AND TECHNICAL DEBT
+================================================================================
+1. Route Shadowing Bug in `server/src/routes/fitness.js`:
+   `GET /:id` defined before `GET /stats`, causing all stats requests to trigger a Mongoose ObjectId CastError.
+2. Jest ESM Configuration Failure in `server/`:
+   `npm test` in server directory fails because Jest lacks ES module configuration and misidentifies `src/routes/test.js` as a test file.
+3. Missing Client Test Suite:
+   `npm test` in client directory finds zero tests and exits with code 1.
+4. Security Exposure in Password Reset:
+   `forgotPassword` controller returns the plaintext `resetToken` in HTTP response body.
+5. Missing Google Callback Route:
+   `GoogleCallback.js` exists in `pages/Auth/` but is never imported or routed in `App.js`.
+6. Admin Role Update Lockout:
+   `updateUser` controller prevents administrators from updating roles or details of other users.
+7. Admin Tournament Verification Lockout:
+   `updateTournament` controller blocks non-organizers, preventing administrators from approving or verifying tournaments.
+8. Unused Duplicate Files:
+   - `client/src/contexts/ThemeContext.js` (duplicate of `client/src/context/ThemeContext.js`).
+   - `client/src/pages/Profile/ProfilePage_fixed.js` (duplicate of `ProfilePage.js`).
+   - `client/src/pages/Messages/DirectMessages.js` (unrouted).
+   - `client/src/components/Layout/Navbar2.js` and `NavbarSwitcher.js` (unrouted).
+   - `server/src/config/postgres.js` (unused).
+   - `server/src/models/Cricket.js` (unimported standalone model).
+
+================================================================================
+18. SECURITY, PRIVACY AND PERFORMANCE FINDINGS
+================================================================================
+1. Security Audit:
+   - Passwords: Protected with bcrypt hashing.
+   - JWT Tokens: Signed with secret, verified in middleware, expiration enforced.
+   - Stack Traces: Leaked in error responses when `NODE_ENV === 'development'`. Must verify that production environments enforce `NODE_ENV=production`.
+   - Password Reset Token: Currently returned in API response; must be sent strictly via email.
+   - Google Client Secrets: Kept on backend only.
+2. Privacy Audit:
+   - Profile privacy settings (`profileVisibility`: 'public', 'friends', 'private') are respected in `getUser` controller.
+   - Email and phone visibility flags (`showEmail`, `showPhone`) are enforced on public profile responses.
+3. Performance Audit:
+   - Client Production Gzip Bundle: 583.55 kB. Exceeds recommended 500kB warning threshold. Optimization required via `React.lazy()` for heavy views (MapDiscovery, LiveTournamentBoard, Recharts/Chart.js).
+   - Backend Rate Limiting: Configured at 100 requests per 15 minutes on `/api/`.
+
+================================================================================
+19. ENVIRONMENT CONFIGURATION AND SETUP REQUIREMENTS
+================================================================================
+19.1 Server Environment (`server/.env`)
+| Variable | Status in Workspace | Purpose |
+|---|---|---|
+| `NODE_ENV` | Configured (`development`) | Controls error reporting and optimizations |
+| `PORT` | Configured (`5000`) | Primary listening port |
+| `MONGODB_URI` | Configured (Valid MongoDB Atlas URI) | Database cluster connection string |
+| `JWT_SECRET` | Configured | Cryptographic key for signing tokens |
+| `JWT_EXPIRE` | Configured (`7d`) | Token validity lifespan |
+| `CLOUDINARY_CLOUD_NAME`| Configured | Cloudinary cloud account name |
+| `CLOUDINARY_API_KEY` | Configured | Cloudinary public API key |
+| `CLOUDINARY_API_SECRET`| Configured | Cloudinary secret key |
+| `EMAIL_HOST` | Configured (`smtp.gmail.com`) | SMTP server for notifications |
+| `EMAIL_PORT` | Configured (`587`) | SMTP port |
+| `EMAIL_USER` | Configured | Authenticated sender email address |
+| `EMAIL_PASS` | Configured (App Password) | App-specific password for SMTP |
+| `CLIENT_URL` | Configured (`http://localhost:3000`) | Frontend origin for CORS |
+| `GOOGLE_CLIENT_ID` | Missing / Empty | Google OAuth credential |
+| `GOOGLE_CLIENT_SECRET` | Missing / Empty | Google OAuth secret |
+
+19.2 Client Environment (`client/.env`)
+| Variable | Status in Workspace | Purpose |
+|---|---|---|
+| `REACT_APP_API_URL` | Configured (`http://localhost:5000/api`) | Base backend REST API URL |
+| `REACT_APP_SOCKET_URL` | Configured (`http://localhost:5000`) | Base backend WebSocket URL |
+| `REACT_APP_CLOUDINARY_CLOUD_NAME` | Configured | Client-side media upload reference |
+| `REACT_APP_CLOUDINARY_API_KEY` | Configured | Client-side media upload reference |
+| `REACT_APP_NAME` | Configured (`SportSphere`) | Application brand display name |
+| `REACT_APP_GOOGLE_CLIENT_ID` | Missing / Empty | Google Sign-In button integration |
+
+================================================================================
+20. TESTING AND QUALITY ASSURANCE AUDIT
+================================================================================
+20.1 Test Execution Observations
+1. `server/e2e_workflow.mjs`:
+   - Executed against live backend port 5000 and MongoDB Atlas.
+   - Result: 17 out of 17 tests PASSED (100% success rate).
+   - Verified: User registration, authentication, session isolation, tournament validation, tournament persistence, public discovery, team tournament registration, duplicate registration rejection, unauthorized modification blocking, and organizer registration approval.
+2. `server/test_tournament_flow.mjs`:
+   - Executed against live backend port 5000.
+   - Result: Failed on initial organizer login because hardcoded seed user `org@gmail.com` had an updated password in DB.
+3. Server `npm test` (Jest):
+   - Executed. Result: FAILED with SyntaxError due to ES module import of `src/routes/test.js`.
+4. Client `npm test` (react-scripts test):
+   - Executed with `CI=true`. Result: FAILED with "No tests found, exiting with code 1".
+5. Client `npm run build`:
+   - Executed. Result: PASSED with 0 errors (compiled with minor unused variable ESLint warnings). Production bundle generated at `client/build/`.
+
+================================================================================
+21. DEPLOYMENT AND INFRASTRUCTURE REQUIREMENTS
+================================================================================
+1. Production Hosting Recommendations:
+   - Frontend: Vercel or AWS Amplify / S3+CloudFront. Configure rewrite rule to route all paths to `index.html`.
+   - Backend: Render or Railway or AWS App Runner. Set environment variables identical to `server/.env` with `NODE_ENV=production` and production `CLIENT_URL`.
+2. Database Production Architecture:
+   - MongoDB Atlas M10+ instance with IP Access List restricted to backend application server IPs.
+3. Automated CI/CD Pipeline:
+   - GitHub Actions workflow running:
+     1. Client lint & production build verification (`npm run build`).
+     2. Server syntax check and Jest automated suites.
+     3. Automated deployment upon push to `main` branch.
+
+================================================================================
+22. PRIORITIZED DEVELOPMENT ROADMAP (PHASES 1-8)
+================================================================================
+
+--- PHASE 1: ENVIRONMENT STABILIZATION & CRITICAL BUG FIXES ---
+* Task 1.1 [Priority: CRITICAL]: Fix route shadowing bug in `server/src/routes/fitness.js`. Move `router.get('/stats')` before `router.get('/:id')`.
+* Task 1.2 [Priority: CRITICAL]: Configure Jest in `server/` with ESM support and isolate `src/routes/test.js` from test runners.
+* Task 1.3 [Priority: CRITICAL]: Close security hole in `server/src/controllers/auth.js` (`forgotPassword`) so resetToken is never returned in HTTP response; wire Nodemailer email dispatch.
+* Task 1.4 [Priority: HIGH]: Remove or archive dead duplicate files (`client/src/contexts/ThemeContext.js`, `ProfilePage_fixed.js`, `DirectMessages.js`, `Navbar2.js`, `server/src/config/postgres.js`).
+* Task 1.5 [Priority: HIGH]: Register `/auth/google/callback` route in `client/src/App.js` pointing to `GoogleCallback.js`.
+
+--- PHASE 2: CORE TOURNAMENT & MATCH COMPLETION ---
+* Task 2.1 [Priority: HIGH]: Implement automated bracket progression in `tournaments.js`. When a match result is updated, automatically populate the winning team into the next round match slot.
+* Task 2.2 [Priority: HIGH]: Connect `ScoreEntry.js` and `ScoringPage.js` to handle both innings of cricket matches and points-based sets for volleyball, badminton, and tennis.
+* Task 2.3 [Priority: MEDIUM]: Wire `client/src/pages/Dashboard/MyRegistrations.js` to real backend endpoints (`/api/tournaments/my` and `/api/teams`).
+
+--- PHASE 3: REAL-TIME COLLABORATION & SOCIAL FEATURES ---
+* Task 3.1 [Priority: HIGH]: Connect `client/src/pages/Team/TeamChat.js` to real backend API `GET /api/chat/team/:roomId` and Socket.io room events.
+* Task 3.2 [Priority: MEDIUM]: Replace fake form in `client/src/pages/Tournament/CommunicationCenter.js` with real broadcast notifications and team messaging.
+* Task 3.3 [Priority: MEDIUM]: Add automated achievement triggers to `server/src/models/Profile.js` upon match and tournament wins.
+
+--- PHASE 4: ADMIN PORTAL EMPOWERMENT ---
+* Task 4.1 [Priority: HIGH]: Update `server/src/controllers/users.js` to allow `role: 'admin'` to modify user roles and statuses.
+* Task 4.2 [Priority: HIGH]: Update `server/src/controllers/tournaments.js` and `Tournament.js` schema to include `isVerified` field and allow administrators to approve/verify tournaments.
+* Task 4.3 [Priority: MEDIUM]: Filter posts in `client/src/pages/Admin/ContentModeration.js` to display flagged posts (`reports.length > 0`).
+
+--- PHASE 5: CODEBASE QUALITY, TESTING & OPTIMIZATION ---
+* Task 5.1 [Priority: HIGH]: Add React component unit tests in `client/src/__tests__/` to achieve passing client test suite.
+* Task 5.2 [Priority: MEDIUM]: Implement React code-splitting (`React.lazy`) for heavy pages (Leaflet Map, LiveBoard, Charts) to reduce bundle size under 400kB.
+* Task 5.3 [Priority: LOW]: Clear all unused variable ESLint warnings in `client/src/`.
+
+================================================================================
+23. FIRST FIVE RECOMMENDED IMMEDIATE TASKS
+================================================================================
+1. TASK-01: Fix Route Shadowing in `server/src/routes/fitness.js`
+   - File: `server/src/routes/fitness.js`
+   - Action: Relocate `router.get('/stats', protect, getUserStats);` above `router.get('/:id', optional, getFitnessContentById);`.
+   - Acceptance: `GET /api/fitness/stats` returns 200 OK with user statistics instead of Mongoose CastError.
+
+2. TASK-02: Fix Server Jest Test Configuration & Script Matching
+   - Files: `server/package.json`, `server/jest.config.js`
+   - Action: Add Jest configuration to handle ES modules (`node --experimental-vm-modules node_modules/jest/bin/jest.js`) and configure `testMatch` to ignore route files.
+   - Acceptance: Running `npm test` inside `server/` executes without syntax errors.
+
+3. TASK-03: Remediate Password Reset Security Leak
+   - File: `server/src/controllers/auth.js`
+   - Action: Remove `resetToken` from the response JSON in `forgotPassword`. Connect `sendPasswordResetEmail` in `server/src/utils/emailService.js`.
+   - Acceptance: Requesting password reset sends email and returns only `{ success: true, message: 'Email sent' }`.
+
+4. TASK-04: Enable Google OAuth Route in Frontend App.js
+   - File: `client/src/App.js`
+   - Action: Import `GoogleCallback` from `./pages/Auth/GoogleCallback` and add `<Route path="/auth/google/callback" element={<GoogleCallback />} />`.
+   - Acceptance: Redirects from Google OAuth successfully hit the callback handler and persist authentication token to localStorage.
+
+5. TASK-05: Enable Admin Role & Tournament Verification Permissions
+   - Files: `server/src/controllers/users.js`, `server/src/controllers/tournaments.js`, `server/src/models/Tournament.js`
+   - Action: Add `isVerified` to Tournament schema; update permission checks in `updateUser` and `updateTournament` to permit access when `req.user.role === 'admin'`.
+   - Acceptance: Admin portal buttons for role toggling and tournament verification succeed with 200 OK.
+
+================================================================================
+24. RISKS, BLOCKERS, AND DEPENDENCIES
+================================================================================
+1. Google OAuth Credentials Missing (BLOCKER for Google Auth):
+   - Impact: "Sign in with Google" cannot complete in production until Google Cloud Console project OAuth Client ID and Secret are provided and added to `.env`.
+   - Resolution: User must create OAuth credentials in Google Cloud Console and paste Client ID and Secret into `server/.env` and `client/.env`.
+2. Port 3000 Collision on Local Developer Machine (RISK):
+   - Impact: An existing Next.js portfolio process is listening on port 3000.
+   - Resolution: SportSphere client runs on port 3001, which is already whitelisted in server CORS.
+3. Bundle Size Growth (RISK):
+   - Impact: Initial page load performance on slow 3G mobile networks.
+   - Resolution: Implement `React.lazy()` chunking for Leaflet map and Recharts.
+
+================================================================================
+25. DEFINITION OF DONE (DOD)
+================================================================================
+A task or feature in SportSphere is defined as "Done" only when:
+1. Implementation: Code conforms to existing modern ES6+ and React 18 patterns without `any` types or extraneous console logs.
+2. Architecture: Zero duplicate models, orphaned components, or route shadowing.
+3. Security: No secrets, passwords, or tokens exposed in responses or logs. Role authorization strictly validated on server.
+4. Testing: Local tests executed and passing. Verified through automated API script (`e2e_workflow.mjs`) or Jest/Puppeteer.
+5. Production Readiness: `npm run build` compiles cleanly with zero blocking errors.
+6. Documentation: Changes, endpoints, and status updated in `PROJECT_MASTER_DOCUMENT.txt`.
+
+================================================================================
+26. FINAL COMPLETION CHECKLIST
+================================================================================
+- [x] Full workspace source code inspected (frontend, backend, tests, configs).
+- [x] Backend running on port 5000 and verified with live MongoDB Atlas connection.
+- [x] Frontend running on port 3001 and verified in browser.
+- [x] End-to-end automated testing executed (17/17 core workflow tests passing).
+- [x] All 13 backend models, 14 route files, and 11 controllers audited.
+- [x] All frontend pages, Redux slices, and services mapped.
+- [x] Bugs, security vulnerabilities, and route shadows pinpointed with exact lines.
+- [x] Complete 32-section Product Requirements Document (PRD) authored.
+- [x] Prioritized development roadmap and first five tasks defined.
+- [x] PROJECT_MASTER_DOCUMENT.txt written to project root directory.
+
+================================================================================
+27. ASSUMPTIONS AND UNRESOLVED QUESTIONS
+================================================================================
+1. Question: Should tournament registration fees involve an integrated payment gateway (e.g., Razorpay / Stripe / UPI), or should registration remain free/manual for the upcoming launch?
+2. Question: For Google OAuth, do you want to configure real Google Cloud Console OAuth credentials, or should we keep email/password as the primary authentication method for now?
+3. Question: Should we clean up and delete the confirmed dead/duplicate files (`client/src/contexts/ThemeContext.js`, `ProfilePage_fixed.js`, `DirectMessages.js`, `Navbar2.js`, `server/src/config/postgres.js`) to keep the repository pristine?
+
+================================================================================
+28. FUTURE SCOPE AND STRATEGIC RECOMMENDATIONS
+================================================================================
+1. WhatsApp & Push Notification Integration:
+   - Grassroots sports organizers heavily rely on WhatsApp. Adding Twilio WhatsApp API hooks for match reminders and bracket updates will maximize engagement.
+2. Progressive Web App (PWA) Offline Scoring:
+   - Match scorers frequently experience spotty cell service at outdoor grounds. Building offline ServiceWorker caching will allow scorers to log balls offline and sync automatically upon reconnection.
+3. Public API & Embeddable Widgets:
+   - Offer embeddable iframe widgets for schools and regional sports clubs to show live brackets and tournament scoreboards directly on their websites.
+================================================================================
+END OF PROJECT MASTER DOCUMENT
+================================================================================

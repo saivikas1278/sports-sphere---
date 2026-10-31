@@ -157,7 +157,43 @@ const MatchDetails = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
   
-  const handleDownloadScorecard = () => alert('Downloading scorecard...');
+  const handleDownloadScorecard = () => {
+    try {
+      const team1Name = match.teams?.team1?.name || match.homeTeam?.name || 'Team 1';
+      const team2Name = match.teams?.team2?.name || match.awayTeam?.name || 'Team 2';
+      const score1 = match.teams?.team1?.score ?? match.score?.home ?? 0;
+      const score2 = match.teams?.team2?.score ?? match.score?.away ?? 0;
+      const venueName = typeof match.venue === 'object' ? match.venue?.name : (match.venue || 'Main Ground');
+      const sportName = match.sport || match.tournament?.sport || 'Sports';
+      const resultText = match.result?.summary || match.result?.details || match.status || 'Scheduled';
+
+      const csvRows = [
+        ['SportSphere Official Match Scorecard'],
+        ['Match', `${team1Name} vs ${team2Name}`],
+        ['Sport', sportName.toUpperCase()],
+        ['Venue', venueName],
+        ['Date', match.date ? new Date(match.date).toLocaleString() : 'TBD'],
+        ['Status', (match.status || '').toUpperCase()],
+        ['Result', resultText],
+        [],
+        ['Team', 'Score'],
+        [team1Name, score1],
+        [team2Name, score2]
+      ];
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `${team1Name}_vs_${team2Name}_Scorecard.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error downloading scorecard:', err);
+      alert('Failed to generate scorecard CSV');
+    }
+  };
   const handlePrintScorecard = () => window.print();
   
   const handleShareMatch = () => {

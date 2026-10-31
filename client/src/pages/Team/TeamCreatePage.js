@@ -69,11 +69,18 @@ const TeamCreatePage = () => {
     try {
       setIsSubmitting(true);
       
+      // Map sport enum to lowercase and align soccer -> football
+      const rawSport = (formData.sport || '').toLowerCase().trim();
+      const sportEnum = rawSport === 'soccer' ? 'football' : (rawSport === 'kabaddi' ? 'other' : rawSport);
+
       const teamData = {
-        name: formData.name,
-        sport: formData.sport,
-        location: formData.location,
-        description: formData.description,
+        name: formData.name.trim(),
+        sport: sportEnum,
+        location: formData.location.trim(),
+        homeVenue: {
+          city: formData.location.trim()
+        },
+        description: (formData.description || '').trim(),
         skillLevel: formData.skillLevel,
         type: formData.type
       };
@@ -84,15 +91,19 @@ const TeamCreatePage = () => {
 
       const response = await teamService.createTeam(teamData);
       
-      if (response.success) {
+      const createdTeam = response?.data || response;
+      const teamId = createdTeam?._id || response?._id;
+      
+      if (teamId) {
         showToast('Team created successfully!', 'success');
-        navigate(`/teams/${response.data._id}`);
+        navigate(`/teams/${teamId}`);
       } else {
         showToast('Failed to create team', 'error');
       }
     } catch (error) {
       console.error('Error creating team:', error);
-      showToast(error.response?.data?.message || 'Failed to create team. Please try again.', 'error');
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Failed to create team. Please try again.';
+      showToast(errorMsg, 'error');
     } finally {
       setIsSubmitting(false);
     }

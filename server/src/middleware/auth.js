@@ -98,3 +98,5 @@ export const admin = (req, res, next) => {
     });
   }
 };
+
+export { canModify } from './authorization.js';

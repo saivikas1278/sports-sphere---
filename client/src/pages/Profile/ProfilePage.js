@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend
+  BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
 import { loadUser, uploadAvatar } from '../../redux/slices/authSlice';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';

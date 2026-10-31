@@ -126,42 +126,48 @@ export const createTeam = async (req, res, next) => {
       });
     }
 
-    // Verify tournament exists
-    const tournament = await Tournament.findById(req.body.tournament);
-    if (!tournament) {
-      return res.status(404).json({
-        success: false,
-        error: 'Tournament not found'
-      });
-    }
+    let tournament = null;
 
-    // Check if registration is open
-    if (tournament.registrationStatus !== 'open') {
-      return res.status(400).json({
-        success: false,
-        error: 'Tournament registration is not open'
-      });
-    }
+    // If tournament ID is provided, validate tournament registration
+    if (req.body.tournament) {
+      tournament = await Tournament.findById(req.body.tournament);
+      if (!tournament) {
+        return res.status(404).json({
+          success: false,
+          error: 'Tournament not found'
+        });
+      }
 
-    // Check if tournament is full
-    if (tournament.registeredTeams.length >= tournament.maxTeams) {
-      return res.status(400).json({
-        success: false,
-        error: 'Tournament is full'
-      });
-    }
+      // Check if registration is open
+      if (tournament.registrationStatus !== 'open') {
+        return res.status(400).json({
+          success: false,
+          error: 'Tournament registration is not open'
+        });
+      }
 
-    // Check if user already has a team in this tournament
-    const existingTeam = await Team.findOne({
-      tournament: req.body.tournament,
-      captain: req.user.id
-    });
+      // Check if tournament is full
+      if (tournament.registeredTeams.length >= tournament.maxTeams) {
+        return res.status(400).json({
+          success: false,
+          error: 'Tournament is full'
+        });
+      }
 
-    if (existingTeam) {
-      return res.status(400).json({
-        success: false,
-        error: 'You already have a team in this tournament'
+      // Check if user already has a team in this tournament
+      const existingTeam = await Team.findOne({
+        tournament: req.body.tournament,
+        captain: req.user.id
       });
+
+      if (existingTeam) {
+        return res.status(400).json({
+          success: false,
+          error: 'You already have a team in this tournament'
+        });
+      }
+    } else {
+      req.body.tournament = null;
     }
 
     // Add captain and current user to team data
@@ -174,14 +180,18 @@ export const createTeam = async (req, res, next) => {
 
     const team = await Team.create(req.body);
 
-    // Add team to tournament
-    tournament.registeredTeams.push(team._id);
-    await tournament.save();
+    // Link tournament if applicable
+    if (tournament) {
+      tournament.registeredTeams.push(team._id);
+      await tournament.save();
+    }
 
     // Populate team data before sending response
     await team.populate('captain', 'firstName lastName avatar');
     await team.populate('players.user', 'firstName lastName avatar');
-    await team.populate('tournament', 'name sport');
+    if (tournament) {
+      await team.populate('tournament', 'name sport');
+    }
 
     res.status(201).json({
       success: true,
@@ -724,6 +734,32 @@ export const getMyInvitations = async (req, res, next) => {
     });
 
     res.status(200).json({ success: true, data: invitations });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get current user's teams (as captain or member)
+// @route   GET /api/teams/my
+// @access  Private
+export const getMyTeams = async (req, res, next) => {
+  try {
+    const teams = await Team.find({
+      $or: [
+        { captain: req.user.id },
+        { 'players.user': req.user.id }
+      ]
+    })
+      .populate('captain', 'firstName lastName fullName avatar')
+      .populate('players.user', 'firstName lastName fullName avatar')
+      .populate('tournament', 'name sport')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: teams.length,
+      data: teams
+    });
   } catch (error) {
     next(error);
   }

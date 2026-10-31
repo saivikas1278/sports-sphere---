@@ -4,7 +4,8 @@ import {
   createConversation,
   getMessages,
   sendMessage,
-  getRoomMessages
+  getRoomMessages,
+  sendRoomMessage
 } from '../controllers/chat.js';
 import { protect } from '../middleware/auth.js';
 
@@ -21,6 +22,8 @@ router.route('/messages/:conversationId')
   .get(getMessages)
   .post(sendMessage);
 
-router.get('/:roomType/:roomId', getRoomMessages);
+router.route('/:roomType/:roomId')
+  .get(getRoomMessages)
+  .post(sendRoomMessage);
 
 export default router;

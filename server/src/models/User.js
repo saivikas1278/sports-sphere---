@@ -71,6 +71,8 @@ const userSchema = new mongoose.Schema({
   },
   verificationToken: String,
   verificationExpire: Date,
+  resetPasswordToken: String,
+  resetPasswordExpire: Date,
   preferences: {
     notifications: {
       email: { type: Boolean, default: true },

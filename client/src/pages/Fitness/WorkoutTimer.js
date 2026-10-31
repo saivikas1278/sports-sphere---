@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -9,8 +9,11 @@ import {
   Zap,
   Flame,
   Dumbbell,
-  Settings
+  Settings,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
+import { showToast } from '../../utils/toast';
 
 const WorkoutTimer = () => {
   const navigate = useNavigate();
@@ -22,10 +25,37 @@ const WorkoutTimer = () => {
   const [rounds, setRounds] = useState(1);
   const [currentRound, setCurrentRound] = useState(1);
   const [timerType, setTimerType] = useState('simple'); // 'simple', 'interval', 'tabata'
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Synthesized Web Audio function
+  const playTone = useCallback((freq = 440, duration = 0.15, type = 'sine') => {
+    if (!soundEnabled) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const audioCtx = new AudioCtx();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {
+      console.warn('Audio synthesis note:', e);
+    }
+  }, [soundEnabled]);
 
   useEffect(() => {
     const handleTimerComplete = () => {
-      if ('Notification' in window) {
+      // Victory/Complete Double Chime
+      playTone(880, 0.25, 'triangle');
+      setTimeout(() => playTone(1174.66, 0.35, 'triangle'), 200);
+
+      if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Timer Complete!', {
           body: mode === 'work' ? 'Rest time!' : 'Work time!',
           icon: '/favicon.ico'
@@ -36,32 +66,40 @@ const WorkoutTimer = () => {
         if (mode === 'work') {
           setMode('rest');
           setTimeLeft(restTime);
+          showToast('Work period complete! Take a breather.', 'info');
         } else {
           if (currentRound < rounds) {
             setCurrentRound(currentRound + 1);
             setMode('work');
             setTimeLeft(workTime);
+            showToast(`Round ${currentRound + 1} starting! Let's go!`, 'info');
           } else {
             setIsRunning(false);
-            alert('Workout Complete! Great job!');
+            showToast('Workout Complete! Outstanding effort! 🎉', 'success');
           }
         }
       } else {
         setIsRunning(false);
-        alert('Timer Complete!');
+        showToast('Timer Complete! Great session! ⏱️', 'success');
       }
     };
 
     let interval = null;
     if (isRunning && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(timeLeft => timeLeft - 1);
+        setTimeLeft((prev) => {
+          // Play countdown warning on 3, 2, 1
+          if (prev <= 4 && prev > 1) {
+            playTone(523.25, 0.1, 'sine'); // C5 beep
+          }
+          return prev - 1;
+        });
       }, 1000);
     } else if (timeLeft === 0 && isRunning) {
       handleTimerComplete();
     }
     return () => clearInterval(interval);
-  }, [isRunning, timeLeft, mode, restTime, workTime, timerType, currentRound, rounds]);
+  }, [isRunning, timeLeft, mode, restTime, workTime, timerType, currentRound, rounds, soundEnabled, playTone]);
 
   const startTimer = () => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -132,19 +170,38 @@ const WorkoutTimer = () => {
     <div className="container mx-auto px-4 py-4 md:py-8 relative z-10 max-w-4xl animate-fade-in">
       
       {/* Header */}
-      <div className="flex items-center mb-4 md:mb-8">
-        <button 
-          onClick={() => navigate('/fitness')}
-          className="w-10 h-10 rounded-full bg-white/60 border border-white flex items-center justify-center text-slate-500 hover:text-blue-500 hover:bg-white transition-colors shadow-sm mr-4"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <div>
-          <h1 className="text-xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
-            <Timer className="text-blue-500" size={32} />
-            Smart Timer
-          </h1>
+      <div className="flex items-center justify-between mb-4 md:mb-8">
+        <div className="flex items-center">
+          <button 
+            onClick={() => navigate('/fitness')}
+            className="w-10 h-10 rounded-full bg-white/60 border border-white flex items-center justify-center text-slate-500 hover:text-blue-500 hover:bg-white transition-colors shadow-sm mr-4"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
+              <Timer className="text-blue-500" size={32} />
+              Smart Timer
+            </h1>
+          </div>
         </div>
+
+        {/* Audio Mute/Unmute Toggle */}
+        <button
+          onClick={() => {
+            setSoundEnabled(!soundEnabled);
+            showToast(!soundEnabled ? 'Audio cues enabled 🔊' : 'Audio cues muted 🔇', 'info');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all shadow-sm ${
+            soundEnabled 
+              ? 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100' 
+              : 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200'
+          }`}
+          title={soundEnabled ? 'Mute audio countdown' : 'Enable audio countdown'}
+        >
+          {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          <span>{soundEnabled ? 'Audio On' : 'Muted'}</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">

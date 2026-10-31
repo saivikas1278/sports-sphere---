@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { 
   Users, Plus, UserPlus, Search, X, PlayCircle, Shield
 } from 'lucide-react';
@@ -10,6 +11,7 @@ import tournamentService from '../../services/tournamentService';
 const TeamSelection = () => {
   const { sportId } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useSelector((state) => state.auth || {});
   
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -103,6 +105,11 @@ const TeamSelection = () => {
   };
   
   const handleStartMatch = async () => {
+    if (!isAuthenticated) {
+      showToast('Please log in to create and track a live match', 'warning');
+      navigate('/login', { state: { from: `/matches/create/${sportId}/teams` } });
+      return;
+    }
     if (!team1.name || !team2.name) {
       showToast('Please enter names for both teams', 'error');
       return;
@@ -117,40 +124,77 @@ const TeamSelection = () => {
     }
     
     try {
-      // Wire Match Creation page to POST /api/tournaments
+      setLoading(true);
+      // 1. Create Tournament Container with instant auto-approval settings
+      const normalizedSport = ['football', 'basketball', 'cricket', 'tennis', 'badminton', 'volleyball', 'table-tennis', 'chess'].includes(sportId?.toLowerCase())
+        ? sportId.toLowerCase()
+        : 'other';
+
       const tournamentData = {
         name: `${team1.name} vs ${team2.name}`,
         description: `Exhibition Match between ${team1.name} and ${team2.name}`,
-        sport: sportId,
+        sport: normalizedSport,
         format: 'single-elimination',
         maxTeams: 2,
+        settings: {
+          requireApproval: false,
+          minPlayersPerTeam: 1,
+          maxPlayersPerTeam: currentConfig.maxPlayers || 15
+        },
         dates: {
-          registrationStart: new Date().toISOString(),
-          registrationEnd: new Date().toISOString(),
-          tournamentStart: new Date().toISOString(),
-          tournamentEnd: new Date(new Date().getTime() + 2 * 60 * 60 * 1000).toISOString()
+          registrationStart: new Date(Date.now() - 3600 * 1000).toISOString(),
+          registrationEnd: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+          tournamentStart: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
+          tournamentEnd: new Date(Date.now() + 24 * 3600 * 1000).toISOString()
         },
         venue: {
-          name: 'Local Arena',
-          address: '123 Main St',
-          city: 'Local City'
+          name: 'Main Stadium',
+          address: '123 Sports Complex',
+          city: 'Sports City'
         }
       };
       
-      const response = await tournamentService.createTournament(tournamentData);
-      
-      const matchId = response.data?._id || response.data?.id; // In this context, treating tournament as the match container
-      if (!matchId) {
-        throw new Error('Tournament ID not returned from server');
+      const tourneyRes = await tournamentService.createTournament(tournamentData);
+      const tournId = tourneyRes.data?._id || tourneyRes.data?.id;
+      if (!tournId) {
+        throw new Error('Tournament container ID not returned from server');
       }
 
-      showToast('Match created successfully!', 'success');
+      // 2. Register Team 1
+      const team1Payload = {
+        name: team1.name,
+        shortName: team1.name.slice(0, 5).toUpperCase(),
+        sport: normalizedSport,
+        players: team1.players.map(p => ({ user: p.id, role: 'player' }))
+      };
+      await tournamentService.registerTeam(tournId, team1Payload);
+
+      // 3. Register Team 2
+      const team2Payload = {
+        name: team2.name,
+        shortName: team2.name.slice(0, 5).toUpperCase(),
+        sport: normalizedSport,
+        players: team2.players.map(p => ({ user: p.id, role: 'player' }))
+      };
+      await tournamentService.registerTeam(tournId, team2Payload);
+
+      // 4. Start Tournament to generate bracket, fixtures, and scorecards
+      const startRes = await tournamentService.startTournament(tournId);
       
-      // Navigate to the tournament board where they can view the live match
-      navigate(`/tournaments/${matchId}/live`);
+      showToast('Match initialized and ready for live scoring!', 'success');
+      
+      const createdMatches = startRes.data?.matches || startRes.matches;
+      if (createdMatches && createdMatches.length > 0) {
+        const firstMatchId = createdMatches[0]._id || createdMatches[0].id;
+        navigate(`/tournaments/${tournId}/matches/${firstMatchId}/score`);
+      } else {
+        navigate(`/tournaments/${tournId}/live`);
+      }
     } catch (error) {
       console.error('Error creating match:', error);
-      showToast(error.response?.data?.message || 'Failed to create match', 'error');
+      showToast(error.response?.data?.error || error.response?.data?.message || 'Failed to create match', 'error');
+    } finally {
+      setLoading(false);
     }
   };
   

@@ -173,7 +173,8 @@ const TournamentCreatePage = () => {
           tournamentStart: tournStart.toISOString(),
           tournamentEnd: tournEnd.toISOString()
         },
-        status: 'draft',
+        status: 'open',
+        registrationStatus: 'open',
         visibility: 'public',
         rules: data.specialRules || '',
         eligibility: { skillLevel: 'all', genderRestriction: 'none' },
@@ -185,12 +186,18 @@ const TournamentCreatePage = () => {
         }
       };
       
-      await dispatch(createTournament(tournamentData)).unwrap();
+      const result = await dispatch(createTournament(tournamentData)).unwrap();
+      const createdTournament = result?.tournament || result?.data || result;
+      const tournamentId = createdTournament?._id || createdTournament?.id;
       
-      showToast('Tournament created successfully! You can now manage it from your dashboard.', 'success');
+      showToast('Tournament published successfully! You can now manage it from your dashboard.', 'success');
       reset();
       setLogoPreview(null);
-      navigate('/tournaments');
+      if (tournamentId) {
+        navigate(`/tournaments/${tournamentId}`);
+      } else {
+        navigate('/tournaments');
+      }
     } catch (error) {
       console.error('Error creating tournament:', error);
       showToast(error.message || 'Failed to create tournament. Please try again.', 'error');

@@ -8,7 +8,8 @@ import {
   getFollowing,
   getLeaderboard,
   addAchievement,
-  updateStatistics
+  updateStatistics,
+  getProfileStats
 } from '../controllers/profiles.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 
@@ -17,6 +18,7 @@ const router = express.Router();
 // Public routes
 router.get('/leaderboard', getLeaderboard);
 router.get('/:userId', optionalAuth, getProfile);
+router.get('/:userId/stats', optionalAuth, getProfileStats);
 router.get('/:userId/followers', getFollowers);
 router.get('/:userId/following', getFollowing);
 

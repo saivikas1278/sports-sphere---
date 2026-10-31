@@ -69,10 +69,12 @@ api.interceptors.response.use(
 
     // Handle token expiration
     if (error.response?.status === 401) {
-      console.error('[API] Authentication error:', error.response.data);
+      console.warn('[API] 401 Unauthorized for URL:', error.config?.url);
       localStorage.removeItem('token');
-      // Don't auto-redirect during login attempts
-      if (!error.config?.url?.includes('/auth/login')) {
+      const isAuthCheck = error.config?.url?.includes('/auth/login') || 
+                          error.config?.url?.includes('/auth/me') || 
+                          error.config?.url?.includes('/auth/profile');
+      if (!isAuthCheck && error.config?.headers?.Authorization && window.location.pathname.startsWith('/dashboard')) {
         window.location.href = '/login';
       }
     }

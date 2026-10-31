@@ -166,7 +166,8 @@ export const createNotification = async (req, res) => {
 
     // Emit socket event
     const io = req.app.get('io');
-    io.to(`user_${recipient}`).emit('notification', notification);
+    const { emitNotification } = await import('../utils/socketHandlers.js');
+    emitNotification(io, recipient, notification);
 
     // Email notification disabled
 

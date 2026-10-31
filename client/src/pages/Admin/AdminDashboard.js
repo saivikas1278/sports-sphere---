@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Users, 
@@ -6,29 +6,60 @@ import {
   MessageSquare,
   BarChart2,
   Settings,
-  ChevronRight,
   ShieldAlert, 
-  Activity, 
-  TrendingUp, 
-  DollarSign,
-  AlertCircle
+  Activity
 } from 'lucide-react';
 import FloatingElements from '../../components/UI/FloatingElements';
+import userService from '../../services/userService';
+import tournamentService from '../../services/tournamentService';
 
 const AdminDashboard = () => {
-  // Mock data for dashboard
+  const [statsData, setStatsData] = useState({
+    totalUsers: '0',
+    activeTournaments: '0',
+    pendingVerification: '0',
+    totalMatches: '0'
+  });
+
+  useEffect(() => {
+    const fetchAdminStats = async () => {
+      try {
+        const [usersRes, tournsRes] = await Promise.allSettled([
+          userService.getUsers({ limit: 1 }),
+          tournamentService.getTournaments({ limit: 100 })
+        ]);
+
+        const userTotal = usersRes.status === 'fulfilled' 
+          ? (usersRes.value.data?.total || usersRes.value.data?.count || usersRes.value.data?.data?.length || 1) 
+          : 1;
+        const tournsList = tournsRes.status === 'fulfilled' 
+          ? (tournsRes.value.data?.data || tournsRes.value.data || []) 
+          : [];
+        const pendingCount = tournsList.filter(t => !t.isVerified || t.status === 'draft').length;
+        const matchesCount = tournsList.reduce((acc, t) => acc + (t.matches?.length || 0), 0);
+
+        setStatsData({
+          totalUsers: Number(userTotal).toLocaleString(),
+          activeTournaments: tournsList.length.toLocaleString(),
+          pendingVerification: pendingCount.toString(),
+          totalMatches: matchesCount.toString()
+        });
+      } catch (err) {
+        console.error('Failed to load admin stats:', err);
+      }
+    };
+
+    fetchAdminStats();
+  }, []);
+
   const stats = [
-    { title: 'Total Users', value: '12,450', change: '+12%', icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { title: 'Active Tournaments', value: '342', change: '+5%', icon: Trophy, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { title: 'Pending Verification', value: '28', change: '-2%', icon: ShieldAlert, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-    { title: 'Reported Content', value: '15', change: '+1%', icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-500/10' },
+    { title: 'Total Users', value: statsData.totalUsers, change: '+100%', icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { title: 'Active Tournaments', value: statsData.activeTournaments, change: '+Live', icon: Trophy, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { title: 'Pending Verification', value: statsData.pendingVerification, change: 'Action', icon: ShieldAlert, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { title: 'Total Matches', value: statsData.totalMatches, change: 'Active', icon: Activity, color: 'text-purple-500', bg: 'bg-purple-500/10' },
   ];
 
-  const quickActions = [
-    { title: 'Manage Users', desc: 'View, block, or verify users and roles.', link: '/admin/users', icon: Users },
-    { title: 'Tournament Verification', desc: 'Review and approve pending tournaments.', link: '/admin/verification', icon: Trophy },
-    { title: 'Content Moderation', desc: 'Review user reports and flagged content.', link: '/admin/moderation', icon: ShieldAlert },
-  ];
+  // Quick actions rendered directly below
 
   return (
     <div className="min-h-screen relative pt-4 md:pt-8 md:pt-16 md:pt-20 md:pt-24 pb-6 md:pb-12 overflow-hidden">

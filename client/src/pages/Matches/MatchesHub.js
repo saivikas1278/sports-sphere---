@@ -10,6 +10,7 @@ import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import StandardMatchCard from '../../components/UI/StandardMatchCard';
 import CategoryFilterScroll from '../../components/UI/CategoryFilterScroll';
 import matchService from '../../services/matchService';
+import { getSocket } from '../../services/socket';
 
 const SPORTS = [
   { id: '', label: 'All Sports' },
@@ -61,11 +62,49 @@ const MatchesHub = () => {
     
     fetchMatches();
   }, []);
+
+  // Real-time socket listener for live matches updates
+  useEffect(() => {
+    const socketInstance = getSocket();
+    if (!socketInstance) return;
+
+    const handleScoreUpdate = (data) => {
+      if (!data) return;
+      const targetId = String(data.matchId || data.match?._id || data._id);
+      setMatches(prevMatches => prevMatches.map(m => {
+        if (String(m._id || m.id) === targetId) {
+          return {
+            ...m,
+            score: data.score || (data.homeScore !== undefined ? { home: data.homeScore, away: data.awayScore } : m.score),
+            status: data.status || m.status,
+            cricketData: data.cricketData || m.cricketData,
+            setsData: data.setsData || m.setsData
+          };
+        }
+        return m;
+      }));
+    };
+
+    socketInstance.on('score-updated', handleScoreUpdate);
+    socketInstance.on('match-score-updated', handleScoreUpdate);
+    socketInstance.on('match:score_updated', handleScoreUpdate);
+
+    return () => {
+      socketInstance.off('score-updated', handleScoreUpdate);
+      socketInstance.off('match-score-updated', handleScoreUpdate);
+      socketInstance.off('match:score_updated', handleScoreUpdate);
+    };
+  }, []);
   
   useEffect(() => {
     let result = [...matches];
     if (activeStatus) result = result.filter(match => match.status === activeStatus);
-    if (activeSport) result = result.filter(match => match.sport === activeSport);
+    if (activeSport) {
+      result = result.filter(match => {
+        const sportKey = (match.sport || match.tournament?.sport || '').toLowerCase();
+        return sportKey === activeSport.toLowerCase();
+      });
+    }
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       result = result.filter(match => {
@@ -82,10 +121,21 @@ const MatchesHub = () => {
 
   const handleMatchClick = (match) => {
     const matchId = match.id || match._id;
+    const sportKey = (match.sport || match.tournament?.sport || 'sports').toLowerCase();
+    const tournamentId = match.tournament?._id || (typeof match.tournament === 'string' ? match.tournament : null);
+    
     if (match.status === 'live') {
-      navigate(`/matches/score/${match.sport}/${matchId}`);
+      if (tournamentId) {
+        navigate(`/tournaments/${tournamentId}/matches/${matchId}/score`);
+      } else {
+        navigate(`/matches/score/${sportKey}/${matchId}`);
+      }
     } else {
-      navigate(`/matches/${matchId}`);
+      if (tournamentId) {
+        navigate(`/tournaments/${tournamentId}/matches/${matchId}`);
+      } else {
+        navigate(`/matches/${matchId}`);
+      }
     }
   };
 
@@ -204,11 +254,12 @@ const MatchesHub = () => {
               return (
                 <div key={match.id || match._id} className="relative">
                   <StandardMatchCard 
-                    image={getSportImage(match.sport)}
-                    sport={match.sport?.toUpperCase()}
+                    image={getSportImage(match.sport || match.tournament?.sport)}
+                    sport={(match.sport || match.tournament?.sport || 'SPORTS').toUpperCase()}
                     title={`${team1Name} vs ${team2Name}`}
                     location={venueName}
                     time={formattedDate}
+                    actionText={actionText}
                     onBook={() => handleMatchClick(match)}
                   />
                   {/* Status Badge Override */}

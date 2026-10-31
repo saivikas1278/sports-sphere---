@@ -35,6 +35,18 @@ const userService = {
     return response;
   },
 
+  // Update user role (admin action)
+  updateUserRole: async (userId, role) => {
+    const response = await api.put(`/users/${userId}`, { role });
+    return response;
+  },
+
+  // Delete user (admin action)
+  deleteUser: async (userId) => {
+    const response = await api.delete(`/users/${userId}`);
+    return response;
+  },
+
   // Get users by sport preference
   getUsersBySport: async (sport) => {
     const response = await api.get(`/users/by-sport/${sport}`);

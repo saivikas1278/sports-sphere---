@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -18,12 +18,7 @@ const MapDiscovery = ({ defaultLocation = [40.7128, -74.0060], onRadiusChange, o
   const [tournaments, setTournaments] = useState([]);
   const navigate = useNavigate();
 
-  // We need to fetch tournaments from our backend with geospatial query
-  useEffect(() => {
-    fetchNearbyTournaments();
-  }, [radius, defaultLocation]);
-
-  const fetchNearbyTournaments = async () => {
+  const fetchNearbyTournaments = useCallback(async () => {
     try {
       const response = await fetch(`/api/tournaments/search?lat=${defaultLocation[0]}&lng=${defaultLocation[1]}&radius=${radius}`);
       const data = await response.json();
@@ -33,7 +28,11 @@ const MapDiscovery = ({ defaultLocation = [40.7128, -74.0060], onRadiusChange, o
     } catch (error) {
       console.error('Error fetching nearby tournaments:', error);
     }
-  };
+  }, [defaultLocation, radius]);
+
+  useEffect(() => {
+    fetchNearbyTournaments();
+  }, [fetchNearbyTournaments]);
 
   const handleRadiusChange = (e) => {
     const newRadius = parseInt(e.target.value);

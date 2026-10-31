@@ -7,7 +7,6 @@ import {
   Flame, 
   Clock, 
   Trophy, 
-  ChevronDown, 
   Image as ImageIcon, 
   Video,
   ListFilter
@@ -16,7 +15,6 @@ import Post from '../../components/Posts/Post';
 import PostUploadForm from '../../components/Posts/PostUploadForm';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import CategoryFilterScroll from '../../components/UI/CategoryFilterScroll';
-import { useTheme } from '../../context/ThemeContext';
 import { 
   fetchPosts, 
   selectPosts, 

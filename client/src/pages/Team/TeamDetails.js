@@ -34,9 +34,19 @@ const TeamDetails = () => {
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
-  useEffect(() => {
-    fetchTeamDetails();
-  }, [fetchTeamDetails]);
+  const fetchJoinRequests = useCallback(async () => {
+    try {
+      setLoadingRequests(true);
+      const res = await teamService.getJoinRequests(id);
+      if (res.success) {
+        setJoinRequests(res.data || []);
+      }
+    } catch (err) {
+      console.error('Error loading join requests', err);
+    } finally {
+      setLoadingRequests(false);
+    }
+  }, [id]);
 
   const fetchTeamDetails = useCallback(async () => {
     try {
@@ -62,9 +72,6 @@ const TeamDetails = () => {
           if (isUserCaptain) {
             fetchJoinRequests();
           }
-          
-          // Note: Backend might need to return if user has a pending request.
-          // For now, we mock hasRequested unless backend provides it.
         }
       }
     } catch (error) {
@@ -73,21 +80,13 @@ const TeamDetails = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, user]);
+  }, [id, user, fetchJoinRequests]);
 
-  const fetchJoinRequests = async () => {
-    try {
-      setLoadingRequests(true);
-      const response = await teamService.getJoinRequests(id);
-      if (response.success) {
-        setJoinRequests(response.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching join requests:', error);
-    } finally {
-      setLoadingRequests(false);
-    }
-  };
+  useEffect(() => {
+    fetchTeamDetails();
+  }, [fetchTeamDetails]);
+
+
 
   const handleJoinRequest = async () => {
     try {

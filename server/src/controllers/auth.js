@@ -377,73 +377,102 @@ export const changePassword = async (req, res, next) => {
 // @access  Public
 export const forgotPassword = async (req, res, next) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
+    const { email } = req.body;
+    const user = email ? await User.findOne({ email: email.toLowerCase().trim() }) : null;
+
+    // Generic response message to avoid leaking account existence
+    const genericResponse = {
+      success: true,
+      message: 'If that email exists, a reset link has been sent'
+    };
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'No user found with that email'
-      });
+      return res.status(200).json(genericResponse);
     }
 
-    // Generate reset token
-    const resetToken = crypto.randomBytes(20).toString('hex');
+    // Generate random 32-byte reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
 
-    // Hash token and set to resetPasswordToken field
+    // Hash token and store only SHA-256 hash in database
     user.resetPasswordToken = crypto
       .createHash('sha256')
       .update(resetToken)
       .digest('hex');
 
-    // Set expire
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    // Set 15-minute expiry
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
 
     await user.save({ validateBeforeSave: false });
 
-    // Create reset url
-    const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/reset-password/${resetToken}`;
+    // Create reset URL pointing to client
+    const frontendUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
 
-    const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+    const isSmtpConfigured = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
 
-    try {
-      // Here you would normally send email
-      // await sendEmail({
-      //   email: user.email,
-      //   subject: 'Password reset token',
-      //   message
-      // });
+    if (isSmtpConfigured) {
+      try {
+        const message = `You are receiving this email because a password reset request was made for your SportSphere account.\n\nPlease click the following link or copy it into your browser to reset your password within 15 minutes:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.`;
+        const emailSent = await sendEmail({
+          email: user.email,
+          subject: 'SportSphere - Password Reset Request',
+          message,
+          html: `<p>You are receiving this email because a password reset request was made for your SportSphere account.</p>
+<p>Please click the link below to reset your password within 15 minutes:</p>
+<p><a href="${resetUrl}">${resetUrl}</a></p>
+<p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`
+        });
 
-      res.status(200).json({
-        success: true,
-        message: 'Email sent',
-        resetToken // Remove this in production
-      });
-    } catch (err) {
-      console.log(err);
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpire = undefined;
-
-      await user.save({ validateBeforeSave: false });
-
-      return res.status(500).json({
-        success: false,
-        error: 'Email could not be sent'
-      });
+        if (!emailSent) {
+          console.warn(`[PASSWORD RESET] Email delivery failed. Development reset link for ${user.email}: ${resetUrl}`);
+        }
+      } catch (err) {
+        console.error('[PASSWORD RESET] SMTP send error:', err);
+        console.warn(`[PASSWORD RESET] Development reset link for ${user.email}: ${resetUrl}`);
+      }
+    } else {
+      console.log(`[PASSWORD RESET] SMTP not configured. Development reset link for ${user.email}: ${resetUrl}`);
     }
+
+    return res.status(200).json(genericResponse);
   } catch (error) {
     next(error);
   }
 };
 
 // @desc    Reset password
-// @route   PUT /api/auth/reset-password/:resettoken
+// @route   PUT /api/auth/reset-password/:resetToken
 // @access  Public
 export const resetPassword = async (req, res, next) => {
   try {
+    const token = req.params.resetToken || req.body.token || req.body.resetToken;
+    const password = req.body.password || req.body.newPassword;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Reset token is required'
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a new password'
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 6 characters long'
+      });
+    }
+
     // Get hashed token
     const resetPasswordToken = crypto
       .createHash('sha256')
-      .update(req.params.resetToken)
+      .update(token)
       .digest('hex');
 
     const user = await User.findOne({
@@ -454,14 +483,17 @@ export const resetPassword = async (req, res, next) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid token'
+        error: 'Invalid or expired reset token'
       });
     }
 
-    // Set new password
-    user.password = req.body.password;
+    // Set new password (will be hashed with bcrypt in User.pre('save'))
+    user.password = password;
+
+    // Invalidate reset token after single use
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
+
     await user.save();
 
     sendTokenResponse(user, 200, res);
@@ -500,7 +532,7 @@ export const googleAuthCallback = async (req, res, next) => {
     res.cookie('token', token, options);
     
     // Redirect to frontend
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard?token=${token}`);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/google/callback?token=${token}`);
   } catch (error) {
     console.error('Google OAuth Error:', error);
     res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=server_error`);

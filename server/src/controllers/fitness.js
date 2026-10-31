@@ -1,5 +1,6 @@
 import { validationResult } from 'express-validator';
 import FitnessContent from '../models/FitnessContent.js';
+import NutritionLog from '../models/NutritionLog.js';
 import { uploadVideoToCloudinary, uploadImageToCloudinary, deleteFromCloudinary } from '../config/cloudinary.js';
 
 // @desc    Get all fitness content
@@ -560,6 +561,117 @@ export const getUserStats = async (req, res, next) => {
         bodyMeasurements: [],
         personalRecords: []
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// @desc    Get user's daily nutrition log
+// @route   GET /api/fitness/nutrition/daily
+// @access  Private
+export const getDailyNutrition = async (req, res, next) => {
+  try {
+    const date = req.query.date || new Date().toISOString().split('T')[0];
+    let log = await NutritionLog.findOne({ user: req.user.id, date });
+
+    if (!log) {
+      log = {
+        user: req.user.id,
+        date,
+        meals: [],
+        waterIntake: 0,
+        goals: { calories: 2200, protein: 165, carbs: 275, fat: 73, water: 8 }
+      };
+    }
+
+    res.status(200).json({
+      success: true,
+      data: log
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Save or update user's daily nutrition log
+// @route   POST /api/fitness/nutrition/daily
+// @access  Private
+export const saveDailyNutrition = async (req, res, next) => {
+  try {
+    const { date, meals, waterIntake, goals } = req.body;
+    const targetDate = date || new Date().toISOString().split('T')[0];
+
+    const updateFields = {};
+    if (meals !== undefined) updateFields.meals = meals;
+    if (waterIntake !== undefined) updateFields.waterIntake = waterIntake;
+    if (goals !== undefined) updateFields.goals = goals;
+
+    const log = await NutritionLog.findOneAndUpdate(
+      { user: req.user.id, date: targetDate },
+      { $set: updateFields, $setOnInsert: { user: req.user.id, date: targetDate } },
+      { upsert: true, new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Nutrition log saved successfully',
+      data: log
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Add a single meal item to today's log
+// @route   POST /api/fitness/nutrition/meal
+// @access  Private
+export const addMealItem = async (req, res, next) => {
+  try {
+    const { date, meal } = req.body;
+    if (!meal || !meal.name || meal.calories === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Meal name and calories are required'
+      });
+    }
+
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    const log = await NutritionLog.findOneAndUpdate(
+      { user: req.user.id, date: targetDate },
+      { $push: { meals: meal }, $setOnInsert: { user: req.user.id, date: targetDate } },
+      { upsert: true, new: true, runValidators: true }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Meal added successfully',
+      data: log
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete a meal item by ID
+// @route   DELETE /api/fitness/nutrition/meal/:mealId
+// @access  Private
+export const deleteMealItem = async (req, res, next) => {
+  try {
+    const { mealId } = req.params;
+    const targetDate = req.query.date || new Date().toISOString().split('T')[0];
+
+    const log = await NutritionLog.findOneAndUpdate(
+      { user: req.user.id, date: targetDate },
+      { $pull: { meals: { _id: mealId } } },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Meal removed successfully',
+      data: log
     });
   } catch (error) {
     next(error);

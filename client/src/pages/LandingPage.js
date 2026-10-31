@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { 
   Trophy, 
@@ -9,15 +9,12 @@ import {
   Clock, 
   Dumbbell,
   ArrowRight,
-  Sparkles,
-  MapPin,
-  Search
+  MapPin
 } from 'lucide-react';
 import FloatingElements from '../components/UI/FloatingElements';
 
 const LandingPage = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
-  const navigate = useNavigate();
 
   const sports = [
     'Football', 'Basketball', 'Tennis', 'Volleyball', 'Baseball', 'Soccer',

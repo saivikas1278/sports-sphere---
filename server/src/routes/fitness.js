@@ -14,7 +14,11 @@ import {
   searchFitnessContent,
   getFeaturedContent,
   getContentByCategory,
-  getUserStats
+  getUserStats,
+  getDailyNutrition,
+  saveDailyNutrition,
+  addMealItem,
+  deleteMealItem
 } from '../controllers/fitness.js';
 import { protect, authorize, optional } from '../middleware/auth.js';
 
@@ -89,22 +93,29 @@ router.get('/', optional, getFitnessContent);
 router.get('/featured', getFeaturedContent);
 router.get('/category/:category', getContentByCategory);
 router.get('/search', searchFitnessContent);
+router.get('/stats', protect, getUserStats);
+
+// Nutrition routes
+router.get('/nutrition/daily', protect, getDailyNutrition);
+router.post('/nutrition/daily', protect, saveDailyNutrition);
+router.post('/nutrition/meal', protect, addMealItem);
+router.delete('/nutrition/meal/:mealId', protect, deleteMealItem);
+
 router.get('/:id', optional, getFitnessContentById);
 
 // Protected routes
-router.post('/', protect, authorize('organizer'), upload.fields([
+router.post('/', protect, authorize('organizer', 'player', 'admin'), upload.fields([
   { name: 'video', maxCount: 1 },
   { name: 'thumbnail', maxCount: 1 }
 ]), fitnessContentValidation, createFitnessContent);
 
-router.put('/:id', protect, authorize('organizer'), updateFitnessContent);
-router.delete('/:id', protect, authorize('organizer'), deleteFitnessContent);
+router.put('/:id', protect, authorize('organizer', 'player', 'admin'), updateFitnessContent);
+router.delete('/:id', protect, authorize('organizer', 'player', 'admin'), deleteFitnessContent);
 
 // User interaction routes
 router.post('/:id/rate', protect, ratingValidation, rateFitnessContent);
 router.post('/:id/bookmark', protect, bookmarkFitnessContent);
 router.post('/:id/progress', protect, progressValidation, trackProgress);
 router.get('/:id/progress', protect, getUserProgress);
-router.get('/stats', protect, getUserStats);
 
 export default router;

@@ -1,3 +1,4 @@
+import api from '../../services/api';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -48,17 +49,87 @@ const NutritionTracker = () => {
     { id: 10, name: 'Salmon (100g)', calories: 208, protein: 25, carbs: 0, fat: 12 }
   ];
 
+  // Load persisted meals and water for the selected date on mount or date change
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDailyNutrition = async () => {
+      // 1. Try to fetch from backend API
+      try {
+        const res = await api.get(`/fitness/nutrition/daily?date=${selectedDate}`);
+        if (res.data?.data && isMounted) {
+          const log = res.data.data;
+          setMeals(log.meals || []);
+          setWaterIntake(log.waterIntake || 0);
+          return;
+        }
+      } catch (err) {
+        // Fallback to localStorage if unauthenticated or offline
+      }
+
+      try {
+        const stored = localStorage.getItem(`sportsphere_nutrition_${selectedDate}`);
+        if (stored && isMounted) {
+          const parsed = JSON.parse(stored);
+          setMeals(parsed.meals || []);
+          setWaterIntake(parsed.water || 0);
+        } else if (isMounted) {
+          setMeals([]);
+          setWaterIntake(0);
+        }
+      } catch (e) {
+        console.error('Error loading nutrition data:', e);
+      }
+    };
+
+    fetchDailyNutrition();
+    return () => { isMounted = false; };
+  }, [selectedDate]);
+
+  // Recalculate totals and persist whenever meals or water change
   useEffect(() => {
     const totals = meals.reduce((acc, meal) => {
-      acc.calories += meal.calories;
-      acc.protein += meal.protein;
-      acc.carbs += meal.carbs;
-      acc.fat += meal.fat;
+      acc.calories += (meal.calories || 0);
+      acc.protein += (meal.protein || 0);
+      acc.carbs += (meal.carbs || 0);
+      acc.fat += (meal.fat || 0);
       return acc;
     }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
     setDailyIntake({ ...totals, water: waterIntake });
-  }, [meals, waterIntake]);
+
+    // LocalStorage fallback
+    try {
+      localStorage.setItem(`sportsphere_nutrition_${selectedDate}`, JSON.stringify({
+        meals,
+        water: waterIntake
+      }));
+    } catch (e) {
+      console.error('Error saving nutrition data to localStorage:', e);
+    }
+
+    // Sync with backend API
+    const syncTimeout = setTimeout(async () => {
+      try {
+        await api.post('/fitness/nutrition/daily', {
+          date: selectedDate,
+          meals: meals.map(m => ({
+            name: m.name,
+            mealType: m.meal || m.mealType || 'breakfast',
+            calories: m.calories || 0,
+            protein: m.protein || 0,
+            carbs: m.carbs || 0,
+            fat: m.fat || 0
+          })),
+          waterIntake,
+          goals
+        });
+      } catch (err) {
+        // Silent fallback for guest/offline users
+      }
+    }, 600);
+
+    return () => clearTimeout(syncTimeout);
+  }, [meals, waterIntake, selectedDate, goals]);
 
   const addFoodToMeal = (food, quantity = 1) => {
     const mealEntry = {

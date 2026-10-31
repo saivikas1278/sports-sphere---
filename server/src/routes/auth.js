@@ -66,13 +66,40 @@ router.post('/login', loginValidation, login);
 router.post('/logout', logout);
 router.post('/forgot-password', forgotPassword);
 router.put('/reset-password/:resetToken', resetPassword);
+router.post('/reset-password/:resetToken', resetPassword);
+router.post('/reset-password', resetPassword);
 router.get('/verify-email/:token', verifyEmail);
 
-import passport from 'passport';
+import passport, { isGoogleConfigured } from '../config/passport.js';
 
 // Google OAuth routes
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-router.get('/google/callback', passport.authenticate('google', { session: false }), googleAuthCallback);
+router.get('/google/status', (req, res) => {
+  res.status(200).json({
+    success: true,
+    data: {
+      enabled: isGoogleConfigured()
+    }
+  });
+});
+
+router.get('/google', (req, res, next) => {
+  if (!isGoogleConfigured()) {
+    return res.status(503).json({
+      success: false,
+      error: 'Google OAuth is not configured on this server.'
+    });
+  }
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
+router.get('/google/callback', (req, res, next) => {
+  if (!isGoogleConfigured()) {
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_not_configured`);
+  }
+  passport.authenticate('google', {
+    session: false,
+    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_failed`
+  })(req, res, next);
+}, googleAuthCallback);
 
 import os from 'os';
 
