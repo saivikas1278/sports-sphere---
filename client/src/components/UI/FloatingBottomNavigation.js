@@ -9,21 +9,34 @@ const FloatingBottomNavigation = () => {
   const location = useLocation();
   const { isAuthenticated } = useSelector((state) => state.auth);
   
-  // Only show navigation on mobile screens
+  // Navigation items for mobile bottom bar
   const navItems = [
-    { id: 'home', icon: Home, label: 'Home', path: '/' },
+    { id: 'home', icon: Home, label: 'Home', path: '/dashboard' },
     { id: 'compete', icon: Trophy, label: 'Compete', path: '/tournaments' },
     { id: 'feed', icon: PlaySquare, label: 'Feed', path: '/posts' },
     { id: 'train', icon: Activity, label: 'Train', path: '/fitness' },
-    { id: 'profile', icon: User, label: 'Profile', path: '/profile' }
+    { id: 'profile', icon: User, label: 'Profile', path: '/dashboard?tab=profile' }
   ];
 
-  // Helper to determine if a path matches the current location
-  const isActiveTab = (itemPath) => {
-    if (itemPath === '/') {
+  // Helper to determine if an item is currently active
+  const isActiveTab = (item) => {
+    const searchParams = new URLSearchParams(location.search);
+    const currentTab = searchParams.get('tab');
+
+    if (item.id === 'profile') {
+      // Active if on /profile or on /dashboard with ?tab=profile
+      return location.pathname === '/profile' || (location.pathname === '/dashboard' && currentTab === 'profile');
+    }
+
+    if (item.id === 'home') {
+      // If on /dashboard with ?tab=profile, Home is NOT active (Profile is active)
+      if (location.pathname === '/dashboard' && currentTab === 'profile') {
+        return false;
+      }
       return location.pathname === '/' || location.pathname === '/dashboard';
     }
-    return location.pathname.startsWith(itemPath);
+
+    return location.pathname.startsWith(item.path);
   };
 
   // Do not show bottom nav if not authenticated to save space for login screen
@@ -36,7 +49,7 @@ const FloatingBottomNavigation = () => {
       <div className="flex items-center justify-between px-4 py-2.5 gap-2 sm:gap-4 rounded-full glass-pill bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgb(0,0,0,0.1)]">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = isActiveTab(item.path);
+          const isActive = isActiveTab(item);
           
           return (
             <button
