@@ -79,7 +79,7 @@ const RegisterPage = () => {
         role: formData.role,
       }));
       if (register.fulfilled.match(result)) {
-        navigate('/dashboard');
+        navigate('/');
       }
     } catch (err) {}
   };

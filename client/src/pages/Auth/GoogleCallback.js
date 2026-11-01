@@ -45,7 +45,7 @@ const GoogleCallback = () => {
           if (user.role === 'admin') {
             navigate('/admin', { replace: true });
           } else {
-            navigate('/dashboard', { replace: true });
+            navigate('/', { replace: true });
           }
         } else {
           setError('Failed to load user profile after Google sign-in.');

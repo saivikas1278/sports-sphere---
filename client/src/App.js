@@ -142,11 +142,11 @@ function App() {
             {/* Auth Routes */}
             <Route 
               path="/login" 
-              element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" />} 
+              element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" replace />} 
             />
             <Route 
               path="/register" 
-              element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" />} 
+              element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/" replace />} 
             />
             <Route path="/verify-email/:token" element={<VerifyEmail />} />
             <Route path="/auth/google/callback" element={<GoogleCallback />} />

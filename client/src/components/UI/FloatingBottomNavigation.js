@@ -11,29 +11,23 @@ const FloatingBottomNavigation = () => {
   
   // Navigation items for mobile bottom bar
   const navItems = [
-    { id: 'home', icon: Home, label: 'Home', path: '/dashboard' },
+    { id: 'home', icon: Home, label: 'Home', path: '/' },
     { id: 'compete', icon: Trophy, label: 'Compete', path: '/tournaments' },
     { id: 'feed', icon: PlaySquare, label: 'Feed', path: '/posts' },
     { id: 'train', icon: Activity, label: 'Train', path: '/fitness' },
-    { id: 'profile', icon: User, label: 'Profile', path: '/dashboard?tab=profile' }
+    { id: 'profile', icon: User, label: 'Dashboard & Profile', path: '/dashboard' }
   ];
 
   // Helper to determine if an item is currently active
   const isActiveTab = (item) => {
-    const searchParams = new URLSearchParams(location.search);
-    const currentTab = searchParams.get('tab');
-
-    if (item.id === 'profile') {
-      // Active if on /profile or on /dashboard with ?tab=profile
-      return location.pathname === '/profile' || (location.pathname === '/dashboard' && currentTab === 'profile');
+    if (item.id === 'home') {
+      // Home icon is active ONLY when on the actual root homepage '/'
+      return location.pathname === '/';
     }
 
-    if (item.id === 'home') {
-      // If on /dashboard with ?tab=profile, Home is NOT active (Profile is active)
-      if (location.pathname === '/dashboard' && currentTab === 'profile') {
-        return false;
-      }
-      return location.pathname === '/' || location.pathname === '/dashboard';
+    if (item.id === 'profile') {
+      // Profile icon is active when on '/dashboard' or '/profile'
+      return location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/profile');
     }
 
     return location.pathname.startsWith(item.path);
