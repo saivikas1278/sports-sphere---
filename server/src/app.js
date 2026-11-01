@@ -65,8 +65,10 @@ app.use(cors(corsOptions));
 // Rate limiting (disabled in test environment to avoid 429 flakiness)
 if (process.env.NODE_ENV !== 'test') {
   const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 1000,
+    standardHeaders: true,
+    legacyHeaders: false
   });
   app.use('/api/', limiter);
 }

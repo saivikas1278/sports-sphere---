@@ -10,7 +10,6 @@ import {
   ChevronRight, 
   Award, 
   Shield, 
-  Sparkles, 
   MapPin, 
   Mail, 
   Phone, 
@@ -133,7 +132,7 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
           setRecentActivities(actRes.value.data || []);
         }
 
-        // 2. Fetch live tournaments (both organized or joined)
+        // 2. Fetch live tournaments
         try {
           const tourneyRes = await tournamentService.getMyTournaments();
           if (isMounted && tourneyRes?.data) {
@@ -222,14 +221,14 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
 
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-16 min-h-[80vh] flex items-center justify-center">
+      <div className="container mx-auto px-4 py-16 min-h-[80vh] flex items-center justify-center relative z-10">
         <div className="max-w-md w-full text-center p-8 rounded-[40px] glass-panel bg-white/60 shadow-xl border border-white">
           <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600 shadow-inner">
             <Trophy size={36} />
           </div>
-          <h2 className="text-3xl font-black text-slate-800 mb-3 tracking-tight">Access Required</h2>
+          <h2 className="text-3xl font-extrabold text-slate-800 mb-3 tracking-tight">Access Required</h2>
           <p className="text-slate-500 mb-8 font-medium">Please sign in to access your Athlete & Organizer Command Center.</p>
-          <Link to="/login" className="block w-full py-4 rounded-full bg-blue-600 text-white font-black shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all hover:scale-[1.02]">
+          <Link to="/login" className="block w-full py-4 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] transition-all hover:scale-[1.02]">
             Sign In to Continue
           </Link>
         </div>
@@ -238,11 +237,11 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
   }
 
   const isOrganizer = user?.role === 'organizer';
-  const roleTitle = isOrganizer ? 'Tournament Director' : user?.role === 'admin' ? 'Platform Administrator' : 'Verified Athlete';
+  const roleTitle = isOrganizer ? 'Tournament Director' : user?.role === 'admin' ? 'Administrator' : 'Athlete';
   const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.name || 'Athlete';
   const userInitials = (user?.firstName?.[0] || 'A') + (user?.lastName?.[0] || 'S');
 
-  // Chart telemetry data
+  // Performance telemetry data matching soft theme
   const performanceData = [
     { month: 'May', workouts: 8, points: 65 },
     { month: 'Jun', workouts: 14, points: 110 },
@@ -253,77 +252,75 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-6 md:py-10 max-w-7xl">
+    <div className="container mx-auto px-4 py-6 md:py-10 max-w-6xl relative z-10">
       
-      {/* 1. HERO ATHLETE / ORGANIZER PASSPORT BANNER */}
-      <div className="relative rounded-[36px] bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white p-6 md:p-10 shadow-2xl border border-white/10 overflow-hidden mb-8">
-        {/* Athletic Background Glow Mesh */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -ml-20 -mb-20 w-80 h-80 bg-violet-500/20 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+      {/* 1. HERO ATHLETE / ORGANIZER PASSPORT CARD (Consistent Soft Glassmorphism) */}
+      <div className="p-6 md:p-8 rounded-[40px] glass-panel bg-white/60 border border-white shadow-sm mb-8">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           
-          {/* User Identity Details */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 md:gap-6">
-            {/* Avatar with Online Glow */}
-            <div className="relative group">
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 p-1 shadow-xl flex items-center justify-center">
+          {/* Identity details */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            {/* Avatar */}
+            <div className="relative">
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-blue-100 border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
                 {user?.avatar ? (
-                  <img src={user.avatar} alt={fullName} className="w-full h-full rounded-full object-cover" />
+                  <img src={user.avatar} alt={fullName} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center font-black text-2xl text-blue-300">
+                  <span className="font-extrabold text-2xl md:text-3xl text-blue-600">
                     {userInitials.toUpperCase()}
-                  </div>
+                  </span>
                 )}
               </div>
-              <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-slate-900 rounded-full shadow-sm" title="Active & Online" />
+              <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm" title="Online" />
             </div>
 
-            {/* Name, Badges & Bio */}
+            {/* Name, Role & Meta */}
             <div>
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <h1 className="text-2xl md:text-4xl font-black tracking-tight text-white">{fullName}</h1>
-                <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${
-                  isOrganizer ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40' : 'bg-blue-500/20 text-blue-300 border border-blue-400/40'
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">{fullName}</h1>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                  isOrganizer 
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200/60' 
+                    : 'bg-blue-50 text-blue-600 border border-blue-200/60'
                 }`}>
-                  <Sparkles size={12} />
                   {roleTitle}
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs md:text-sm text-slate-300 font-medium">
-                <span className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs md:text-sm text-slate-500 font-medium">
+                <span className="flex items-center gap-1.5">
                   <Mail size={14} className="text-slate-400" /> {user?.email}
                 </span>
                 {user?.location?.city && (
-                  <span className="flex items-center gap-1">
-                    <MapPin size={14} className="text-red-400" /> {user.location.city}, {user.location.state || 'IN'}
+                  <span className="flex items-center gap-1.5">
+                    <MapPin size={14} className="text-blue-500" /> {user.location.city}, {user.location.state || 'IN'}
                   </span>
                 )}
-                <span className="flex items-center gap-1">
-                  <Calendar size={14} className="text-cyan-400" /> Member since {user?.createdAt ? new Date(user.createdAt).getFullYear() : '2026'}
+                <span className="flex items-center gap-1.5">
+                  <Calendar size={14} className="text-slate-400" /> Member since {user?.createdAt ? new Date(user.createdAt).getFullYear() : '2026'}
                 </span>
               </div>
 
-              <p className="mt-2.5 text-xs md:text-sm text-slate-300 max-w-xl line-clamp-2 italic">
-                "{user?.bio || 'Ready to compete, train hard, and lead the leaderboard on SportSphere.'}"
+              <p className="mt-2 text-xs md:text-sm text-slate-600 font-medium max-w-xl line-clamp-2">
+                {user?.bio || 'Passionate sports enthusiast competing on SportSphere and building championship squads.'}
               </p>
             </div>
           </div>
 
-          {/* Quick Action Button */}
+          {/* Action buttons */}
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={() => setIsEditingProfile(true)}
-              className="flex-1 sm:flex-initial px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs md:text-sm flex items-center justify-center gap-2 backdrop-blur-md transition-all hover:scale-105 active:scale-95 shadow-lg"
+              className="flex-1 sm:flex-initial px-5 py-2.5 rounded-full bg-white/80 hover:bg-white text-slate-700 border border-white/80 font-bold text-xs md:text-sm shadow-sm transition-all hover:text-blue-600 flex items-center justify-center gap-2"
             >
-              <Edit3 size={16} />
+              <Edit3 size={15} />
               <span>Edit Profile</span>
             </button>
+
             {isOrganizer ? (
               <Link
                 to="/tournaments/create"
-                className="flex-1 sm:flex-initial px-5 py-3 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs md:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/25 transition-all hover:scale-105 active:scale-95"
+                className="flex-1 sm:flex-initial px-5 py-2.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs md:text-sm shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] transition-all flex items-center justify-center gap-1.5"
               >
                 <Plus size={16} />
                 <span>New Tournament</span>
@@ -331,7 +328,7 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
             ) : (
               <Link
                 to="/dashboard/registrations"
-                className="flex-1 sm:flex-initial px-5 py-3 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black text-xs md:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95"
+                className="flex-1 sm:flex-initial px-5 py-2.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs md:text-sm shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] transition-all flex items-center justify-center gap-1.5"
               >
                 <Trophy size={16} />
                 <span>My Tournaments</span>
@@ -340,46 +337,46 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
           </div>
         </div>
 
-        {/* Live Athlete KPI Telemetry Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-8 pt-6 border-t border-white/10">
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+        {/* Clean Stat Strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-6 pt-6 border-t border-slate-200/60">
+          <div className="p-3.5 rounded-2xl bg-white/70 border border-white">
             <div className="flex items-center justify-between text-slate-400 text-xs font-bold mb-1">
               <span>{isOrganizer ? 'Tourneys Created' : 'Tournaments'}</span>
-              <Trophy size={14} className="text-amber-400" />
+              <Trophy size={15} className="text-blue-500" />
             </div>
-            <div className="text-2xl md:text-3xl font-black text-white">{myTournaments.length || stats.tournaments || 0}</div>
+            <div className="text-2xl md:text-3xl font-extrabold text-slate-800">{myTournaments.length || stats.tournaments || 0}</div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+          <div className="p-3.5 rounded-2xl bg-white/70 border border-white">
             <div className="flex items-center justify-between text-slate-400 text-xs font-bold mb-1">
               <span>Active Squads</span>
-              <Users size={14} className="text-blue-400" />
+              <Users size={15} className="text-blue-500" />
             </div>
-            <div className="text-2xl md:text-3xl font-black text-white">{myTeams.length || stats.teams || 0}</div>
+            <div className="text-2xl md:text-3xl font-extrabold text-slate-800">{myTeams.length || stats.teams || 0}</div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+          <div className="p-3.5 rounded-2xl bg-white/70 border border-white">
             <div className="flex items-center justify-between text-slate-400 text-xs font-bold mb-1">
               <span>Win Ratio</span>
-              <Award size={14} className="text-emerald-400" />
+              <Award size={15} className="text-emerald-500" />
             </div>
-            <div className="text-2xl md:text-3xl font-black text-emerald-300">
+            <div className="text-2xl md:text-3xl font-extrabold text-emerald-600">
               {user?.stats?.matchesPlayed > 0 ? Math.round(((user.stats.matchesWon || 0) / user.stats.matchesPlayed) * 100) : 75}%
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+          <div className="p-3.5 rounded-2xl bg-white/70 border border-white">
             <div className="flex items-center justify-between text-slate-400 text-xs font-bold mb-1">
               <span>Training Streak</span>
-              <Flame size={14} className="text-orange-400" />
+              <Flame size={15} className="text-orange-500" />
             </div>
-            <div className="text-2xl md:text-3xl font-black text-orange-300">{user?.stats?.fitnessStreak || 6} Days</div>
+            <div className="text-2xl md:text-3xl font-extrabold text-orange-500">{user?.stats?.fitnessStreak || 6} Days</div>
           </div>
         </div>
       </div>
 
-      {/* 2. SEGMENTED NAVIGATION TABS */}
-      <div className="flex items-center gap-2 p-1.5 rounded-full bg-slate-200/60 dark:bg-slate-800/60 backdrop-blur-md border border-white/50 max-w-2xl mb-8 overflow-x-auto scrollbar-none shadow-sm">
+      {/* 2. CLEAN SEGMENTED PILL TABS */}
+      <div className="flex items-center gap-2 p-1.5 rounded-full bg-white/50 backdrop-blur-md border border-white/60 max-w-xl mb-8 overflow-x-auto scrollbar-none shadow-sm">
         {[
           { id: 'overview', label: 'Command Center', icon: LayoutDashboard },
           { id: 'profile', label: 'Profile & Bio', icon: UserCheck },
@@ -389,81 +386,78 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-full font-black text-xs md:text-sm flex items-center justify-center gap-2 transition-all duration-300 whitespace-nowrap ${
+            className={`flex-1 py-2 px-4 rounded-full font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all whitespace-nowrap ${
               activeTab === tab.id
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30 scale-[1.02]'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
+                : 'text-slate-600 hover:text-blue-600 hover:bg-white/60'
             }`}
           >
-            <tab.icon size={16} />
+            <tab.icon size={15} />
             <span>{tab.label}</span>
           </button>
         ))}
       </div>
 
-      {/* 3. TAB CONTENT VIEWS */}
+      {/* 3. TAB VIEWS */}
       
-      {/* TAB 1: ⚡ COMMAND CENTER (OVERVIEW) */}
+      {/* TAB 1: COMMAND CENTER (OVERVIEW) */}
       {activeTab === 'overview' && (
-        <div className="space-y-8 animate-fadeIn">
+        <div className="space-y-8">
           
-          {/* Role-Adaptive Action Command Deck */}
+          {/* Quick Actions */}
           <div>
-            <h2 className="text-xl font-black text-slate-800 mb-4 tracking-tight flex items-center gap-2">
-              <Sparkles size={18} className="text-blue-500" />
-              <span>Quick Actions</span>
-            </h2>
+            <h2 className="text-lg font-extrabold text-slate-800 mb-4 tracking-tight">Quick Actions</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {isOrganizer ? (
                 <>
                   <Link
                     to="/tournaments/create"
-                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-amber-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                    className="p-5 rounded-[32px] glass-panel bg-white/60 border border-white hover:bg-white hover:shadow-md transition-all group flex flex-col justify-between"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                       <Trophy size={22} />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Create Tournament</h3>
-                      <p className="text-xs text-slate-500 font-medium">Launch knockout or round robin event</p>
+                      <h3 className="font-extrabold text-slate-800 text-sm mb-0.5">Create Tournament</h3>
+                      <p className="text-xs text-slate-500 font-medium">Launch knockout or league</p>
                     </div>
                   </Link>
 
                   <Link
                     to="/tournaments"
-                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-blue-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                    className="p-5 rounded-[32px] glass-panel bg-white/60 border border-white hover:bg-white hover:shadow-md transition-all group flex flex-col justify-between"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                       <Users size={22} />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Manage Registrations</h3>
-                      <p className="text-xs text-slate-500 font-medium">Approve or reject squads</p>
+                      <h3 className="font-extrabold text-slate-800 text-sm mb-0.5">Registrations</h3>
+                      <p className="text-xs text-slate-500 font-medium">Review and approve teams</p>
                     </div>
                   </Link>
 
                   <Link
                     to="/matches"
-                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-red-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                    className="p-5 rounded-[32px] glass-panel bg-white/60 border border-white hover:bg-white hover:shadow-md transition-all group flex flex-col justify-between"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                       <Activity size={22} />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Live Scoring Console</h3>
-                      <p className="text-xs text-slate-500 font-medium">Score cricket, badminton, volleyball</p>
+                      <h3 className="font-extrabold text-slate-800 text-sm mb-0.5">Live Scoring</h3>
+                      <p className="text-xs text-slate-500 font-medium">Multi-sport consoles</p>
                     </div>
                   </Link>
 
                   <Link
                     to="/matches/create"
-                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-indigo-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                    className="p-5 rounded-[32px] glass-panel bg-white/60 border border-white hover:bg-white hover:shadow-md transition-all group flex flex-col justify-between"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                       <Calendar size={22} />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Schedule Fixtures</h3>
+                      <h3 className="font-extrabold text-slate-800 text-sm mb-0.5">Schedule Fixture</h3>
                       <p className="text-xs text-slate-500 font-medium">Create standalone matches</p>
                     </div>
                   </Link>
@@ -472,53 +466,53 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
                 <>
                   <Link
                     to="/dashboard/registrations"
-                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-blue-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                    className="p-5 rounded-[32px] glass-panel bg-white/60 border border-white hover:bg-white hover:shadow-md transition-all group flex flex-col justify-between"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                       <CheckCircle2 size={22} />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-800 text-base mb-1">My Registrations</h3>
-                      <p className="text-xs text-slate-500 font-medium">Track approved tournament statuses</p>
+                      <h3 className="font-extrabold text-slate-800 text-sm mb-0.5">My Registrations</h3>
+                      <p className="text-xs text-slate-500 font-medium">Track approved team entries</p>
                     </div>
                   </Link>
 
                   <Link
                     to="/teams/create"
-                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-indigo-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                    className="p-5 rounded-[32px] glass-panel bg-white/60 border border-white hover:bg-white hover:shadow-md transition-all group flex flex-col justify-between"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                       <Shield size={22} />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Create Squad</h3>
-                      <p className="text-xs text-slate-500 font-medium">Form team and invite teammates</p>
+                      <h3 className="font-extrabold text-slate-800 text-sm mb-0.5">Create Squad</h3>
+                      <p className="text-xs text-slate-500 font-medium">Form team and invite players</p>
                     </div>
                   </Link>
 
                   <Link
                     to="/tournaments"
-                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-emerald-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                    className="p-5 rounded-[32px] glass-panel bg-white/60 border border-white hover:bg-white hover:shadow-md transition-all group flex flex-col justify-between"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                       <Trophy size={22} />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Join Tournament</h3>
-                      <p className="text-xs text-slate-500 font-medium">Browse active events near you</p>
+                      <h3 className="font-extrabold text-slate-800 text-sm mb-0.5">Join Tournament</h3>
+                      <p className="text-xs text-slate-500 font-medium">Browse active sports events</p>
                     </div>
                   </Link>
 
                   <Link
                     to="/fitness/browse-workouts"
-                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-orange-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                    className="p-5 rounded-[32px] glass-panel bg-white/60 border border-white hover:bg-white hover:shadow-md transition-all group flex flex-col justify-between"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                       <Dumbbell size={22} />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Start Workout</h3>
-                      <p className="text-xs text-slate-500 font-medium">Browse sport conditioning drills</p>
+                      <h3 className="font-extrabold text-slate-800 text-sm mb-0.5">Start Workout</h3>
+                      <p className="text-xs text-slate-500 font-medium">Drills and conditioning</p>
                     </div>
                   </Link>
                 </>
@@ -526,18 +520,18 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
             </div>
           </div>
 
-          {/* Active Events & Squads Row */}
+          {/* Active Events & Squads Section */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Active Tournaments Cards */}
+            {/* Tournaments List */}
             <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center justify-between mb-1">
-                <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-                  <Trophy size={18} className="text-amber-500" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                  <Trophy size={18} className="text-blue-500" />
                   <span>{isOrganizer ? 'Managed Tournaments' : 'Enrolled Tournaments'}</span>
                 </h2>
-                <Link to="/tournaments" className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                  Browse All <ChevronRight size={14} />
+                <Link to="/tournaments" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                  View All <ChevronRight size={14} />
                 </Link>
               </div>
 
@@ -546,20 +540,20 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
                   {myTournaments.slice(0, 4).map(tourney => (
                     <div
                       key={tourney._id || tourney.id}
-                      className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+                      className="p-5 rounded-[32px] glass-panel bg-white/60 border border-white hover:bg-white/90 hover:shadow-md transition-all flex flex-col justify-between"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-blue-50 text-blue-600">
+                          <span className="px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-200/40">
                             {tourney.sport || 'Sports'}
                           </span>
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200/50">
                             {tourney.status || 'Active'}
                           </span>
                         </div>
-                        <h3 className="text-lg font-black text-slate-800 tracking-tight mb-1">{tourney.name}</h3>
-                        <p className="text-xs text-slate-500 line-clamp-2 mb-3">
-                          {tourney.description || 'Official competitive championship hosted on SportSphere.'}
+                        <h3 className="text-base font-extrabold text-slate-800 tracking-tight mb-1">{tourney.name}</h3>
+                        <p className="text-xs text-slate-500 font-medium line-clamp-2 mb-3">
+                          {tourney.description || 'Championship tournament hosted on SportSphere.'}
                         </p>
                       </div>
 
@@ -569,7 +563,7 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
                         </span>
                         <Link
                           to={isOrganizer ? `/tournaments/${tourney._id || tourney.id}/dashboard` : `/tournaments/${tourney._id || tourney.id}`}
-                          className="px-3.5 py-1.5 rounded-full bg-slate-900 hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-1 transition-colors"
+                          className="px-3.5 py-1.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-1 transition-colors shadow-sm"
                         >
                           <span>{isOrganizer ? 'Dashboard' : 'View Event'}</span>
                           <ArrowUpRight size={14} />
@@ -579,36 +573,36 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
                   ))}
                 </div>
               ) : (
-                <div className="p-8 rounded-[32px] glass-panel bg-white/50 border border-dashed border-slate-300 text-center">
+                <div className="p-8 rounded-[32px] glass-panel bg-white/40 border border-dashed border-slate-300 text-center">
                   <Trophy size={36} className="text-slate-300 mx-auto mb-2" />
                   <h4 className="font-bold text-slate-700">No active tournament registrations</h4>
-                  <p className="text-xs text-slate-400 mt-1 mb-4">Discover exciting open tournaments and compete for victory.</p>
-                  <Link to="/tournaments" className="px-5 py-2.5 rounded-full bg-blue-600 text-white font-bold text-xs shadow-md">
+                  <p className="text-xs text-slate-500 mt-1 mb-4">Discover exciting open tournaments and compete for victory.</p>
+                  <Link to="/tournaments" className="px-5 py-2 rounded-full bg-blue-500 text-white font-bold text-xs shadow-sm">
                     Explore Tournaments
                   </Link>
                 </div>
               )}
 
-              {/* Recent Activity Mini-Feed */}
+              {/* Recent Activity Feed */}
               {recentActivities.length > 0 && (
-                <div className="mt-6 pt-4">
-                  <h3 className="text-lg font-black text-slate-800 mb-3 flex items-center gap-2">
-                    <Activity size={16} className="text-indigo-600" />
-                    <span>Recent Milestones</span>
+                <div className="pt-2">
+                  <h3 className="text-base font-extrabold text-slate-800 mb-3 flex items-center gap-2">
+                    <Activity size={16} className="text-blue-500" />
+                    <span>Recent Activity</span>
                   </h3>
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {recentActivities.slice(0, 3).map((act, i) => (
                       <div key={i} className="p-3.5 rounded-2xl bg-white/60 border border-white flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                            <Trophy size={16} />
+                          <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center font-bold">
+                            <Trophy size={15} />
                           </div>
                           <div>
                             <div className="text-xs font-bold text-slate-800">{act.title}</div>
-                            <div className="text-[11px] text-slate-500">{act.description}</div>
+                            <div className="text-[11px] text-slate-500 font-medium">{act.description}</div>
                           </div>
                         </div>
-                        <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                           {act.status || 'Done'}
                         </span>
                       </div>
@@ -618,21 +612,21 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
               )}
             </div>
 
-            {/* Notifications & System Updates Sidebar */}
+            {/* Notifications Sidebar */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between mb-1">
-                <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
                   <Bell size={18} className="text-blue-500" />
-                  <span>Live Alerts</span>
+                  <span>Alerts</span>
                 </h2>
-                <span className="text-xs font-bold text-slate-400">Real-Time</span>
+                <span className="text-xs font-semibold text-slate-400">Live</span>
               </div>
 
-              <div className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white space-y-3">
+              <div className="p-4 rounded-[32px] glass-panel bg-white/60 border border-white space-y-2.5">
                 {notifications.length > 0 ? (
                   notifications.slice(0, 4).map((notif, idx) => (
                     <div key={idx} className="p-3 rounded-2xl bg-white/80 border border-white flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0 mt-0.5">
                         <Bell size={14} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -643,9 +637,9 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
                   ))
                 ) : (
                   <div className="p-4 text-center">
-                    <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-2 opacity-80" />
-                    <p className="text-xs font-bold text-slate-700">All Caught Up!</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">You have no unread tournament or match alerts.</p>
+                    <CheckCircle2 size={30} className="text-emerald-500 mx-auto mb-2 opacity-80" />
+                    <p className="text-xs font-bold text-slate-700">All Caught Up</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">No unread notifications.</p>
                   </div>
                 )}
               </div>
@@ -655,21 +649,20 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
         </div>
       )}
 
-      {/* TAB 2: 👤 ATHLETE PROFILE & BIO */}
+      {/* TAB 2: PROFILE & BIO */}
       {activeTab === 'profile' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Identity & Personal Records */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="p-6 md:p-8 rounded-[32px] glass-panel bg-white/70 border border-white">
+            <div className="p-6 md:p-8 rounded-[40px] glass-panel bg-white/60 border border-white">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-800 tracking-tight">Athlete Identity</h2>
-                  <p className="text-xs text-slate-500 font-medium">Official profile attributes visible across tournaments and squads</p>
+                  <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">Athlete Identity</h2>
+                  <p className="text-xs text-slate-500 font-medium">Public profile attributes visible across tournaments and squads</p>
                 </div>
                 <button
                   onClick={() => setIsEditingProfile(true)}
-                  className="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-transform active:scale-95"
+                  className="px-4 py-2 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] transition-all"
                 >
                   <Edit3 size={14} />
                   <span>Edit Details</span>
@@ -677,52 +670,52 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-white/60 border border-white">
-                  <span className="text-xs font-bold text-slate-400 block mb-1">Full Legal Name</span>
-                  <span className="text-base font-extrabold text-slate-800">{fullName}</span>
+                <div className="p-4 rounded-2xl bg-white/70 border border-white">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Full Name</span>
+                  <span className="text-sm font-extrabold text-slate-800">{fullName}</span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/60 border border-white">
-                  <span className="text-xs font-bold text-slate-400 block mb-1">Primary Email</span>
-                  <span className="text-base font-extrabold text-slate-800">{user?.email}</span>
+                <div className="p-4 rounded-2xl bg-white/70 border border-white">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Email</span>
+                  <span className="text-sm font-extrabold text-slate-800">{user?.email}</span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/60 border border-white">
+                <div className="p-4 rounded-2xl bg-white/70 border border-white">
                   <span className="text-xs font-bold text-slate-400 block mb-1">Phone Number</span>
-                  <span className="text-base font-extrabold text-slate-800 flex items-center gap-1.5">
+                  <span className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
                     <Phone size={14} className="text-blue-500" />
                     {user?.phoneNumber || 'Not provided'}
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/60 border border-white">
-                  <span className="text-xs font-bold text-slate-400 block mb-1">Location / City</span>
-                  <span className="text-base font-extrabold text-slate-800 flex items-center gap-1.5">
-                    <MapPin size={14} className="text-red-500" />
+                <div className="p-4 rounded-2xl bg-white/70 border border-white">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Location</span>
+                  <span className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <MapPin size={14} className="text-blue-500" />
                     {user?.location?.city ? `${user.location.city}, ${user.location.state || 'IN'}` : 'Global Athlete'}
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/60 border border-white">
+                <div className="p-4 rounded-2xl bg-white/70 border border-white">
                   <span className="text-xs font-bold text-slate-400 block mb-1">Primary Sport</span>
-                  <span className="text-base font-extrabold text-slate-800 capitalize">
+                  <span className="text-sm font-extrabold text-slate-800 capitalize">
                     {user?.sports?.[0]?.name || 'Cricket'}
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/60 border border-white">
-                  <span className="text-xs font-bold text-slate-400 block mb-1">Jersey # & Role</span>
-                  <span className="text-base font-extrabold text-slate-800">
+                <div className="p-4 rounded-2xl bg-white/70 border border-white">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Jersey & Position</span>
+                  <span className="text-sm font-extrabold text-slate-800">
                     #{user?.sports?.[0]?.position || '10'} ({user?.sports?.[0]?.experience || 'Intermediate'})
                   </span>
                 </div>
               </div>
 
-              {/* Bio Block */}
-              <div className="mt-4 p-4 rounded-2xl bg-white/60 border border-white">
-                <span className="text-xs font-bold text-slate-400 block mb-1">Athlete Biography</span>
-                <p className="text-sm font-medium text-slate-700 leading-relaxed">
-                  {user?.bio || 'Passionate sports enthusiast competing on SportSphere tournaments and leading team performance.'}
+              {/* Biography */}
+              <div className="mt-4 p-4 rounded-2xl bg-white/70 border border-white">
+                <span className="text-xs font-bold text-slate-400 block mb-1">Biography</span>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                  {user?.bio || 'Passionate sports enthusiast competing on SportSphere and leading team performance.'}
                 </p>
               </div>
             </div>
@@ -730,9 +723,9 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
 
           {/* Squad Invitations */}
           <div className="space-y-6">
-            <div className="p-6 rounded-[32px] glass-panel bg-white/70 border border-white">
-              <h3 className="text-xl font-black text-slate-800 tracking-tight mb-4 flex items-center gap-2">
-                <Shield size={18} className="text-blue-600" />
+            <div className="p-6 rounded-[40px] glass-panel bg-white/60 border border-white">
+              <h3 className="text-lg font-extrabold text-slate-800 tracking-tight mb-4 flex items-center gap-2">
+                <Shield size={18} className="text-blue-500" />
                 <span>Squad Invitations</span>
               </h3>
               <TeamInvitations />
@@ -742,34 +735,34 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
         </div>
       )}
 
-      {/* TAB 3: 📊 ANALYTICS & CAREER */}
+      {/* TAB 3: ANALYTICS & CAREER */}
       {activeTab === 'analytics' && (
-        <div className="space-y-6 animate-fadeIn">
-          <div className="p-6 md:p-8 rounded-[32px] glass-panel bg-white/70 border border-white">
+        <div className="space-y-6">
+          <div className="p-6 md:p-8 rounded-[40px] glass-panel bg-white/60 border border-white">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Performance Analytics</h2>
-                <p className="text-xs text-slate-500 font-medium">Monthly training volume & competitive match score points</p>
+                <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">Performance Analytics</h2>
+                <p className="text-xs text-slate-500 font-medium">Monthly training volume & competitive match points</p>
               </div>
-              <div className="px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-600 font-extrabold text-xs">
+              <div className="px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-600 font-bold text-xs">
                 Current Season 2026
               </div>
             </div>
 
-            {/* Recharts Bar Graph */}
+            {/* Clean Recharts Bar Graph matching light glassmorphic theme */}
             <div className="h-72 w-full pt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                   <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} />
                   <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} />
                   <RechartsTooltip
                     contentStyle={{
-                      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
                       borderRadius: '16px',
-                      color: '#fff',
-                      border: 'none',
-                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
+                      color: '#1e293b',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 8px 30px rgba(0, 0, 255, 0.08)'
                     }}
                   />
                   <Bar dataKey="points" name="Match Points" fill="#3b82f6" radius={[6, 6, 0, 0]} />
@@ -781,16 +774,16 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
         </div>
       )}
 
-      {/* TAB 4: 🛡️ SQUADS & TEAMS */}
+      {/* TAB 4: SQUADS & TEAMS */}
       {activeTab === 'teams' && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight">My Squads & Rosters</h2>
+            <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">My Squads & Rosters</h2>
             <Link
               to="/teams/create"
-              className="px-4 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20"
+              className="px-4 py-2 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-[0_4px_14px_0_rgb(59,130,246,0.39)]"
             >
-              <Plus size={16} />
+              <Plus size={15} />
               <span>Create New Squad</span>
             </Link>
           </div>
@@ -800,20 +793,20 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
               {myTeams.map(team => (
                 <div
                   key={team._id || team.id}
-                  className="p-6 rounded-[32px] glass-panel bg-white/70 border border-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                  className="p-6 rounded-[32px] glass-panel bg-white/60 border border-white hover:bg-white hover:shadow-lg transition-all flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-md">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200/50 flex items-center justify-center font-extrabold text-lg shadow-sm">
                         {team.name?.substring(0, 2).toUpperCase() || 'TM'}
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-50 text-blue-600">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-200/50">
                         {team.sport || 'Cricket'}
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-black text-slate-800 tracking-tight mb-1">{team.name}</h3>
-                    <p className="text-xs text-slate-500 line-clamp-2 mb-4">
+                    <h3 className="text-lg font-extrabold text-slate-800 tracking-tight mb-1">{team.name}</h3>
+                    <p className="text-xs text-slate-500 font-medium line-clamp-2 mb-4">
                       {team.description || 'Active competitive team participating in SportSphere leagues.'}
                     </p>
                   </div>
@@ -827,7 +820,7 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
                     <div className="flex items-center gap-2 pt-2">
                       <Link
                         to={`/teams/${team._id || team.id}`}
-                        className="flex-1 py-2 px-3 rounded-full bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold text-center transition-colors"
+                        className="flex-1 py-2 px-3 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold text-center transition-colors shadow-sm"
                       >
                         Team Roster
                       </Link>
@@ -844,11 +837,11 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
               ))}
             </div>
           ) : (
-            <div className="p-12 rounded-[40px] glass-panel bg-white/50 border border-dashed border-slate-300 text-center">
-              <Shield size={48} className="text-slate-300 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-slate-700">No Squads Registered Yet</h3>
-              <p className="text-xs text-slate-400 mt-1 mb-5">Create your own squad as team captain or accept team invitations.</p>
-              <Link to="/teams/create" className="px-6 py-3 rounded-full bg-blue-600 text-white font-bold text-xs shadow-md">
+            <div className="p-12 rounded-[40px] glass-panel bg-white/40 border border-dashed border-slate-300 text-center">
+              <Shield size={44} className="text-slate-300 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-slate-700">No Squads Registered Yet</h3>
+              <p className="text-xs text-slate-500 mt-1 mb-5">Create your own squad as team captain or accept team invitations.</p>
+              <Link to="/teams/create" className="px-6 py-2.5 rounded-full bg-blue-500 text-white font-bold text-xs shadow-sm">
                 Create First Squad
               </Link>
             </div>
@@ -856,19 +849,19 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
         </div>
       )}
 
-      {/* 4. INLINE EDIT PROFILE MODAL */}
+      {/* 4. INLINE EDIT PROFILE MODAL (Clean Glassmorphism) */}
       {isEditingProfile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-[36px] max-w-lg w-full p-6 md:p-8 shadow-2xl border border-white/80 relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white/95 backdrop-blur-xl rounded-[40px] max-w-lg w-full p-6 md:p-8 shadow-2xl border border-white relative max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center">
                   <Edit3 size={18} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800 tracking-tight">Edit Athlete Profile</h3>
-                  <p className="text-xs text-slate-500">Update your public passport details</p>
+                  <h3 className="text-lg font-extrabold text-slate-800 tracking-tight">Edit Athlete Profile</h3>
+                  <p className="text-xs text-slate-500 font-medium">Update your profile attributes</p>
                 </div>
               </div>
               <button
@@ -909,7 +902,7 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
                   rows="3"
                   value={profileForm.bio}
                   onChange={(e) => setProfileForm(p => ({ ...p, bio: e.target.value }))}
-                  placeholder="Share your athletic goals, strengths, or tournament achievements..."
+                  placeholder="Share your athletic goals or tournament achievements..."
                   className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
               </div>
@@ -931,7 +924,7 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
                     type="text"
                     value={profileForm.city}
                     onChange={(e) => setProfileForm(p => ({ ...p, city: e.target.value }))}
-                    placeholder="e.g. Mumbai"
+                    placeholder="e.g. Hyderabad"
                     className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -969,14 +962,14 @@ const Dashboard = ({ defaultTab = 'overview' }) => {
                 <button
                   type="button"
                   onClick={() => setIsEditingProfile(false)}
-                  className="px-5 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-xs text-slate-600 transition-colors"
+                  className="px-5 py-2 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-xs text-slate-600 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingProfile}
-                  className="px-6 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md shadow-blue-500/25 flex items-center gap-1.5 disabled:opacity-50 transition-transform active:scale-95"
+                  className="px-6 py-2.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] flex items-center gap-1.5 disabled:opacity-50 transition-all"
                 >
                   {isSavingProfile ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   <span>{isSavingProfile ? 'Saving...' : 'Save Profile'}</span>
