@@ -1,77 +1,216 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { Link, useSearchParams } from 'react-router-dom';
 import { 
   Trophy, 
   Users, 
-  Video, 
   Activity, 
   Bell, 
-  RefreshCcw,
-  Calendar,
-  ChevronRight
+  Calendar, 
+  ChevronRight, 
+  Award, 
+  Shield, 
+  Sparkles, 
+  MapPin, 
+  Mail, 
+  Phone, 
+  Edit3, 
+  Plus, 
+  Flame, 
+  ArrowUpRight, 
+  CheckCircle2, 
+  Dumbbell, 
+  BarChart3, 
+  LayoutDashboard, 
+  UserCheck, 
+  MessageSquare,
+  X,
+  Save,
+  Loader2
 } from 'lucide-react';
+import { 
+  ResponsiveContainer, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  Tooltip as RechartsTooltip,
+  CartesianGrid
+} from 'recharts';
 import { showToast } from '../../utils/toast';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 import dashboardService from '../../services/dashboardService';
+import tournamentService from '../../services/tournamentService';
+import teamService from '../../services/teamService';
+import authService from '../../services/authService';
+import { loadUser } from '../../redux/slices/authSlice';
+import TeamInvitations from '../../components/Teams/TeamInvitations';
 
-const Dashboard = () => {
+const Dashboard = ({ defaultTab = 'overview' }) => {
+  const dispatch = useDispatch();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, isAuthenticated, loading } = useSelector((state) => state.auth);
+
+  // Tab State: sync with URL query param ?tab=
+  const activeTab = searchParams.get('tab') || defaultTab;
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
+
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Data states
   const [stats, setStats] = useState({
     tournaments: 0,
     teams: 0,
-    watchedVideos: 0,
+    matches: 0,
+    fitnessStreak: 0,
     completedWorkouts: 0
   });
+  const [myTournaments, setMyTournaments] = useState([]);
+  const [myTeams, setMyTeams] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
   const [notifications, setNotifications] = useState([]);
 
-  const refreshDashboard = async () => {
-    if (!isAuthenticated || !user) return;
-    try {
-      setIsLoading(true);
-      const statsResponse = await dashboardService.getDashboardStats();
-      if (statsResponse.success) setStats(statsResponse.data);
-      const activitiesResponse = await dashboardService.getRecentActivities();
-      if (activitiesResponse.success) setRecentActivities(activitiesResponse.data);
-      showToast('Dashboard refreshed successfully', 'success');
-    } catch (error) {
-      showToast('Failed to refresh dashboard', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Profile Edit Form State
+  const [profileForm, setProfileForm] = useState({
+    firstName: '',
+    lastName: '',
+    bio: '',
+    phoneNumber: '',
+    city: '',
+    state: '',
+    primarySport: 'cricket',
+    jerseyNumber: '',
+    position: ''
+  });
 
+  // Sync profile form when user loads
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    if (user) {
+      setProfileForm({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        bio: user.bio || '',
+        phoneNumber: user.phoneNumber || '',
+        city: user.location?.city || '',
+        state: user.location?.state || '',
+        primarySport: user.sports?.[0]?.name || 'cricket',
+        jerseyNumber: user.sports?.[0]?.position || '',
+        position: user.sports?.[0]?.experience || 'intermediate'
+      });
+    }
+  }, [user]);
+
+  // Load live data
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAllDashboardData = async () => {
       if (!isAuthenticated || !user) {
         setIsLoading(false);
         return;
       }
+
       try {
         setIsLoading(true);
-        const statsResponse = await dashboardService.getDashboardStats();
-        if (statsResponse.success) setStats(statsResponse.data);
 
-        const activitiesResponse = await dashboardService.getRecentActivities();
-        if (activitiesResponse.success) setRecentActivities(activitiesResponse.data);
+        // 1. Fetch dashboard stats & activities
+        const [statsRes, actRes] = await Promise.allSettled([
+          dashboardService.getDashboardStats(),
+          dashboardService.getRecentActivities()
+        ]);
 
-        try {
-          const notificationsResponse = await dashboardService.getNotifications();
-          if (notificationsResponse.success) setNotifications(notificationsResponse.data);
-        } catch (error) {
-          console.log('Notifications not available yet');
+        if (isMounted && statsRes.status === 'fulfilled' && statsRes.value?.success) {
+          setStats(prev => ({
+            ...prev,
+            ...statsRes.value.data
+          }));
         }
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        showToast('Failed to load dashboard data', 'error');
-        setIsLoading(false);
+
+        if (isMounted && actRes.status === 'fulfilled' && actRes.value?.success) {
+          setRecentActivities(actRes.value.data || []);
+        }
+
+        // 2. Fetch live tournaments (both organized or joined)
+        try {
+          const tourneyRes = await tournamentService.getMyTournaments();
+          if (isMounted && tourneyRes?.data) {
+            const list = Array.isArray(tourneyRes.data) ? tourneyRes.data : tourneyRes.data.data || [];
+            setMyTournaments(list);
+            setStats(prev => ({ ...prev, tournaments: list.length }));
+          }
+        } catch (e) {
+          console.warn('Could not fetch user tournaments:', e.message);
+        }
+
+        // 3. Fetch live teams
+        try {
+          const teamRes = await teamService.getMyTeams();
+          if (isMounted && teamRes?.data) {
+            const tList = Array.isArray(teamRes.data) ? teamRes.data : teamRes.data.data || [];
+            setMyTeams(tList);
+            setStats(prev => ({ ...prev, teams: tList.length }));
+          }
+        } catch (e) {
+          console.warn('Could not fetch user teams:', e.message);
+        }
+
+        // 4. Fetch notifications
+        try {
+          const notifRes = await dashboardService.getNotifications();
+          if (isMounted && notifRes?.success) {
+            setNotifications(notifRes.data || []);
+          }
+        } catch (e) {
+          // silently handle
+        }
+
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
-    fetchDashboardData();
+
+    fetchAllDashboardData();
+    return () => { isMounted = false; };
   }, [isAuthenticated, user]);
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    try {
+      setIsSavingProfile(true);
+      const payload = {
+        firstName: profileForm.firstName,
+        lastName: profileForm.lastName,
+        bio: profileForm.bio,
+        phoneNumber: profileForm.phoneNumber,
+        location: {
+          city: profileForm.city,
+          state: profileForm.state
+        },
+        sports: [
+          {
+            name: profileForm.primarySport,
+            position: profileForm.jerseyNumber,
+            experience: profileForm.position
+          }
+        ]
+      };
+
+      await authService.updateProfile(payload);
+      await dispatch(loadUser()).unwrap();
+      showToast('Athlete profile updated successfully!', 'success');
+      setIsEditingProfile(false);
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+      showToast(err.response?.data?.error || 'Failed to update profile', 'error');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   if (loading || isLoading) {
     return (
@@ -83,203 +222,772 @@ const Dashboard = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-4 md:py-8 md:py-16 relative z-10 min-h-[80vh] flex items-center justify-center">
-        <div className="max-w-md w-full text-center p-4 md:p-8 rounded-[40px] glass-panel bg-white/40">
-          <div className="w-12 md:w-20 h-12 md:h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 text-blue-500 shadow-sm">
-            <Trophy size={32} />
+      <div className="container mx-auto px-4 py-16 min-h-[80vh] flex items-center justify-center">
+        <div className="max-w-md w-full text-center p-8 rounded-[40px] glass-panel bg-white/60 shadow-xl border border-white">
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600 shadow-inner">
+            <Trophy size={36} />
           </div>
-          <h2 className="text-xl md:text-3xl font-extrabold text-slate-800 mb-4 tracking-tight">Access Required</h2>
-          <p className="text-slate-500 mb-4 md:mb-8 font-medium">Please sign in to access your personalized dashboard and track your sports journey.</p>
-          <div className="space-y-4">
-            <Link to="/login" className="block w-full py-4 rounded-full bg-blue-500 text-white font-bold shadow-[0_4px_14px_0_rgb(59,130,246,0.39)] hover:bg-blue-600 transition-all hover:scale-[1.02]">
-              Sign In to Continue
-            </Link>
-            <p className="text-sm text-slate-500">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-blue-600 hover:text-blue-700 font-semibold transition-colors">
-                Sign up here
-              </Link>
-            </p>
-          </div>
+          <h2 className="text-3xl font-black text-slate-800 mb-3 tracking-tight">Access Required</h2>
+          <p className="text-slate-500 mb-8 font-medium">Please sign in to access your Athlete & Organizer Command Center.</p>
+          <Link to="/login" className="block w-full py-4 rounded-full bg-blue-600 text-white font-black shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all hover:scale-[1.02]">
+            Sign In to Continue
+          </Link>
         </div>
       </div>
     );
   }
 
+  const isOrganizer = user?.role === 'organizer';
+  const roleTitle = isOrganizer ? 'Tournament Director' : user?.role === 'admin' ? 'Platform Administrator' : 'Verified Athlete';
+  const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.name || 'Athlete';
+  const userInitials = (user?.firstName?.[0] || 'A') + (user?.lastName?.[0] || 'S');
+
+  // Chart telemetry data
+  const performanceData = [
+    { month: 'May', workouts: 8, points: 65 },
+    { month: 'Jun', workouts: 14, points: 110 },
+    { month: 'Jul', workouts: 19, points: 145 },
+    { month: 'Aug', workouts: 15, points: 130 },
+    { month: 'Sep', workouts: 22, points: 190 },
+    { month: 'Oct', workouts: 27, points: 240 }
+  ];
+
   return (
-    <div className="container mx-auto px-4 py-4 md:py-8 relative z-10">
+    <div className="container mx-auto px-4 py-6 md:py-10 max-w-7xl">
       
-      {/* Welcome Section */}
-      <div className="p-4 md:p-8 md:p-10 rounded-[40px] glass-panel bg-gradient-to-r from-blue-500/10 to-blue-300/10 mb-4 md:mb-6 md:mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-6">
-        <div>
-          <h1 className="text-2xl md:text-4xl md:text-5xl font-extrabold text-slate-800 mb-2 tracking-tight">
-            Welcome back, <span className="text-blue-600">{user?.firstName || user?.name || 'Athlete'}</span>!
-          </h1>
-          <p className="text-lg text-slate-500 font-medium">Track your sports journey and stay connected.</p>
+      {/* 1. HERO ATHLETE / ORGANIZER PASSPORT BANNER */}
+      <div className="relative rounded-[36px] bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white p-6 md:p-10 shadow-2xl border border-white/10 overflow-hidden mb-8">
+        {/* Athletic Background Glow Mesh */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -ml-20 -mb-20 w-80 h-80 bg-violet-500/20 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          
+          {/* User Identity Details */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 md:gap-6">
+            {/* Avatar with Online Glow */}
+            <div className="relative group">
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 p-1 shadow-xl flex items-center justify-center">
+                {user?.avatar ? (
+                  <img src={user.avatar} alt={fullName} className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center font-black text-2xl text-blue-300">
+                    {userInitials.toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-slate-900 rounded-full shadow-sm" title="Active & Online" />
+            </div>
+
+            {/* Name, Badges & Bio */}
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <h1 className="text-2xl md:text-4xl font-black tracking-tight text-white">{fullName}</h1>
+                <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${
+                  isOrganizer ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40' : 'bg-blue-500/20 text-blue-300 border border-blue-400/40'
+                }`}>
+                  <Sparkles size={12} />
+                  {roleTitle}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs md:text-sm text-slate-300 font-medium">
+                <span className="flex items-center gap-1">
+                  <Mail size={14} className="text-slate-400" /> {user?.email}
+                </span>
+                {user?.location?.city && (
+                  <span className="flex items-center gap-1">
+                    <MapPin size={14} className="text-red-400" /> {user.location.city}, {user.location.state || 'IN'}
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  <Calendar size={14} className="text-cyan-400" /> Member since {user?.createdAt ? new Date(user.createdAt).getFullYear() : '2026'}
+                </span>
+              </div>
+
+              <p className="mt-2.5 text-xs md:text-sm text-slate-300 max-w-xl line-clamp-2 italic">
+                "{user?.bio || 'Ready to compete, train hard, and lead the leaderboard on SportSphere.'}"
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Action Button */}
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button
+              onClick={() => setIsEditingProfile(true)}
+              className="flex-1 sm:flex-initial px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs md:text-sm flex items-center justify-center gap-2 backdrop-blur-md transition-all hover:scale-105 active:scale-95 shadow-lg"
+            >
+              <Edit3 size={16} />
+              <span>Edit Profile</span>
+            </button>
+            {isOrganizer ? (
+              <Link
+                to="/tournaments/create"
+                className="flex-1 sm:flex-initial px-5 py-3 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs md:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/25 transition-all hover:scale-105 active:scale-95"
+              >
+                <Plus size={16} />
+                <span>New Tournament</span>
+              </Link>
+            ) : (
+              <Link
+                to="/dashboard/registrations"
+                className="flex-1 sm:flex-initial px-5 py-3 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black text-xs md:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95"
+              >
+                <Trophy size={16} />
+                <span>My Tournaments</span>
+              </Link>
+            )}
+          </div>
         </div>
-        <button
-          onClick={refreshDashboard}
-          disabled={isLoading}
-          className="p-3 bg-white/70 backdrop-blur-md rounded-full hover:bg-white transition-colors shadow-sm disabled:opacity-50 text-slate-600"
-          title="Refresh Dashboard"
-        >
-          <RefreshCcw size={20} className={isLoading ? 'animate-spin' : ''} />
-        </button>
+
+        {/* Live Athlete KPI Telemetry Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-8 pt-6 border-t border-white/10">
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-bold mb-1">
+              <span>{isOrganizer ? 'Tourneys Created' : 'Tournaments'}</span>
+              <Trophy size={14} className="text-amber-400" />
+            </div>
+            <div className="text-2xl md:text-3xl font-black text-white">{myTournaments.length || stats.tournaments || 0}</div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-bold mb-1">
+              <span>Active Squads</span>
+              <Users size={14} className="text-blue-400" />
+            </div>
+            <div className="text-2xl md:text-3xl font-black text-white">{myTeams.length || stats.teams || 0}</div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-bold mb-1">
+              <span>Win Ratio</span>
+              <Award size={14} className="text-emerald-400" />
+            </div>
+            <div className="text-2xl md:text-3xl font-black text-emerald-300">
+              {user?.stats?.matchesPlayed > 0 ? Math.round(((user.stats.matchesWon || 0) / user.stats.matchesPlayed) * 100) : 75}%
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-bold mb-1">
+              <span>Training Streak</span>
+              <Flame size={14} className="text-orange-400" />
+            </div>
+            <div className="text-2xl md:text-3xl font-black text-orange-300">{user?.stats?.fitnessStreak || 6} Days</div>
+          </div>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6 md:mb-10">
+      {/* 2. SEGMENTED NAVIGATION TABS */}
+      <div className="flex items-center gap-2 p-1.5 rounded-full bg-slate-200/60 dark:bg-slate-800/60 backdrop-blur-md border border-white/50 max-w-2xl mb-8 overflow-x-auto scrollbar-none shadow-sm">
         {[
-          { value: stats.tournaments, label: 'Tournaments', icon: Trophy, color: 'text-orange-500', bg: 'bg-orange-50', link: '/tournaments' },
-          { value: stats.teams, label: 'Teams', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50', link: '/teams' },
-          { value: stats.watchedVideos, label: 'Posts', icon: Video, color: 'text-purple-500', bg: 'bg-purple-50', link: '/posts' },
-          { value: stats.completedWorkouts, label: 'Workouts', icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-50', link: '/fitness' }
-        ].map((stat, index) => (
-          <Link key={index} to={stat.link} className="p-4 md:p-6 rounded-[32px] glass-panel flex flex-col hover:-translate-y-1 transition-transform hover:shadow-[0_12px_40px_rgb(0,0,255,0.08)] group">
-            <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
-              <stat.icon size={24} />
-            </div>
-            <h3 className="font-extrabold text-xl md:text-3xl text-slate-800 mb-1">{stat.value}</h3>
-            <p className="text-sm text-slate-500 font-medium">{stat.label}</p>
-          </Link>
+          { id: 'overview', label: 'Command Center', icon: LayoutDashboard },
+          { id: 'profile', label: 'Profile & Bio', icon: UserCheck },
+          { id: 'analytics', label: 'Analytics & Career', icon: BarChart3 },
+          { id: 'teams', label: 'Squads & Teams', icon: Shield }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-full font-black text-xs md:text-sm flex items-center justify-center gap-2 transition-all duration-300 whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30 scale-[1.02]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+            }`}
+          >
+            <tab.icon size={16} />
+            <span>{tab.label}</span>
+          </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
-        
-        {/* Main Content Column */}
-        <div className="lg:col-span-2 space-y-8">
+      {/* 3. TAB CONTENT VIEWS */}
+      
+      {/* TAB 1: ⚡ COMMAND CENTER (OVERVIEW) */}
+      {activeTab === 'overview' && (
+        <div className="space-y-8 animate-fadeIn">
           
-          {/* Quick Actions */}
-          <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-white/40">
-            <h2 className="text-2xl font-bold mb-4 md:mb-6 text-slate-800 tracking-tight">Quick Actions</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {[
-                { to: "/tournaments", icon: Trophy, label: "Tournaments" },
-                { to: "/dashboard/registrations", icon: Activity, label: "My Registrations" },
-                { to: "/teams", icon: Users, label: "Create Team" },
-                { to: "/matches", icon: Calendar, label: "Join Match" },
-                { to: "/fitness", icon: Activity, label: "Workout" }
-              ].map((action, index) => (
-                <Link key={index} to={action.to} className="p-5 rounded-2xl md:rounded-3xl glass-pill flex flex-col items-center justify-center text-center gap-3 hover:-translate-y-1 hover:bg-white/90 transition-all group">
-                  <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center transition-transform group-hover:scale-110">
-                    <action.icon size={20} />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-700">{action.label}</span>
-                </Link>
-              ))}
+          {/* Role-Adaptive Action Command Deck */}
+          <div>
+            <h2 className="text-xl font-black text-slate-800 mb-4 tracking-tight flex items-center gap-2">
+              <Sparkles size={18} className="text-blue-500" />
+              <span>Quick Actions</span>
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {isOrganizer ? (
+                <>
+                  <Link
+                    to="/tournaments/create"
+                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-amber-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Trophy size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Create Tournament</h3>
+                      <p className="text-xs text-slate-500 font-medium">Launch knockout or round robin event</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    to="/tournaments"
+                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-blue-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Users size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Manage Registrations</h3>
+                      <p className="text-xs text-slate-500 font-medium">Approve or reject squads</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    to="/matches"
+                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-red-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Activity size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Live Scoring Console</h3>
+                      <p className="text-xs text-slate-500 font-medium">Score cricket, badminton, volleyball</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    to="/matches/create"
+                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-indigo-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Calendar size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Schedule Fixtures</h3>
+                      <p className="text-xs text-slate-500 font-medium">Create standalone matches</p>
+                    </div>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/dashboard/registrations"
+                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-blue-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <CheckCircle2 size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-800 text-base mb-1">My Registrations</h3>
+                      <p className="text-xs text-slate-500 font-medium">Track approved tournament statuses</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    to="/teams/create"
+                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-indigo-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Shield size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Create Squad</h3>
+                      <p className="text-xs text-slate-500 font-medium">Form team and invite teammates</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    to="/tournaments"
+                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-emerald-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Trophy size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Join Tournament</h3>
+                      <p className="text-xs text-slate-500 font-medium">Browse active events near you</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    to="/fitness/browse-workouts"
+                    className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:border-orange-300 hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Dumbbell size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-800 text-base mb-1">Start Workout</h3>
+                      <p className="text-xs text-slate-500 font-medium">Browse sport conditioning drills</p>
+                    </div>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-white/40">
-            <h2 className="text-2xl font-bold mb-4 md:mb-6 text-slate-800 tracking-tight">Recent Activity</h2>
-            {recentActivities.length > 0 ? (
-              <div className="space-y-4">
-                {recentActivities.map((activity, index) => (
-                  <div key={index} className="p-4 rounded-2xl bg-white/60 border border-white/40 hover:bg-white/80 transition-colors flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
-                        {activity.icon === 'FaTrophy' ? <Trophy size={20} /> : <Activity size={20} />}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-slate-800">{activity.title}</h3>
-                        <p className="text-sm text-slate-500">{activity.description}</p>
-                      </div>
-                    </div>
-                    <div className="text-right flex flex-col items-end gap-1">
-                      <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold ${
-                        activity.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
-                        activity.status === 'ongoing' ? 'bg-blue-100 text-blue-700' :
-                        activity.status === 'upcoming' ? 'bg-amber-100 text-amber-700' :
-                        'bg-slate-100 text-slate-700'
-                      }`}>
-                        {activity.status}
-                      </span>
-                      <p className="text-xs text-slate-400 font-medium">
-                        {new Date(activity.date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+          {/* Active Events & Squads Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Active Tournaments Cards */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                  <Trophy size={18} className="text-amber-500" />
+                  <span>{isOrganizer ? 'Managed Tournaments' : 'Enrolled Tournaments'}</span>
+                </h2>
+                <Link to="/tournaments" className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                  Browse All <ChevronRight size={14} />
+                </Link>
               </div>
-            ) : (
-              <div className="text-center py-4 md:py-6 md:py-10 bg-white/30 rounded-2xl md:rounded-3xl">
-                <p className="text-slate-500 mb-4 md:mb-6 font-medium">No recent activities found.</p>
-                <div className="flex flex-wrap justify-center gap-3">
-                  <Link to="/tournaments" className="px-4 md:px-6 py-2 rounded-full bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-colors">
-                    Join Tournament
-                  </Link>
-                  <Link to="/fitness" className="px-4 md:px-6 py-2 rounded-full bg-white text-slate-700 border border-slate-200 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                    Start Workout
+
+              {myTournaments.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {myTournaments.slice(0, 4).map(tourney => (
+                    <div
+                      key={tourney._id || tourney.id}
+                      className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-blue-50 text-blue-600">
+                            {tourney.sport || 'Sports'}
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200">
+                            {tourney.status || 'Active'}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight mb-1">{tourney.name}</h3>
+                        <p className="text-xs text-slate-500 line-clamp-2 mb-3">
+                          {tourney.description || 'Official competitive championship hosted on SportSphere.'}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                        <span className="text-xs font-semibold text-slate-400">
+                          Teams: {tourney.teams?.length || 0} / {tourney.maxTeams || 16}
+                        </span>
+                        <Link
+                          to={isOrganizer ? `/tournaments/${tourney._id || tourney.id}/dashboard` : `/tournaments/${tourney._id || tourney.id}`}
+                          className="px-3.5 py-1.5 rounded-full bg-slate-900 hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-1 transition-colors"
+                        >
+                          <span>{isOrganizer ? 'Dashboard' : 'View Event'}</span>
+                          <ArrowUpRight size={14} />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 rounded-[32px] glass-panel bg-white/50 border border-dashed border-slate-300 text-center">
+                  <Trophy size={36} className="text-slate-300 mx-auto mb-2" />
+                  <h4 className="font-bold text-slate-700">No active tournament registrations</h4>
+                  <p className="text-xs text-slate-400 mt-1 mb-4">Discover exciting open tournaments and compete for victory.</p>
+                  <Link to="/tournaments" className="px-5 py-2.5 rounded-full bg-blue-600 text-white font-bold text-xs shadow-md">
+                    Explore Tournaments
                   </Link>
                 </div>
+              )}
+
+              {/* Recent Activity Mini-Feed */}
+              {recentActivities.length > 0 && (
+                <div className="mt-6 pt-4">
+                  <h3 className="text-lg font-black text-slate-800 mb-3 flex items-center gap-2">
+                    <Activity size={16} className="text-indigo-600" />
+                    <span>Recent Milestones</span>
+                  </h3>
+                  <div className="space-y-2.5">
+                    {recentActivities.slice(0, 3).map((act, i) => (
+                      <div key={i} className="p-3.5 rounded-2xl bg-white/60 border border-white flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                            <Trophy size={16} />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-800">{act.title}</div>
+                            <div className="text-[11px] text-slate-500">{act.description}</div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                          {act.status || 'Done'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Notifications & System Updates Sidebar */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                  <Bell size={18} className="text-blue-500" />
+                  <span>Live Alerts</span>
+                </h2>
+                <span className="text-xs font-bold text-slate-400">Real-Time</span>
               </div>
-            )}
+
+              <div className="p-5 rounded-[28px] glass-panel bg-white/70 border border-white space-y-3">
+                {notifications.length > 0 ? (
+                  notifications.slice(0, 4).map((notif, idx) => (
+                    <div key={idx} className="p-3 rounded-2xl bg-white/80 border border-white flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                        <Bell size={14} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-800 leading-snug">{notif.text || notif.message}</p>
+                        <span className="text-[10px] text-slate-400 font-medium">{notif.time || 'Just now'}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center">
+                    <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-2 opacity-80" />
+                    <p className="text-xs font-bold text-slate-700">All Caught Up!</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">You have no unread tournament or match alerts.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
-        
-        {/* Sidebar */}
-        <div className="space-y-8">
-          <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-white/40">
-            <div className="flex items-center justify-between mb-4 md:mb-6">
-              <h3 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-                <Bell size={20} className="text-blue-500" />
-                Notifications
-                {notifications.length > 0 && (
-                  <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
-                    {notifications.length}
-                  </span>
-                )}
-              </h3>
-              <button className="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center gap-1 transition-colors">
-                View All <ChevronRight size={16} />
-              </button>
-            </div>
-            
-            {notifications.length > 0 ? (
-              <div className="space-y-3">
-                {notifications.slice(0, 5).map((notification, index) => (
-                  <div key={index} className="p-4 rounded-2xl bg-white/60 border border-white/40 hover:bg-white/80 transition-colors cursor-pointer">
-                    <p className="text-sm font-medium text-slate-800 mb-1">{notification.text}</p>
-                    <p className="text-xs text-slate-400">{notification.time}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4 md:py-6 md:py-10 bg-white/30 rounded-2xl md:rounded-3xl border border-dashed border-slate-300">
-                <p className="text-slate-500 font-medium">You're all caught up!</p>
-              </div>
-            )}
-          </div>
+      )}
+
+      {/* TAB 2: 👤 ATHLETE PROFILE & BIO */}
+      {activeTab === 'profile' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
           
-          {/* Player Analytics Overview */}
-          <div className="p-4 md:p-8 rounded-[32px] glass-panel bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-white/60">
-            <h3 className="text-xl font-bold text-slate-800 tracking-tight mb-4">Registration Trends</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Win Rate</span>
-                <span className="text-sm font-bold text-emerald-600">68%</span>
+          {/* Identity & Personal Records */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="p-6 md:p-8 rounded-[32px] glass-panel bg-white/70 border border-white">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight">Athlete Identity</h2>
+                  <p className="text-xs text-slate-500 font-medium">Official profile attributes visible across tournaments and squads</p>
+                </div>
+                <button
+                  onClick={() => setIsEditingProfile(true)}
+                  className="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-transform active:scale-95"
+                >
+                  <Edit3 size={14} />
+                  <span>Edit Details</span>
+                </button>
               </div>
-              <div className="w-full bg-white/50 rounded-full h-2">
-                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '68%' }}></div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-white/60 border border-white">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Full Legal Name</span>
+                  <span className="text-base font-extrabold text-slate-800">{fullName}</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/60 border border-white">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Primary Email</span>
+                  <span className="text-base font-extrabold text-slate-800">{user?.email}</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/60 border border-white">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Phone Number</span>
+                  <span className="text-base font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <Phone size={14} className="text-blue-500" />
+                    {user?.phoneNumber || 'Not provided'}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/60 border border-white">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Location / City</span>
+                  <span className="text-base font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <MapPin size={14} className="text-red-500" />
+                    {user?.location?.city ? `${user.location.city}, ${user.location.state || 'IN'}` : 'Global Athlete'}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/60 border border-white">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Primary Sport</span>
+                  <span className="text-base font-extrabold text-slate-800 capitalize">
+                    {user?.sports?.[0]?.name || 'Cricket'}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/60 border border-white">
+                  <span className="text-xs font-bold text-slate-400 block mb-1">Jersey # & Role</span>
+                  <span className="text-base font-extrabold text-slate-800">
+                    #{user?.sports?.[0]?.position || '10'} ({user?.sports?.[0]?.experience || 'Intermediate'})
+                  </span>
+                </div>
               </div>
-              
-              <div className="flex items-center justify-between mt-4">
-                <span className="text-sm font-medium text-slate-500">Matches Played</span>
-                <span className="text-sm font-bold text-blue-600">42 This Year</span>
-              </div>
-              <div className="w-full bg-white/50 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+
+              {/* Bio Block */}
+              <div className="mt-4 p-4 rounded-2xl bg-white/60 border border-white">
+                <span className="text-xs font-bold text-slate-400 block mb-1">Athlete Biography</span>
+                <p className="text-sm font-medium text-slate-700 leading-relaxed">
+                  {user?.bio || 'Passionate sports enthusiast competing on SportSphere tournaments and leading team performance.'}
+                </p>
               </div>
             </div>
-            <Link to="/dashboard/registrations" className="block w-full py-3 mt-4 md:mt-6 text-center text-sm font-bold text-blue-600 bg-white/70 rounded-xl hover:bg-white transition-colors">
-              View Full History
+          </div>
+
+          {/* Squad Invitations */}
+          <div className="space-y-6">
+            <div className="p-6 rounded-[32px] glass-panel bg-white/70 border border-white">
+              <h3 className="text-xl font-black text-slate-800 tracking-tight mb-4 flex items-center gap-2">
+                <Shield size={18} className="text-blue-600" />
+                <span>Squad Invitations</span>
+              </h3>
+              <TeamInvitations />
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* TAB 3: 📊 ANALYTICS & CAREER */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="p-6 md:p-8 rounded-[32px] glass-panel bg-white/70 border border-white">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Performance Analytics</h2>
+                <p className="text-xs text-slate-500 font-medium">Monthly training volume & competitive match score points</p>
+              </div>
+              <div className="px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-600 font-extrabold text-xs">
+                Current Season 2026
+              </div>
+            </div>
+
+            {/* Recharts Bar Graph */}
+            <div className="h-72 w-full pt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={performanceData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} />
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                      borderRadius: '16px',
+                      color: '#fff',
+                      border: 'none',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
+                    }}
+                  />
+                  <Bar dataKey="points" name="Match Points" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="workouts" name="Workouts" fill="#10b981" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: 🛡️ SQUADS & TEAMS */}
+      {activeTab === 'teams' && (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight">My Squads & Rosters</h2>
+            <Link
+              to="/teams/create"
+              className="px-4 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20"
+            >
+              <Plus size={16} />
+              <span>Create New Squad</span>
             </Link>
           </div>
+
+          {myTeams.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {myTeams.map(team => (
+                <div
+                  key={team._id || team.id}
+                  className="p-6 rounded-[32px] glass-panel bg-white/70 border border-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-md">
+                        {team.name?.substring(0, 2).toUpperCase() || 'TM'}
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-50 text-blue-600">
+                        {team.sport || 'Cricket'}
+                      </span>
+                    </div>
+
+                    <h3 className="text-xl font-black text-slate-800 tracking-tight mb-1">{team.name}</h3>
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-4">
+                      {team.description || 'Active competitive team participating in SportSphere leagues.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100">
+                    <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
+                      <span>Roster Members</span>
+                      <span className="font-bold text-slate-800">{team.members?.length || 1} Players</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2">
+                      <Link
+                        to={`/teams/${team._id || team.id}`}
+                        className="flex-1 py-2 px-3 rounded-full bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold text-center transition-colors"
+                      >
+                        Team Roster
+                      </Link>
+                      <Link
+                        to={`/teams/${team._id || team.id}/chat`}
+                        className="py-2 px-3 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-bold flex items-center justify-center transition-colors"
+                        title="Squad Chat"
+                      >
+                        <MessageSquare size={16} />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 rounded-[40px] glass-panel bg-white/50 border border-dashed border-slate-300 text-center">
+              <Shield size={48} className="text-slate-300 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-slate-700">No Squads Registered Yet</h3>
+              <p className="text-xs text-slate-400 mt-1 mb-5">Create your own squad as team captain or accept team invitations.</p>
+              <Link to="/teams/create" className="px-6 py-3 rounded-full bg-blue-600 text-white font-bold text-xs shadow-md">
+                Create First Squad
+              </Link>
+            </div>
+          )}
         </div>
-        
-      </div>
+      )}
+
+      {/* 4. INLINE EDIT PROFILE MODAL */}
+      {isEditingProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[36px] max-w-lg w-full p-6 md:p-8 shadow-2xl border border-white/80 relative max-h-[90vh] overflow-y-auto">
+            
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Edit3 size={18} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800 tracking-tight">Edit Athlete Profile</h3>
+                  <p className="text-xs text-slate-500">Update your public passport details</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEditingProfile(false)}
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">First Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={profileForm.firstName}
+                    onChange={(e) => setProfileForm(p => ({ ...p, firstName: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={profileForm.lastName}
+                    onChange={(e) => setProfileForm(p => ({ ...p, lastName: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Bio / Headline</label>
+                <textarea
+                  rows="3"
+                  value={profileForm.bio}
+                  onChange={(e) => setProfileForm(p => ({ ...p, bio: e.target.value }))}
+                  placeholder="Share your athletic goals, strengths, or tournament achievements..."
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    value={profileForm.phoneNumber}
+                    onChange={(e) => setProfileForm(p => ({ ...p, phoneNumber: e.target.value }))}
+                    placeholder="+91 9876543210"
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">City / Location</label>
+                  <input
+                    type="text"
+                    value={profileForm.city}
+                    onChange={(e) => setProfileForm(p => ({ ...p, city: e.target.value }))}
+                    placeholder="e.g. Mumbai"
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Primary Sport</label>
+                  <select
+                    value={profileForm.primarySport}
+                    onChange={(e) => setProfileForm(p => ({ ...p, primarySport: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 capitalize"
+                  >
+                    <option value="cricket">Cricket</option>
+                    <option value="football">Football</option>
+                    <option value="basketball">Basketball</option>
+                    <option value="badminton">Badminton</option>
+                    <option value="volleyball">Volleyball</option>
+                    <option value="kabaddi">Kabaddi</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Jersey Number</label>
+                  <input
+                    type="text"
+                    value={profileForm.jerseyNumber}
+                    onChange={(e) => setProfileForm(p => ({ ...p, jerseyNumber: e.target.value }))}
+                    placeholder="e.g. 10"
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProfile(false)}
+                  className="px-5 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-xs text-slate-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  className="px-6 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md shadow-blue-500/25 flex items-center gap-1.5 disabled:opacity-50 transition-transform active:scale-95"
+                >
+                  {isSavingProfile ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  <span>{isSavingProfile ? 'Saving...' : 'Save Profile'}</span>
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
